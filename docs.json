@@ -3,9 +3,9 @@
   "theme": "mint",
   "name": "Textin 智能文档解析",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#1a66ff",
+    "light": "#1a66ff",
+    "dark": "#1a66ff"
   },
   "favicon": "/favicon.png",
   "navigation": {
@@ -36,7 +36,7 @@
             ]
           },
           {
-            "group": "文档抽取",
+            "group": "智能抽取",
             "pages": [
               "xparse/extract-quickstart",
               "xparse/extract-getjson",
