@@ -1,0 +1,22 @@
+---
+title: "获取目录树"
+---
+
+当您使用智能文档解析API想要获取文档目录树(即大纲结构)时，您可以参考以下示例代码。
+
+- 在 options 中设置参数 catalog_details=1，API会在返回结果中包含目录相关信息。
+
+```python
+if "result" in json_response and "catalog" in json_response["result"]:
+    catalog = json_response["result"]["catalog"]
+    
+    # 保存为json文件
+    import json
+    with open("catalog.json", "w", encoding="utf-8") as f:
+        json.dump(catalog, f, ensure_ascii=False, indent=2)
+    print("目录树已保存为 catalog.json")
+else:
+    print("未检测到目录树字段，可能文档没有目录或参数设置有误。")
+```
+
+- 如果您想了解更多详细信息，可以在[API文档](https://www.textin.com/document/pdf_to_markdown)中查看。

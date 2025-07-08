@@ -1,0 +1,50 @@
+---
+title: "获取表格"
+---
+
+当您使用智能文档解析API想要获取表格时，您可以参考以下示例代码，将表格保存为 md 和 json 文件。
+
+- 在 options 中设置参数 table_flavor 为 md 或 html，这样API会以Markdown或HTML格式输出表格。
+
+```python
+if "result" in json_response and "markdown" in json_response["result"]:
+    markdown_content = json_response["result"]["markdown"]
+    # 提取所有表格
+    tables = re.findall(r'(?:\|.*\n)+', markdown_content)
+    tables_md = '\n'.join(tables)
+    
+    # 保存为md文件
+    with open("tables.md", "w", encoding="utf-8") as f:
+        f.write(tables_md)
+
+        
+tables_json = []
+
+for page in json_response["result"]["pages"]:
+    for block in page.get("structured", []):
+        if block.get("type") == "table":
+            tables_json.append(block)
+
+# 保存为 json 文件
+with open("tables.json", "w", encoding="utf-8") as f:
+    json.dump(tables_json, f, ensure_ascii=False, indent=2)   
+```
+
+如果您需要将表格导出为Excel等格式，您可以参考以下示例代码。
+
+- 在 options 中设置参数 get_excel=1，让API返回 excel_base64 字段（Excel文件的base64编码）。
+
+```python
+import base64
+
+if "result" in json_response and "excel_base64" in json_response["result"]:
+    excel_base64 = json_response["result"]["excel_base64"]
+    excel_bytes = base64.b64decode(excel_base64)
+    with open("result.xlsx", "wb") as f:
+        f.write(excel_bytes)
+    print("Excel 文件已保存为 result.xlsx")
+else:
+    print("未检测到 excel_base64 字段，可能 PDF 中没有表格或参数设置有误。")
+```
+
+- 如果您想了解更多详细信息，可以在[API文档](https://www.textin.com/document/pdf_to_markdown)中查看。

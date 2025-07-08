@@ -1,0 +1,108 @@
+---
+title: "异步请求"
+---
+
+**快速启动**中的示例请求方式已经是异步请求，以下为您提供一份完整的异步请求示例代码，您可根据具体需求进行调整。
+
+- 使用prompt模式进行抽取
+- 将抽取结果保存为JSON格式
+
+```python
+import asyncio
+import base64
+import json
+import os
+from typing import Any
+import aiohttp
+from enum import Enum
+
+
+def file_to_base64(file_path):
+    """
+    将文件转换为 Base64 字符串。
+
+    Args:
+        file_path (str): 文件的路径。
+
+    Returns:
+        str: Base64 编码的字符串。
+    """
+    # 打开文件并读取内容
+    with open(file_path, "rb") as file:
+        file_content = file.read()
+
+    # 将文件内容转换为 Base64 字符串
+    base64_string = base64.b64encode(file_content).decode("utf-8")
+
+    return base64_string
+
+
+class TextinWebApiClient:
+
+    ENTITY_EXTRACTION_API = "https://api.textin.com/ai/service/v2/entity_extraction"
+
+    class ENTITY_EXTRACTION(Enum):
+        close_ie = "close_ie"
+
+    def __init__(self, app_id, secret_code):
+        self.app_id = app_id
+        self.secret_code = secret_code
+
+    async def entity_extraction(self, body: any,
+                                file_name: str,
+                                ie_type: ENTITY_EXTRACTION = ENTITY_EXTRACTION.close_ie
+                                ) -> Any:
+        """
+        调用智能文档抽取API
+
+        Args:
+            body (any): 调用智能文档抽取接口所需的body
+            file_name (str): 文档的文件名
+            ie_type (enum): 抽取模式，默认`close_ie`
+
+        Returns:
+            Any
+        """
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=600)) as session:
+            async with session.post(self.ENTITY_EXTRACTION_API, json=body,
+                                    headers={
+                                        "x-ti-app-id": self.app_id,
+                                        "x-ti-secret-code": self.secret_code
+                                    },
+                                    params={
+                                        "ie_type": ie_type.value,
+                                        "file_name": file_name
+                                    }) as response:
+                if response.status != 200:
+                    error_message = await response.text()
+                    print(
+                        f"调用失败，http状态码：{response.status}, 错误信息：{error_message}")
+                    return None
+                return await response.json()
+
+async def main():
+    """
+    TextinWebApiClient 类使用示例
+    """
+    apiClient = TextinWebApiClient(
+        "你的x-ti-app-id", "你的x-ti-secret-code")
+
+    file_path = "你的文件.pdf"
+    file_bytes = file_to_base64(file_path)
+    
+    # Prompt模式
+    post_body = {
+       "file": file_bytes,
+       "prompt": "这里是你的抽取prompt"
+    }
+
+    res = await apiClient.entity_extraction(body=post_body, file_name=os.path.basename(file_path))
+
+    print(res)
+
+    # 保存为json文件
+    with open("抽取结果.json", "w", encoding="utf-8") as f:
+        json.dump(res, f, ensure_ascii=False, indent=4)
+
+asyncio.run(main())
+```

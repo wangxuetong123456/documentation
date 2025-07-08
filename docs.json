@@ -1,95 +1,100 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Textin 智能文档解析",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
     "dark": "#15803D"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/favicon.png",
   "navigation": {
     "tabs": [
       {
         "tab": "Guides",
         "groups": [
           {
-            "group": "Get Started",
+            "group": "产品概览",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "xparse/overview",
+              "xparse/api-key",
+              "xparse/product-manual"
             ]
           },
           {
-            "group": "Essentials",
+            "group": "文档解析",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/settings",
-              "essentials/navigation",
-              "essentials/reusable-snippets"
+              "xparse/parse-quickstart",
+              "xparse/parse-getmarkdown",
+              "xparse/parse-getjson",
+              "xparse/parse-gettable",
+              "xparse/parse-getcatalog",
+              "xparse/parse-getimage",
+              "xparse/parse-getpos",
+              "xparse/parse-chunk",
+              "xparse/parse-max-workers"
+            ]
+          },
+          {
+            "group": "文档抽取",
+            "pages": [
+              "xparse/extract-quickstart",
+              "xparse/extract-getjson",
+              "xparse/extract-gettable",
+              "xparse/extract-getpos",
+              "xparse/extract-asyncio",
+              "xparse/extract-max-concurrent"
             ]
           }
         ]
       },
       {
-        "tab": "API Reference",
+        "tab": "API",
         "groups": [
           {
-            "group": "API Documentation",
+            "group": "智能文档抽取",
             "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint Examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/endpoint/extract"
             ]
           }
         ]
       }
     ],
     "global": {
-      "anchors": [
+      "languages": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "language": "cn",
+          "default": true,
+          "href": "https://mintlify.com/docs"
         },
         {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "slack"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "language": "en",
+          "href": "https://mintlify.com/docs"
         }
+      ],
+      "anchors": [
       ]
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png"
   },
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "label": "资讯中心",
+        "href": "https://www.textin.com/news/list"
+      },
+      {
+        "label": "技术支持",
+        "href": "https://www.textin.com/document/list"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "快速体验",
+      "href": "https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown"
     }
   },
   "footer": {
@@ -97,6 +102,11 @@
       "x": "https://x.com/mintlify",
       "github": "https://github.com/mintlify",
       "linkedin": "https://linkedin.com/company/mintlify"
+    }
+  },
+  "api": {
+    "playground": {
+      "proxy": false
     }
   }
 }

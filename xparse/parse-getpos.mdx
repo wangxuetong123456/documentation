@@ -1,0 +1,29 @@
+---
+title: "前端可视化：获取精确坐标"
+---
+
+当您使用智能文档解析API想要获取各类型元素精确的框坐标，以便于您完成前端可视化时，您可以参考以下示例代码。
+
+- 在 options 中设置参数 char_details=1 和 page_details=1，如需目录结构则还需设置catalog_details=1，让API返回详细的页面结构信息和坐标信息。
+
+```python
+elements = []
+
+for page_num, page in enumerate(json_response["result"]["pages"]):
+    for block in page.get("structured", []):
+        element = {
+            "page": page_num + 1,
+            "type": block.get("type"),
+            "pos": block.get("pos"),  # 四个角点坐标
+            "content": block.get("content"),  # 具体内容（如文本、表格、图片等）
+            # 你可以根据需要提取更多字段
+        }
+        elements.append(element)
+
+# 保存为json，便于前端使用
+import json
+with open("elements_with_pos.json", "w", encoding="utf-8") as f:
+    json.dump(elements, f, ensure_ascii=False, indent=2)
+```
+
+- 如果您想了解更多详细信息，可以在[API文档](https://www.textin.com/document/pdf_to_markdown)中查看。

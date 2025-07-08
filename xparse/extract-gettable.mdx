@@ -1,0 +1,40 @@
+---
+title: "获取表格"
+---
+
+当您使用智能文档抽取API想要将结果保存为表格文件时，您可以参考以下示例代码。
+
+```python
+import pandas as pd  # 记得加上这个import
+
+# res 是你的抽取结果
+    res = await apiClient.entity_extraction(body=post_body, file_name=os.path.basename(file_path))
+    print(res)
+
+# 在main函数中插入
+# 1. 保存普通字段
+fields = res["result"].get("fields", {})
+fields_data = {k: v["value"] for k, v in fields.items()}
+fields_df = pd.DataFrame([fields_data])  # 单行DataFrame
+
+# 2. 保存表格字段（以第一个表为例）
+table_fields = res["result"].get("table_fields", [])
+if table_fields:
+    table = table_fields[0]  # 只取第一个表
+    # 假设每个表格字段是一个字典，key为字段名，value为{"value": ...}
+    table_data = []
+    for row in table.get("fields", []):
+        row_data = {k: v["value"] for k, v in row.items()}
+        table_data.append(row_data)
+    table_df = pd.DataFrame(table_data)
+else:
+    table_df = pd.DataFrame()
+
+# 3. 写入Excel
+with pd.ExcelWriter("抽取结果.xlsx") as writer:
+    fields_df.to_excel(writer, sheet_name="普通字段", index=False)
+    if not table_df.empty:
+        table_df.to_excel(writer, sheet_name="购物表", index=False)
+        
+asyncio.run(main())
+```

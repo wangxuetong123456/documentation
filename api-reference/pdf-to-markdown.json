@@ -1,0 +1,1542 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "文档还原",
+        "description": "图片/pdf转markdown",
+        "version": "1.0.1"
+    },
+    "servers": [
+        {
+            "url": "https://api.textin.com"
+        }
+    ],
+    "paths": {
+        "/ai/service/v1/pdf_to_markdown": {
+            "post": {
+                "tags": [
+                    "图片/PDF转markdown"
+                ],
+                "summary": "图片/PDF转markdown",
+                "description": "上传图片/pdf/word/html，进行版面检测，文字识别，表格识别，版面分析等操作，并生成markdown文档",
+                "operationId": "pdf_to_markdown",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "pdf_pwd",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "当pdf为加密文档时，需要提供密码。 备注：对前端封装该接口时，需要自行对密码进行安全防护\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "char_details",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        },
+                        "description": "当为1 或 true时，可以返回 char_pos 字段, 保存了每一行的位置信息。默认关闭\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "page_details",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        },
+                        "description": "当为1 或 true时，可以返回 pages 字段, 保存了每一页更加详细的解析结果。默认打开\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "catalog_details",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        },
+                        "description": "当为1 或 true时，可以返回 catalog details\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "dpi",
+                        "schema": {
+                            "type": "integer",
+                            "default": 144
+                        },
+                        "description": "pdf文档的坐标基准,默认144 dpi。\n当parse_mode=auto时，默认动态，支持72，144，216；\n当parse_mode=scan时，默认144，支持72，144，216；\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "page_start",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        },
+                        "description": "当上传的是pdf时，page_start 表示从第几页开始转\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "page_count",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1000
+                        },
+                        "description": "当上传的是pdf时，page_count 表示要进行转换的pdf页数。 总页数不得超过1000页，默认为1000页\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "apply_document_tree",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        },
+                        "description": "是否生成标题，默认为1，生成标题\n- 0 不生成\n- 1 生成标题\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "markdown_details",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        },
+                        "description": "是否生成markdown details，默认为1，生成markdown details\n- 0 不生成\n- 1 生成\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "table_flavor",
+                        "schema": {
+                            "type": "string",
+                            "default": "html"
+                        },
+                        "description": "markdown里的表格格式，默认为html，按html语法输出表格 \n- md 按md语法输出表格\n- html 按html语法输出表格      \n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "get_image",
+                        "schema": {
+                            "type": "string",
+                            "default": "objects"
+                        },
+                        "description": "获取markdown里的图片，默认为none，不返回任何图像\n- none 不返回任何图像\n- page 返回每一页的整页图像     \n- objects 返回页面内的图像对象\n- both 返回整页图像和图像对象 \n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "image_output_type",
+                        "schema": {
+                            "type": "string",
+                            "default": "default"
+                        },
+                        "description": "指定引擎返回的图片对象输出类型，默认返回子图片url和页图片id\n- base64str 指定所有图片对象为base64字符串，适用于没有云存储的用户，但是引擎返回结果体积会很大\n- default 指定子图片对象为图片url,页图片对象为图片id\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "parse_mode",
+                        "schema": {
+                            "type": "string",
+                            "default": "scan"
+                        },
+                        "description": "PDF解析模式，默认为scan模式，仅按文字识别方式处理。图片不用设置，均按文字识别方式处理。\n- auto 综合文字识别和解析模式\n- scan 仅按文字识别模式\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "get_excel",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        },
+                        "description": "是否返回excel结果，结果字段为excel_base64，默认为0，不返回\n- 0 不返回\n- 1 返回\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "raw_ocr",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        },
+                        "description": "是否返回全文识别结果，结果字段为raw_ocr。默认为0，不返回。当page_details为0或false时不返回。\n- 0 不返回\n- 1 返回\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "crop_enhance",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        },
+                        "description": "是否进行切边增强处理，默认为0，不进行切边增强\n- 0 不进行切边增强\n- 1 进行切边增强\n"
+                    },
+                    {
+                        "in": "query",
+                        "required": false,
+                        "name": "remove_watermark",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        },
+                        "description": "是否进行去水印处理，默认为0，不去水印\n- 0 不去水印\n- 1 去水印\n"
+                    }
+                ],
+                "requestBody": {
+                    "description": "支持的文件格式：png, jpg, jpeg, pdf, bmp, tiff, webp, doc, docx, html, mhtml",
+                    "content": {
+                        "application/octet-stream": {
+                            "schema": {
+                                "type": "string",
+                                "format": "binary"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "json结构树",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/codemessage"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/image_to_markdown_output"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "codemessage": {
+                "type": "object",
+                "required": [
+                    "code",
+                    "message"
+                ],
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "default": 200,
+                        "description": "错误码\n- 200: Success\n- 500: Engine failed\n- 40422: PDFError: The file is corrupted.\n- 40423: Password required or incorrect password.\n- 40424: Page number out of range.\n- 40425: The input file format is not supported.\n- 40426: WordError: The file is corrupted.\n- 40427: Input DPI is not in the allowed DPIs list(72,144,216).\n- 50207: Partial failed\n",
+                        "enum": [
+                            200,
+                            500,
+                            40422,
+                            40423,
+                            40424,
+                            40425,
+                            40426,
+                            40427,
+                            50207
+                        ]
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "错误信息",
+                        "example": "success"
+                    }
+                }
+            },
+            "image_to_markdown_output": {
+                "type": "object",
+                "description": "生成makrdown结果",
+                "properties": {
+                    "result": {
+                        "required": [
+                            "markdown",
+                            "src_page_count",
+                            "pages",
+                            "detail"
+                        ],
+                        "type": "object",
+                        "properties": {
+                            "total_page_number": {
+                                "type": "integer",
+                                "description": "输入Pdf时， 返回文档的总页数",
+                                "example": 10
+                            },
+                            "document_type": {
+                                "type": "string",
+                                "description": "记录文档类型，若引擎判断文档类型非法，则无法进行正确的解析过程",
+                                "example": "pdf",
+                                "default": "unknown",
+                                "enum": [
+                                    "unknown",
+                                    "image",
+                                    "pdf"
+                                ]
+                            },
+                            "valid_page_number": {
+                                "type": "integer",
+                                "description": "记录本次解析成功的总页数",
+                                "example": 3
+                            },
+                            "paragraph_number": {
+                                "type": "integer",
+                                "description": "记录本次解析文档的段落数，适用于所有文件类型",
+                                "example": 18
+                            },
+                            "character_number": {
+                                "type": "integer",
+                                "description": "记录本次解析文档的字符数，适用于所有文件类型",
+                                "example": 3280
+                            },
+                            "pages": {
+                                "type": "array",
+                                "description": "文档按照页为单位展开时， 存储每一页的详情和状态 （适用于PDF）,部分信息跟metrics字段重复。为兼容旧接口，保留metrics信息。",
+                                "items": {
+                                    "$ref": "#/components/schemas/pages_detail"
+                                }
+                            },
+                            "detail": {
+                                "type": "array",
+                                "description": "markdown详细信息， 参考markdown_details的说明",
+                                "items": {
+                                    "$ref": "#/components/schemas/markdown_details"
+                                }
+                            },
+                            "catalog": {
+                                "type": "object",
+                                "description": "描述目录树的结构",
+                                "properties": {
+                                    "toc": {
+                                        "type": "array",
+                                        "description": "返回的table of contents\n",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "sub_type": {
+                                                    "type": "string",
+                                                    "description": "标题类型 text_title、 image_title、 table_title"
+                                                },
+                                                "hierarchy": {
+                                                    "type": "integer",
+                                                    "description": "标题层级， 1 是 1级标题, 2 是 2级标题，依次类推"
+                                                },
+                                                "title": {
+                                                    "type": "string",
+                                                    "description": "标题内容"
+                                                },
+                                                "page_id": {
+                                                    "type": "integer",
+                                                    "description": "标题所在页码 （最小页码为 1)"
+                                                },
+                                                "pos": {
+                                                    "type": "array",
+                                                    "description": "该目录区域的四个角点坐标，依次left-top,right-top,right-bottom,left-bottom.",
+                                                    "maxItems": 8,
+                                                    "minItems": 8,
+                                                    "items": {
+                                                        "type": "integer",
+                                                        "example": [
+                                                            10,
+                                                            10,
+                                                            100,
+                                                            10,
+                                                            100,
+                                                            50,
+                                                            10,
+                                                            50
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "hierarchy",
+                                                "title",
+                                                "page_id",
+                                                "pos"
+                                            ],
+                                            "example": [
+                                                {
+                                                    "hierarchy": 2,
+                                                    "title": "1.公司简介和主要财务指标",
+                                                    "page_id": 3,
+                                                    "pos": [
+                                                        10,
+                                                        10,
+                                                        100,
+                                                        10,
+                                                        100,
+                                                        50,
+                                                        10,
+                                                        50
+                                                    ]
+                                                },
+                                                {
+                                                    "hierarchy": 3,
+                                                    "title": "1.1 公司简介",
+                                                    "page_id": 4,
+                                                    "pos": [
+                                                        10,
+                                                        10,
+                                                        100,
+                                                        10,
+                                                        100,
+                                                        50,
+                                                        10,
+                                                        50
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            "markdown": {
+                                "type": "string",
+                                "description": "markdown 正文字符串",
+                                "example": "# hello markdown"
+                            },
+                            "excel_base64": {
+                                "type": "string",
+                                "description": "excel的base64结果，仅当get_excel=1时返回。",
+                                "example": ""
+                            }
+                        }
+                    },
+                    "version": {
+                        "type": "string",
+                        "description": "doc_restore 引擎版本号",
+                        "example": "2.1.0"
+                    },
+                    "duration": {
+                        "type": "integer",
+                        "description": "引擎耗时 （毫秒）",
+                        "example": 999
+                    },
+                    "metrics": {
+                        "type": "array",
+                        "description": "每一页的信息",
+                        "items": {
+                            "type": "object",
+                            "description": "状态情况",
+                            "properties": {
+                                "page_image_width": {
+                                    "type": "integer",
+                                    "description": "当前段落所在页的图片宽或者pdf转成的图片宽",
+                                    "example": 1024
+                                },
+                                "page_image_height": {
+                                    "type": "integer",
+                                    "description": "当前段落所在页的图片高或者pdf转成的图片高",
+                                    "example": 768
+                                },
+                                "dpi": {
+                                    "type": "integer",
+                                    "description": "当前pdf页转成图片所用的dpi",
+                                    "example": 72
+                                },
+                                "durations": {
+                                    "description": "当前页总耗时",
+                                    "type": "number",
+                                    "format": "float"
+                                },
+                                "status": {
+                                    "description": "当前页状态",
+                                    "type": "string"
+                                },
+                                "page_id": {
+                                    "description": "当前页码",
+                                    "type": "number"
+                                },
+                                "angle": {
+                                    "type": "integer",
+                                    "description": "图像角度，\n定义0度为人类阅读文字的图像方向，称为正置图像，\n本字段表示输入图像是正置图像进行顺时针若干角度的旋转所得。\n- 0: ▲\n- 90: ▶\n- 180: ▼\n- 270: ◀\n",
+                                    "enum": [
+                                        0,
+                                        90,
+                                        180,
+                                        270
+                                    ],
+                                    "example": 90
+                                },
+                                "image_id": {
+                                    "description": "当前页图片id （下载方式：https://api.textin.com/ocr_image/download?image_id=xxx ,需要在headers里添加appid和key） \\\n例如使用curl下载: \\\ncurl 'https://api.textin.com/ocr_image/download?image_id=xxx' \\\n--header 'x-ti-app-id: c81f*************************e9ff' \\\n--header 'x-ti-secret-code: 5508***********************1c17' \n",
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "page_image_width",
+                                "page_image_height",
+                                "durations",
+                                "status",
+                                "page_id",
+                                "angle"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "result",
+                    "version",
+                    "duration",
+                    "metrics"
+                ]
+            },
+            "pages_detail": {
+                "type": "object",
+                "description": "文档页数据",
+                "properties": {
+                    "status": {
+                        "description": "表示当前页的引擎输出状态，或者error_message",
+                        "type": "string",
+                        "example": "success"
+                    },
+                    "page_id": {
+                        "description": "当前页码 (若为流式文件, 页码置为0)",
+                        "type": "number",
+                        "example": 0
+                    },
+                    "durations": {
+                        "description": "当前页总耗时",
+                        "type": "number",
+                        "format": "float",
+                        "example": 612.5
+                    },
+                    "image_id": {
+                        "description": "(仅用于PDF) 当URL参数get_image=objects, 本条字段存储图像上传对象存储后获得的图像ID。\n下载方式: https://api.textin.com/ocr_image/download?image_id=xxx, 需要在headers里添加appid和key）\\\n例如使用curl下载\\\ncurl 'https://api.textin.com/ocr_image/download?image_id=xxx' \\\n--header 'x-ti-app-id: c81f*************************e9ff' \\\n--header 'x-ti-secret-code: 5508********************1c17'\n",
+                        "type": "string",
+                        "example": "90u12adcad08r2"
+                    },
+                    "width": {
+                        "type": "integer",
+                        "description": "文档页宽度"
+                    },
+                    "height": {
+                        "type": "integer",
+                        "description": "文档页高度"
+                    },
+                    "angle": {
+                        "type": "integer",
+                        "description": "图像（中文字）的角度（当输入为图像时，默认为0， 可选值0, 90, 180, 270)"
+                    },
+                    "content": {
+                        "type": "array",
+                        "description": "基础数据: 文字行, 图像中的其中一种，请参考textline和image的说明",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#components/schemas/textline"
+                                },
+                                {
+                                    "$ref": "#components/schemas/image"
+                                }
+                            ]
+                        }
+                    },
+                    "raw_ocr": {
+                        "type": "array",
+                        "description": "全文识别结果，只包含文字结果",
+                        "items": {
+                            "$ref": "#components/schemas/ocrline"
+                        }
+                    },
+                    "structured": {
+                        "type": "array",
+                        "description": "结构化数据, 为textblock, table, imageblock, footer, header中的一种",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#components/schemas/textblock"
+                                },
+                                {
+                                    "$ref": "#components/schemas/table"
+                                },
+                                {
+                                    "$ref": "#components/schemas/imageblock"
+                                },
+                                {
+                                    "$ref": "#components/schemas/footer"
+                                },
+                                {
+                                    "$ref": "#components/schemas/header"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "markdown_details": {
+                "type": "object",
+                "description": "段落信息",
+                "properties": {
+                    "page_id": {
+                        "type": "integer",
+                        "description": "当前段落所在页码",
+                        "example": 1
+                    },
+                    "paragraph_id": {
+                        "type": "integer",
+                        "description": "当前段落id"
+                    },
+                    "outline_level": {
+                        "type": "integer",
+                        "description": "标题级别: (最多支持5级标题)\n  -1.正文 0.一级标题 1.二级标题 ...\n",
+                        "default": -1,
+                        "enum": [
+                            -1,
+                            0,
+                            1,
+                            2,
+                            3,
+                            4
+                        ]
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "文本",
+                        "example": "hello markdown"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "类型, paragraph（段落类型，包括正文、标题、公式等文字信息）、image（图片类型）、table（表格类型）",
+                        "default": "paragraph",
+                        "enum": [
+                            "image",
+                            "table",
+                            "paragraph"
+                        ]
+                    },
+                    "image_url": {
+                        "type": "string",
+                        "description": "当get_image = objects 时，返回图片的公共连接,图片默认保存30天，如需长久保存，请在有效期内下载图片并保存;或者使用image_output_type=base64str,图片以base64的方式返回"
+                    },
+                    "content": {
+                        "type": "integer",
+                        "description": "内容类型\n- 0 正文(段落、图片、表格)\n- 1 非正文(页眉、页脚、侧边栏)\n",
+                        "default": 0,
+                        "enum": [
+                            "0 正文(段落、图片、表格)",
+                            "1 非正文(页眉、页脚、侧边栏)"
+                        ]
+                    },
+                    "position": {
+                        "type": "array",
+                        "description": "以长度为8的整型数组表示四边形，8个数两两一组为一个点的横纵坐标，分别是左上，右上，右下，左下。\n当输入是PDF时, 此坐标是基于72dpi的;当输入是图片时，此坐标是原图里的坐标。\n单位：像素\n",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            217,
+                            390,
+                            1336,
+                            390,
+                            1336,
+                            460,
+                            217,
+                            460
+                        ]
+                    },
+                    "sub_type": {
+                        "type": "string",
+                        "description": "当type是paragraph时，如果段落为目录，输出catalog; 当type是image时，如果图像为印章，输出为stamp\n",
+                        "example": "catalog",
+                        "enum": [
+                            "catalog",
+                            "stamp",
+                            "header",
+                            "footer"
+                        ]
+                    },
+                    "continue": {
+                        "type": "boolean",
+                        "description": "段落块连续属性，用于判断完整的段落块是否被页面或栏分割，为true表示该段落块和下一个段落块连续（即两个段落块可合成一个逻辑段落块，如果 continue为true 且该段落块位于本页结尾，该段落块可与下一页开头段落块组合为一个逻辑段落块，否则与本页该段落块后一相邻段落块可组合为一个逻辑段落块）",
+                        "example": true
+                    },
+                    "cells": {
+                        "type": "array",
+                        "description": "单元格数组, 仅在type为table时返回",
+                        "items": {
+                            "type": "object",
+                            "description": "单元格数据",
+                            "required": [
+                                "row",
+                                "col"
+                            ],
+                            "properties": {
+                                "row": {
+                                    "type": "integer",
+                                    "description": "单元格行号"
+                                },
+                                "col": {
+                                    "type": "integer",
+                                    "description": "单元格列号"
+                                },
+                                "row_span": {
+                                    "type": "integer",
+                                    "description": "单元格行跨度,默认为1"
+                                },
+                                "col_span": {
+                                    "type": "integer",
+                                    "description": "单元格列跨度,默认为1"
+                                },
+                                "position": {
+                                    "type": "array",
+                                    "description": "单元格的四个角点坐标，依次left-top,right-top,right-bottom,left-bottom.",
+                                    "maxItems": 8,
+                                    "minItems": 8,
+                                    "items": {
+                                        "type": "integer"
+                                    },
+                                    "example": [
+                                        10,
+                                        10,
+                                        100,
+                                        10,
+                                        100,
+                                        50,
+                                        10,
+                                        50
+                                    ]
+                                },
+                                "text": {
+                                    "type": "string",
+                                    "description": "单元格文本内容"
+                                }
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "page_id",
+                    "paragraph_id",
+                    "outline_level",
+                    "text",
+                    "type",
+                    "content",
+                    "position"
+                ]
+            },
+            "textline": {
+                "type": "object",
+                "description": "文本行数据",
+                "required": [
+                    "id",
+                    "type",
+                    "pos",
+                    "text"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "数据id(页内唯一)"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "数据类型,line",
+                        "enum": [
+                            "line",
+                            "image"
+                        ],
+                        "example": "line"
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "文本行文字内容, 当sub_type=stamp时， text为印章上的文字."
+                    },
+                    "angle": {
+                        "type": "integer",
+                        "description": "文本行文字方向, 默认为0(angle为0时， json中可能不包含angle属性).",
+                        "enum": [
+                            0,
+                            90,
+                            180,
+                            270
+                        ]
+                    },
+                    "pos": {
+                        "type": "array",
+                        "description": "文本行四个角点坐标",
+                        "maxItems": 8,
+                        "minItems": 8,
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "sub_type": {
+                        "type": "string",
+                        "description": "子类型, 当type为line时， 有handwriting; 当type为image, 有stamp",
+                        "enum": [
+                            "handwriting",
+                            "stamp",
+                            "formula"
+                        ]
+                    },
+                    "direction": {
+                        "type": "integer",
+                        "description": "文字方向, 默认为0. 0:横向文本; 1:竖向文本; 2:横向右往左文本（如阿拉伯语）"
+                    },
+                    "score": {
+                        "type": "number",
+                        "description": "文本行内每个字符的置信度(仅当输入图像做ocr时)",
+                        "maximum": 1,
+                        "minimum": 0
+                    },
+                    "char_pos": {
+                        "type": "array",
+                        "description": "文本行内每个字符的坐标,每个item是一个由八个整数组成的数组，分别表示，左上，右上，右下，左下四个点的（x,y)坐标",
+                        "items": {
+                            "type": "array",
+                            "maxItems": 8,
+                            "minItems": 8,
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "image": {
+                "type": "object",
+                "description": "图像数据",
+                "required": [
+                    "id",
+                    "type",
+                    "pos",
+                    "data"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "数据id"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "数据类型, image",
+                        "example": "image"
+                    },
+                    "pos": {
+                        "type": "array",
+                        "description": "图像四个角点坐标",
+                        "maxItems": 8,
+                        "minItems": 8,
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "sub_type": {
+                        "type": "string",
+                        "description": "子类型, 如stamp, background"
+                    },
+                    "stamp_type": {
+                        "type": "string",
+                        "description": "印章类型, 当sub_type 为stamp时，具体数值定义请依照全文/印章接口定义",
+                        "enum": [
+                            "公章",
+                            "个人章",
+                            "专用章",
+                            "合同专用章",
+                            "财务专用章",
+                            "发票专用章",
+                            "业务专用章",
+                            "其他"
+                        ]
+                    },
+                    "stamp_shape": {
+                        "type": "string",
+                        "description": "印章形状, 当sub_type 为 stamp时， 具体数值定义请依照全文/印章接口定义",
+                        "enum": [
+                            "园章",
+                            "椭圆章",
+                            "方章",
+                            "三角章",
+                            "菱形章",
+                            "其他"
+                        ]
+                    },
+                    "stamp_color": {
+                        "type": "string",
+                        "description": "印章颜色，当sub_type 为 stamp时， 具体数值定义请依照全文/印章接口定义",
+                        "enum": [
+                            "红色",
+                            "蓝色",
+                            "黑色",
+                            "其他"
+                        ]
+                    },
+                    "size": {
+                        "description": "图像大小[width, height]",
+                        "type": "array",
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "data": {
+                        "type": "object",
+                        "description": "图像内容",
+                        "$ref": "#/components/schemas/imagedata"
+                    }
+                }
+            },
+            "imageblock": {
+                "type": "object",
+                "description": "图像块",
+                "required": [
+                    "type",
+                    "pos",
+                    "content"
+                ],
+                "properties": {
+                    "type": {
+                        "description": "图像块类型， 值为 image",
+                        "type": "string",
+                        "example": "image"
+                    },
+                    "pos": {
+                        "type": "array",
+                        "description": "文本行四个角点坐标",
+                        "maxItems": 8,
+                        "minItems": 8,
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "lines": {
+                        "type": "array",
+                        "description": "图像包含的文本行id,",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1
+                        ]
+                    },
+                    "zorder": {
+                        "type": "integer",
+                        "description": "z-order 默认为0; 如-1表示居于底层。"
+                    },
+                    "content": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "description": "图像资源数据id数组",
+                        "maxItems": 1
+                    }
+                }
+            },
+            "textblock": {
+                "type": "object",
+                "description": "段落块",
+                "required": [
+                    "type",
+                    "pos",
+                    "content"
+                ],
+                "properties": {
+                    "type": {
+                        "description": "段落块类型， 固定为 textblock",
+                        "type": "string",
+                        "example": "textblock"
+                    },
+                    "pos": {
+                        "type": "array",
+                        "description": "文本行四个角点",
+                        "maxItems": 8,
+                        "minItems": 8,
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "content": {
+                        "description": "段落块内文本行id数据组",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            0,
+                            1,
+                            2
+                        ]
+                    },
+                    "sub_type": {
+                        "description": "段落块字类型，如title, list, formula等",
+                        "type": "string",
+                        "enum": [
+                            "title",
+                            "list",
+                            "formula",
+                            "catalog"
+                        ],
+                        "example": "title"
+                    },
+                    "continue": {
+                        "description": "段落块连续属性，用于判断完整的段落块是否被页面或栏分割，为true表示该段落块和下一个段落块连续（即两个段落块可合成一个逻辑段落块，如果 continue为true 且该段落块位于本页结尾，该段落块可与下一页开头段落块组合为一个逻辑段落块，否则与本页该段落块后一相邻段落块可组合为一个逻辑段落块）",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "段落块文本内容"
+                    },
+                    "outline_level": {
+                        "type": "integer",
+                        "description": "标题级别: (最多支持5级标题)\n  -1.正文 0.一级标题 1.二级标题 ...\n",
+                        "default": -1
+                    }
+                }
+            },
+            "table": {
+                "type": "object",
+                "description": "表格块",
+                "required": [
+                    "type",
+                    "pos",
+                    "rows",
+                    "cols",
+                    "columns_width",
+                    "rows_height",
+                    "cells"
+                ],
+                "properties": {
+                    "type": {
+                        "description": "表格块类型, 固定为table",
+                        "type": "string",
+                        "example": "table"
+                    },
+                    "sub_type": {
+                        "description": "表格子属性，用于标识是否为无线表格，默认为“bordered\"(即json中无该字段时，默认值为bordered)",
+                        "type": "string",
+                        "enum": [
+                            "bordered",
+                            "borderless"
+                        ],
+                        "example": "bordered"
+                    },
+                    "pos": {
+                        "type": "array",
+                        "description": "文本行四个角点坐标",
+                        "maxItems": 8,
+                        "minItems": 8,
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "rows": {
+                        "type": "integer",
+                        "description": "表格行数"
+                    },
+                    "cols": {
+                        "type": "integer",
+                        "description": "表格列数"
+                    },
+                    "columns_width": {
+                        "type": "array",
+                        "description": "表格列宽度列表",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "rows_height": {
+                        "type": "array",
+                        "description": "表格行高度列表",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "continue": {
+                        "description": "当前表格与后一表格连续，用来判断一个表格是否被页面分割（如果 continue为true 且该表格位于本页结尾，该表格可与下一页开头表格组合为一个表格）",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "cells": {
+                        "description": "单元格数组",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "description": "单元格数据",
+                            "required": [
+                                "row",
+                                "col"
+                            ],
+                            "properties": {
+                                "row": {
+                                    "type": "integer",
+                                    "description": "单元格行号"
+                                },
+                                "col": {
+                                    "type": "integer",
+                                    "description": "单元格列号"
+                                },
+                                "row_span": {
+                                    "type": "integer",
+                                    "description": "单元格行跨度,默认为1"
+                                },
+                                "col_span": {
+                                    "type": "integer",
+                                    "description": "单元格列跨度,默认为1"
+                                },
+                                "pos": {
+                                    "type": "array",
+                                    "description": "单元格的四个角点坐标，依次left-top,right-top,right-bottom,left-bottom.",
+                                    "maxItems": 8,
+                                    "minItems": 8,
+                                    "items": {
+                                        "type": "integer"
+                                    },
+                                    "example": [
+                                        10,
+                                        10,
+                                        100,
+                                        10,
+                                        100,
+                                        50,
+                                        10,
+                                        50
+                                    ]
+                                },
+                                "content": {
+                                    "type": "array",
+                                    "description": "单元格内容",
+                                    "items": {
+                                        "oneOf": [
+                                            {
+                                                "$ref": "#components/schemas/textblock"
+                                            },
+                                            {
+                                                "$ref": "#components/schemas/imageblock"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "footer": {
+                "type": "object",
+                "description": "页脚",
+                "required": [
+                    "type",
+                    "pos",
+                    "blocks"
+                ],
+                "properties": {
+                    "type": {
+                        "description": "页脚块类型，固定为 footer",
+                        "type": "string",
+                        "example": "footer"
+                    },
+                    "pos": {
+                        "type": "array",
+                        "description": "文本行四个角点坐标",
+                        "maxItems": 8,
+                        "minItems": 8,
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "blocks": {
+                        "type": "array",
+                        "description": "footer段落内容，为textblock, imageblock, table中其中的一种",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#components/schemas/textblock"
+                                },
+                                {
+                                    "$ref": "#components/schemas/imageblock"
+                                },
+                                {
+                                    "$ref": "#components/schemas/table"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "header": {
+                "type": "object",
+                "description": "页眉",
+                "required": [
+                    "type",
+                    "pos",
+                    "blocks"
+                ],
+                "properties": {
+                    "type": {
+                        "description": "页眉块类型，固定为 header",
+                        "type": "string",
+                        "example": "header"
+                    },
+                    "pos": {
+                        "type": "array",
+                        "description": "文本行四个角点坐标",
+                        "maxItems": 8,
+                        "minItems": 8,
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "blocks": {
+                        "type": "array",
+                        "description": "header段落内容，为textblock, imageblock, table中的其中一种",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#components/schemas/textblock"
+                                },
+                                {
+                                    "$ref": "#components/schemas/imageblock"
+                                },
+                                {
+                                    "$ref": "#components/schemas/table"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "imagedata": {
+                "type": "object",
+                "description": "图像数据, 下面3种方式之一",
+                "properties": {
+                    "base64": {
+                        "description": "图像文件(jpg, png)的base64字符串",
+                        "type": "string"
+                    },
+                    "region": {
+                        "description": "图像在页图像中的区域（四边形4个点坐标）",
+                        "type": "array",
+                        "maxItems": 8,
+                        "minItems": 8,
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "path": {
+                        "description": "图像文件路径（如在zip包中的路径）",
+                        "type": "string"
+                    }
+                }
+            },
+            "ocrline": {
+                "type": "object",
+                "description": "orc文字识别数据",
+                "required": [
+                    "text",
+                    "score",
+                    "type",
+                    "position",
+                    "angle",
+                    "direction",
+                    "handwritten"
+                ],
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "识别内容字符串\n",
+                        "example": "这是一个例子。"
+                    },
+                    "score": {
+                        "type": "number",
+                        "format": "float",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "识别置信度\n",
+                        "example": 0.99
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "文本类型，用于表示文字的形态。\n当前版本下，文本类型包括：\n- text(文本)\n- formula(公式)\n",
+                        "enum": [
+                            "text",
+                            "formula"
+                        ],
+                        "example": "text"
+                    },
+                    "position": {
+                        "type": "array",
+                        "description": "文本行的四个角点坐标，依次left-top,right-top,right-bottom,left-bottom.",
+                        "maxItems": 8,
+                        "minItems": 8,
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            10,
+                            10,
+                            100,
+                            10,
+                            100,
+                            50,
+                            10,
+                            50
+                        ]
+                    },
+                    "angle": {
+                        "type": "integer",
+                        "description": "图像（中文字）的角度（当输入为图像时，默认为0， 可选值0, 90, 180, 270)"
+                    },
+                    "direction": {
+                        "type": "integer",
+                        "description": "文字阅读方向。\n- -1: 其他\n- 0: 单字\n- 1: 横向\n- 2: 纵向\n",
+                        "enum": [
+                            -1,
+                            0,
+                            1,
+                            2
+                        ],
+                        "example": 1
+                    },
+                    "handwritten": {
+                        "type": "integer",
+                        "description": "文字是否手写所得。\n- -1: 未知\n- 0: 非手写文字, 一般为印刷文字\n- 1: 文字手写, 一般具备明显的书写特征\n",
+                        "enum": [
+                            -1,
+                            0,
+                            1
+                        ],
+                        "example": 1
+                    },
+                    "char_scores": {
+                        "type": "array",
+                        "description": "字符置信度，值域范围0-1。\n设置char_details=1时输出。\n",
+                        "items": {
+                            "type": "number",
+                            "format": "float",
+                            "example": 0.98
+                        },
+                        "example": [
+                            0.99,
+                            0.98,
+                            0.95,
+                            0.95,
+                            0.99,
+                            0.93,
+                            0.87
+                        ]
+                    },
+                    "char_centers": {
+                        "type": "array",
+                        "description": "字符中心点。\n设置character=1时输出。\n",
+                        "items": {
+                            "type": "array",
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "items": {
+                                "type": "integer",
+                                "example": 10
+                            }
+                        },
+                        "example": [
+                            [
+                                20,
+                                10
+                            ],
+                            [
+                                30,
+                                10
+                            ],
+                            [
+                                40,
+                                10
+                            ],
+                            [
+                                50,
+                                10
+                            ],
+                            [
+                                60,
+                                10
+                            ],
+                            [
+                                70,
+                                10
+                            ],
+                            [
+                                80,
+                                10
+                            ]
+                        ]
+                    },
+                    "char_positions": {
+                        "type": "array",
+                        "description": "字符四边形点坐标，以顺时针构成闭合区域。\n设置char_details=1时输出。\n",
+                        "items": {
+                            "type": "array",
+                            "minItems": 8,
+                            "maxItems": 8,
+                            "items": {
+                                "type": "integer",
+                                "example": 18
+                            }
+                        },
+                        "example": [
+                            [
+                                18,
+                                8,
+                                22,
+                                8,
+                                22,
+                                12,
+                                18,
+                                12
+                            ],
+                            [
+                                28,
+                                88,
+                                32,
+                                8,
+                                32,
+                                12,
+                                28,
+                                12
+                            ],
+                            [
+                                38,
+                                88,
+                                42,
+                                8,
+                                42,
+                                12,
+                                38,
+                                12
+                            ],
+                            [
+                                48,
+                                88,
+                                52,
+                                8,
+                                52,
+                                12,
+                                48,
+                                12
+                            ],
+                            [
+                                58,
+                                88,
+                                62,
+                                8,
+                                62,
+                                12,
+                                58,
+                                12
+                            ],
+                            [
+                                68,
+                                88,
+                                72,
+                                8,
+                                72,
+                                12,
+                                68,
+                                12
+                            ],
+                            [
+                                78,
+                                88,
+                                82,
+                                8,
+                                82,
+                                12,
+                                78,
+                                12
+                            ]
+                        ]
+                    },
+                    "char_candidates": {
+                        "type": "array",
+                        "description": "候选字数组，表示每一个字符的候选，与候选置信度配套使用。\n设置char_details=1时输出。\n",
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "example": "这"
+                            },
+                            "example": [
+                                "这"
+                            ]
+                        },
+                        "example": [
+                            [
+                                "这"
+                            ],
+                            [
+                                "是"
+                            ],
+                            [
+                                "一",
+                                "-"
+                            ],
+                            [
+                                "个"
+                            ],
+                            [
+                                "例"
+                            ],
+                            [
+                                "子"
+                            ],
+                            [
+                                "。",
+                                "O"
+                            ]
+                        ]
+                    },
+                    "char_candidates_score": {
+                        "type": "array",
+                        "description": "候选字置信度数组，表示每一个候选字符的置信度，与候选字符配套使用。\n设置char_details=1时输出。\n",
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "number",
+                                "format": "float",
+                                "example": 0.99
+                            }
+                        },
+                        "example": [
+                            [
+                                0.99
+                            ],
+                            [
+                                0.99
+                            ],
+                            [
+                                0.95,
+                                0.05
+                            ],
+                            [
+                                0.99
+                            ],
+                            [
+                                0.99
+                            ],
+                            [
+                                0.99
+                            ],
+                            [
+                                0.89,
+                                0.11
+                            ]
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,42 @@
+---
+title: "多并发请求"
+---
+
+当您使用智能文档抽取API想要多并发请求时，以下为您提供了一份可参考的示例代码，您可根据具体需求进行调整。
+
+```python
+# 参考异步请求示例，main函数前面部分代码不变
+
+async def process_file(apiClient, file_path, prompt, semaphore):
+    async with semaphore:
+        file_bytes = file_to_base64(file_path)
+        post_body = {
+            "file": file_bytes,
+            "prompt": prompt
+        }
+        res = await apiClient.entity_extraction(body=post_body, file_name=os.path.basename(file_path))
+        print(f"{file_path} 处理完成")
+        # 保存为json文件
+        out_name = os.path.splitext(os.path.basename(file_path))[0] + "_result.json"
+        with open(out_name, "w", encoding="utf-8") as f:
+            json.dump(res, f, ensure_ascii=False, indent=4)
+        return res
+
+async def main():
+    apiClient = TextinWebApiClient("你的x-ti-app-id", "你的x-ti-secret-code")
+    folder = "你的文件夹路径"  # 这里是你的文件夹路径
+    # 自动获取文件夹下所有文件（自动过滤文件类型）
+    file_list = [
+        os.path.join(folder, f)
+        for f in os.listdir(folder)
+        if os.path.isfile(os.path.join(folder, f)) and f.lower().endswith(('.pdf','.jpg','.jpeg','.png','.doc','.docx','.ofd','.xlsx','.xls'))
+    ]
+    prompt = "这里是你的抽取prompt"
+    max_concurrent = 3  # 最大并发数，可根据实际情况修改
+    semaphore = asyncio.Semaphore(max_concurrent)
+    tasks = [process_file(apiClient, file_path, prompt, semaphore) for file_path in file_list]
+    results = await asyncio.gather(*tasks)
+    print("全部处理完成")
+
+asyncio.run(main())
+```

@@ -1,0 +1,37 @@
+---
+title: "前端可视化：获取精确坐标"
+---
+
+智能文档抽取API的返回结果中，每个字段的识别结果里都包含了精确的坐标信息，您可以参考以下示例代码获取这些坐标。
+
+```python
+# res 是你的抽取结果
+    res = await apiClient.entity_extraction(body=post_body, file_name=os.path.basename(file_path))
+    print(res)
+
+# 在main函数中插入
+# 1. 普通字段
+fields = res["result"].get("fields", {})
+for field_name, field_info in fields.items():
+    value = field_info.get("value")
+    bounding_regions = field_info.get("bounding_regions", [])
+    for region in bounding_regions:
+        page_id = region.get("page_id")
+        position = region.get("position")  # 这是四个点的坐标
+        print(f"字段: {field_name}, 值: {value}, 页码: {page_id}, 坐标: {position}")
+
+# 2. 表格字段
+table_fields = res["result"].get("table_fields", [])
+for table in table_fields:
+    title = table.get("title")
+    for row in table.get("fields", []):
+        for col_name, col_info in row.items():
+            value = col_info.get("value")
+            bounding_regions = col_info.get("bounding_regions", [])
+            for region in bounding_regions:
+                page_id = region.get("page_id")
+                position = region.get("position")
+                print(f"表格: {title}, 字段: {col_name}, 值: {value}, 页码: {page_id}, 坐标: {position}")
+                
+asyncio.run(main())
+```

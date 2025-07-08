@@ -1,0 +1,79 @@
+---
+title: "分CHUNK"
+---
+
+当您使用智能文档解析API想要帮助您完成分chunk任务时，您可以参考以下示例代码。
+
+```python
+# 提取全文内容
+full_text = ""
+if "result" in json_response and "markdown" in json_response["result"]:
+    full_text = json_response["result"]["markdown"]
+    
+# 定义分chunk函数
+# 按字符数分chunk
+def split_by_char_count(text, chunk_size=500):
+    return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
+    
+# 按段落分chunk
+def split_by_paragraph(text):
+    return [p.strip() for p in text.split('\n\n') if p.strip()]
+    
+# 按标题分chunk
+import re
+def split_by_title(text):
+    pattern = r'(^#+ .*$)'
+    parts = re.split(pattern, text, flags=re.MULTILINE)
+    chunks = []
+    for i in range(1, len(parts), 2):
+        title = parts[i].strip()
+        content = parts[i+1].strip() if i+1 < len(parts) else ""
+        chunks.append(f"{title}\n{content}")
+    return chunks
+```
+
+### 按字符数分chunk
+
+- chunk_size 可根据实际需求调整（如1000、2000等）
+
+```python
+# 解析JSON后调用分chunk函数
+# 按字符数分chunk
+char_chunks = split_by_char_count(full_text, chunk_size=500)
+with open("chunks_by_char.json", "w", encoding="utf-8") as f:
+    json.dump(char_chunks, f, ensure_ascii=False, indent=2)
+```
+
+### 按段落分chunk
+
+```python
+# 解析JSON后调用分chunk函数
+# 按段落分chunk
+para_chunks = split_by_paragraph(full_text)
+with open("chunks_by_paragraph.json", "w", encoding="utf-8") as f:
+    json.dump(para_chunks, f, ensure_ascii=False, indent=2)
+```
+
+### 按页分chunk
+
+```python
+# 解析JSON后调用分chunk函数
+# 按页分chunk
+page_chunks = []
+if "result" in json_response and "pages" in json_response["result"]:
+    for page in json_response["result"]["pages"]:
+        page_text = page.get("markdown", "")  # 或其它字段
+        page_chunks.append(page_text)
+with open("chunks_by_page.json", "w", encoding="utf-8") as f:
+    json.dump(page_chunks, f, ensure_ascii=False, indent=2)
+```
+
+### 按标题分chunk
+
+```python
+# 解析JSON后调用分chunk函数
+# 按标题分chunk
+title_chunks = split_by_title(full_text)
+with open("chunks_by_title.json", "w", encoding="utf-8") as f:
+    json.dump(title_chunks, f, ensure_ascii=False, indent=2)
+```

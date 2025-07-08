@@ -1,0 +1,855 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "DocFlow API",
+        "description": "DocFlow REST API，提供文件上传和获取文件处理结果能力",
+        "version": "2.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://docflow.textin.com"
+        }
+    ],
+    "x-codeSamples": "custom",
+    "tags": [
+        {
+            "name": "Docflow"
+        }
+    ],
+    "paths": {
+        "/api/app-api/sip/platform/v2/file/upload": {
+            "post": {
+                "tags": [
+                    "Docflow"
+                ],
+                "summary": "上传文件",
+                "description": "上传文件",
+                "operationId": "uploadFile",
+                "parameters": [
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "description": "空间ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": 1234567890
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "description": "文件分类",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "invoice"
+                        }
+                    },
+                    {
+                        "name": "batch_number",
+                        "in": "query",
+                        "description": "批次编号。  \n可以用同一个批次编号上传多次，后续可以用批次编号获取该批次多个文件处理结果。  \n如果值为空，则系统自动生成最长20位字符串\n",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": 202412190001
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "文件上传成功",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "code": {
+                                            "$ref": "#/components/schemas/Code"
+                                        },
+                                        "msg": {
+                                            "type": "string",
+                                            "description": "请求状态描述",
+                                            "example": "成功"
+                                        },
+                                        "result": {
+                                            "type": "object",
+                                            "properties": {
+                                                "batch_number": {
+                                                    "type": "string",
+                                                    "description": "批次编号",
+                                                    "example": 202412190001
+                                                },
+                                                "files": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "description": "文件ID",
+                                                                "example": 202412190001
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "description": "文件名",
+                                                                "example": "invoice.pdf"
+                                                            },
+                                                            "format": {
+                                                                "type": "string",
+                                                                "description": "文件格式",
+                                                                "example": "pdf"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "id",
+                                                            "name",
+                                                            "format"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "batch_number",
+                                                "files"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "code",
+                                        "msg",
+                                        "result"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-codeSamples": [
+                    {
+                        "lang": "bash",
+                        "label": "cURL",
+                        "source": "curl -X POST \\\n-H 'x-ti-app-id: 1234567890' \\\n-H 'x-ti-secret-code: 1234567890' \\\n-F 'file=@invoice.pdf'\n-F 'file=@another.pdf'\n'https://docflow.textin.com/api/app-api/sip/platform/v2/file/upload?workspace_id=1234567890&category=invoice&batch_number=202412190001'\n"
+                    }
+                ]
+            }
+        },
+        "/api/app-api/sip/platform/v2/file/fetch": {
+            "get": {
+                "tags": [
+                    "Docflow"
+                ],
+                "summary": "获取文件处理结果列表",
+                "description": "获取文件处理结果列表",
+                "operationId": "getFiles",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "页码，默认1",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "in": "query",
+                        "description": "每页数量，默认1000",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1000
+                        }
+                    },
+                    {
+                        "name": "workspace_id",
+                        "in": "query",
+                        "description": "空间ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "batch_number",
+                        "in": "query",
+                        "description": "批次编号",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "file_id",
+                        "in": "query",
+                        "description": "文件ID",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "description": "文件分类",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "recognition_status",
+                        "in": "query",
+                        "description": "文件识别状态 0: 待识别 1: 识别成功 2: 识别失败",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/RecognitionStatus"
+                        }
+                    },
+                    {
+                        "name": "verification_status",
+                        "in": "query",
+                        "description": "文件核对状态 0: 待核对 2: 已确认 3: 已拒绝 4: 已删除 5: 推迟处理",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/VerificationStatus"
+                        }
+                    },
+                    {
+                        "name": "start_time",
+                        "in": "query",
+                        "description": "以更新时间搜索的开始时间, RFC3339格式(YYYY-MM-DDTHH:MM:SSZ)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2024-01-01T00:00:00.000Z"
+                        }
+                    },
+                    {
+                        "name": "end_time",
+                        "in": "query",
+                        "description": "以更新时间搜索的结束时间, RFC3339格式(YYYY-MM-DDTHH:MM:SSZ)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2024-01-01T10:00:00.000Z"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功获取文件列表",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "code": {
+                                            "$ref": "#/components/schemas/Code"
+                                        },
+                                        "msg": {
+                                            "type": "string",
+                                            "description": "请求状态描述",
+                                            "example": "成功"
+                                        },
+                                        "result": {
+                                            "type": "object",
+                                            "properties": {
+                                                "total": {
+                                                    "type": "integer",
+                                                    "description": "文件总数",
+                                                    "example": 100
+                                                },
+                                                "page": {
+                                                    "type": "integer",
+                                                    "description": "当前页码",
+                                                    "example": 1
+                                                },
+                                                "page_size": {
+                                                    "type": "integer",
+                                                    "description": "每页数量",
+                                                    "example": 20
+                                                },
+                                                "files": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "description": "文件ID",
+                                                                "example": 202412190001
+                                                            },
+                                                            "batch_number": {
+                                                                "type": "string",
+                                                                "description": "批次编号",
+                                                                "example": 202412190001
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "description": "文件名",
+                                                                "example": "invoice.pdf"
+                                                            },
+                                                            "format": {
+                                                                "type": "string",
+                                                                "description": "文件格式"
+                                                            },
+                                                            "recognition_status": {
+                                                                "$ref": "#/components/schemas/RecognitionStatus"
+                                                            },
+                                                            "verification_status": {
+                                                                "$ref": "#/components/schemas/VerificationStatus"
+                                                            },
+                                                            "category": {
+                                                                "type": "string",
+                                                                "description": "文件分类",
+                                                                "example": "invoice"
+                                                            },
+                                                            "pages": {
+                                                                "type": "array",
+                                                                "description": "文件每页用于渲染的数据。  \n配合`data.fields`中的`page`和`position`字段，可以准确画出字段在页面上的位置。\n",
+                                                                "items": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "angle": {
+                                                                            "type": "integer",
+                                                                            "description": "旋转角度",
+                                                                            "enum": [
+                                                                                0,
+                                                                                90,
+                                                                                180,
+                                                                                270
+                                                                            ]
+                                                                        },
+                                                                        "width": {
+                                                                            "type": "integer",
+                                                                            "description": "转正后的页宽",
+                                                                            "example": 1024
+                                                                        },
+                                                                        "height": {
+                                                                            "type": "integer",
+                                                                            "description": "转正后的页高",
+                                                                            "example": 1024
+                                                                        },
+                                                                        "dpi": {
+                                                                            "type": "integer",
+                                                                            "description": "PDF转图片时的分辨率。非PDF文件该值为`0`.",
+                                                                            "example": 144
+                                                                        }
+                                                                    }
+                                                                }
+                                                            },
+                                                            "data": {
+                                                                "type": "object",
+                                                                "description": "处理结果",
+                                                                "properties": {
+                                                                    "fields": {
+                                                                        "description": "字段列表",
+                                                                        "type": "array",
+                                                                        "items": {
+                                                                            "$ref": "#/components/schemas/KeyValue"
+                                                                        },
+                                                                        "example": [
+                                                                            {
+                                                                                "key": "发票代码",
+                                                                                "value": "3100231130",
+                                                                                "position": [
+                                                                                    {
+                                                                                        "page": 0,
+                                                                                        "vertices": [
+                                                                                            0,
+                                                                                            0,
+                                                                                            100,
+                                                                                            0,
+                                                                                            100,
+                                                                                            100,
+                                                                                            0,
+                                                                                            100
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "key": "发票号码",
+                                                                                "value": "28737000",
+                                                                                "position": [
+                                                                                    {
+                                                                                        "page": 0,
+                                                                                        "vertices": [
+                                                                                            0,
+                                                                                            0,
+                                                                                            100,
+                                                                                            0,
+                                                                                            100,
+                                                                                            100,
+                                                                                            0,
+                                                                                            100
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    "items": {
+                                                                        "description": "表格数据列表",
+                                                                        "type": "array",
+                                                                        "items": {
+                                                                            "type": "array",
+                                                                            "items": {
+                                                                                "$ref": "#/components/schemas/KeyValue"
+                                                                            }
+                                                                        },
+                                                                        "example": [
+                                                                            [
+                                                                                {
+                                                                                    "key": "货物劳务名称",
+                                                                                    "value": "＊电子计算机＊微型计算机主机",
+                                                                                    "position": [
+                                                                                        {
+                                                                                            "page": 0,
+                                                                                            "vertices": [
+                                                                                                0,
+                                                                                                0,
+                                                                                                100,
+                                                                                                0,
+                                                                                                100,
+                                                                                                100,
+                                                                                                0,
+                                                                                                100
+                                                                                            ]
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                {
+                                                                                    "key": "规格型号",
+                                                                                    "value": "DMS-SC68",
+                                                                                    "position": [
+                                                                                        {
+                                                                                            "page": 0,
+                                                                                            "vertices": [
+                                                                                                0,
+                                                                                                0,
+                                                                                                100,
+                                                                                                0,
+                                                                                                100,
+                                                                                                100,
+                                                                                                0,
+                                                                                                100
+                                                                                            ]
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ],
+                                                                            [
+                                                                                {
+                                                                                    "key": "货物劳务名称",
+                                                                                    "value": "＊机械计算机＊巨型计算机主机",
+                                                                                    "position": [
+                                                                                        {
+                                                                                            "page": 0,
+                                                                                            "vertices": [
+                                                                                                0,
+                                                                                                0,
+                                                                                                100,
+                                                                                                0,
+                                                                                                100,
+                                                                                                100,
+                                                                                                0,
+                                                                                                100
+                                                                                            ]
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                {
+                                                                                    "key": "规格型号",
+                                                                                    "value": "AN/FSQ-7",
+                                                                                    "position": [
+                                                                                        {
+                                                                                            "page": 0,
+                                                                                            "vertices": [
+                                                                                                0,
+                                                                                                0,
+                                                                                                100,
+                                                                                                0,
+                                                                                                100,
+                                                                                                100,
+                                                                                                0,
+                                                                                                100
+                                                                                            ]
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        ]
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "id",
+                                                            "name",
+                                                            "format",
+                                                            "recognition_status",
+                                                            "verification_status",
+                                                            "category"
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-codeSamples": [
+                    {
+                        "lang": "bash",
+                        "label": "cURL",
+                        "source": "curl \\\n-H 'x-ti-app-id: 1234567890' \\\n-H 'x-ti-secret-code: 1234567890' \\\n'https://docflow.textin.com/api/app-api/sip/platform/v2/file/fetch?workspace_id=1234567890&batch_number=202412190001'\n"
+                    }
+                ]
+            }
+        },
+        "/api/app-api/sip/platform/v2/file/update": {
+            "post": {
+                "tags": [
+                    "Docflow"
+                ],
+                "summary": "更新文件处理结果",
+                "description": "更新文件处理结果。通常用于人工审核校对后，上传修改后的key-value，覆盖自动识别的结果。",
+                "operationId": "updateFile",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "workspace_id": {
+                                            "type": "string",
+                                            "description": "空间ID",
+                                            "example": 1234567890
+                                        },
+                                        "file_id": {
+                                            "type": "string",
+                                            "description": "文件ID",
+                                            "example": 202412190001
+                                        },
+                                        "data": {
+                                            "description": "全量更新字段。  \n注意，即使只更新部分字段，也必须包含所有字段。  \n如果传入的字段较原字段多，则多出的字段会被添加。  \n如果传入的字段较原字段少，则缺少的字段会被删除。  \n如果传入的字段值较原字段值有变化，则字段值会被更新。  \n如果传入的字段与原字段完全相同，则字段会被保留。\n",
+                                            "type": "object",
+                                            "properties": {
+                                                "fields": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/KeyValue"
+                                                    },
+                                                    "example": [
+                                                        {
+                                                            "key": "发票代码",
+                                                            "value": "3100231130",
+                                                            "position": [
+                                                                {
+                                                                    "page": 0,
+                                                                    "vertices": [
+                                                                        0,
+                                                                        0,
+                                                                        100,
+                                                                        0,
+                                                                        100,
+                                                                        100,
+                                                                        0,
+                                                                        100
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "key": "发票号码",
+                                                            "value": "28737000",
+                                                            "position": [
+                                                                {
+                                                                    "page": 0,
+                                                                    "vertices": [
+                                                                        0,
+                                                                        0,
+                                                                        100,
+                                                                        0,
+                                                                        100,
+                                                                        100,
+                                                                        0,
+                                                                        100
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "items": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "$ref": "#/components/schemas/KeyValue"
+                                                        }
+                                                    },
+                                                    "example": [
+                                                        [
+                                                            {
+                                                                "key": "货物劳务名称",
+                                                                "value": "＊电子计算机＊微型计算机主机",
+                                                                "position": [
+                                                                    {
+                                                                        "page": 0,
+                                                                        "vertices": [
+                                                                            0,
+                                                                            0,
+                                                                            100,
+                                                                            0,
+                                                                            100,
+                                                                            100,
+                                                                            0,
+                                                                            100
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "key": "规格型号",
+                                                                "value": "DMS-SC68",
+                                                                "position": [
+                                                                    {
+                                                                        "page": 0,
+                                                                        "vertices": [
+                                                                            0,
+                                                                            0,
+                                                                            100,
+                                                                            0,
+                                                                            100,
+                                                                            100,
+                                                                            0,
+                                                                            100
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ],
+                                                        [
+                                                            {
+                                                                "key": "货物劳务名称",
+                                                                "value": "＊机械计算机＊巨型计算机主机",
+                                                                "position": [
+                                                                    {
+                                                                        "page": 0,
+                                                                        "vertices": [
+                                                                            0,
+                                                                            0,
+                                                                            100,
+                                                                            0,
+                                                                            100,
+                                                                            100,
+                                                                            0,
+                                                                            100
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "key": "规格型号",
+                                                                "value": "AN/FSQ-7",
+                                                                "position": [
+                                                                    {
+                                                                        "page": 0,
+                                                                        "vertices": [
+                                                                            0,
+                                                                            0,
+                                                                            100,
+                                                                            0,
+                                                                            100,
+                                                                            100,
+                                                                            0,
+                                                                            100
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "workspace_id",
+                                        "file_id",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "成功更新文件处理结果",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "code": {
+                                            "$ref": "#/components/schemas/Code"
+                                        },
+                                        "msg": {
+                                            "type": "string",
+                                            "description": "请求状态描述",
+                                            "example": "成功"
+                                        },
+                                        "result": {
+                                            "type": "object",
+                                            "properties": {
+                                                "files": {
+                                                    "description": "更新后的文件列表",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "workspace_id": {
+                                                                "type": "string",
+                                                                "description": "空间ID",
+                                                                "example": 1234567890
+                                                            },
+                                                            "id": {
+                                                                "type": "string",
+                                                                "description": "文件ID",
+                                                                "example": 202412190001
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-codeSamples": [
+                    {
+                        "lang": "bash",
+                        "label": "cURL",
+                        "source": "curl -X POST \\\n-H 'x-ti-app-id: 1234567890' \\\n-H 'x-ti-secret-code: 1234567890' \\\n-d '[{\"workspace_id\": \"1234567890\", \"file_id\": \"202412190001\", \"data\": {\"fields\": [{\"key\": \"发票代码\", \"value\": \"3100231130\"}]}}]' \\\n'https://docflow.textin.com/api/app-api/sip/platform/v2/file/update'\n"
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "RecognitionStatus": {
+                "type": "integer",
+                "description": "文件识别状态 0: 待识别 1: 识别成功 2: 识别失败",
+                "enum": [
+                    0,
+                    1,
+                    2
+                ]
+            },
+            "VerificationStatus": {
+                "type": "integer",
+                "description": "文件核对状态 0: 待核对 2: 已确认 3: 已拒绝 4: 已删除 5: 推迟处理",
+                "enum": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5
+                ]
+            },
+            "Code": {
+                "type": "integer",
+                "description": "状态码",
+                "example": 200
+            },
+            "KeyValue": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "字段名"
+                    },
+                    "value": {
+                        "type": "string",
+                        "description": "字段值"
+                    },
+                    "position": {
+                        "description": "字段值的位置。字段值可能跨页或跨行，因此用数组展示。",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "page": {
+                                    "type": "integer",
+                                    "description": "字段所在页。是`pages`数组的索引"
+                                },
+                                "vertices": {
+                                    "type": "array",
+                                    "description": "字段值的外接四边形坐标。图像以左上为原点，数组值为 [左上角x, 左上角y, 右上角x, 右上角y, 右下角x, 右下角y, 左下角x, 左下角y]",
+                                    "items": {
+                                        "type": "integer"
+                                    },
+                                    "minItems": 8,
+                                    "maxItems": 8
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "ApiId": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "x-ti-app-id"
+            },
+            "SecretCode": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "x-ti-secret-code"
+            }
+        }
+    },
+    "security": [
+        {
+            "ApiId": [],
+            "SecretCode": []
+        }
+    ]
+}

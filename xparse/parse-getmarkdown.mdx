@@ -1,0 +1,14 @@
+---
+title: "获取Markdown"
+---
+
+当您想要获取markdown结果并以.md格式文件保存时，您可以参考以下示例代码。
+
+```python
+# 解析JSON响应以提取markdown内容
+json_response = json.loads(response)
+if "result" in json_response and "markdown" in json_response["result"]:
+    markdown_content = json_response["result"]["markdown"]
+    with open("result.md", "w", encoding="utf-8") as f:
+        f.write(markdown_content)
+```

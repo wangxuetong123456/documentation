@@ -1,0 +1,88 @@
+---
+title: "获取图片并替换链接"
+---
+
+当您使用智能文档解析API想要获取图片并替换为链接时，您可以参考以下示例代码。
+
+- 在 options 中设置参数 get_image 为 objects 或 both，让API返回页面内的图片对象；设置参数 image_output_type 为 base64str 或 default，以下为image_output_type="base64str"的示例。
+
+```python
+import base64
+import os
+
+image_dir = "images"
+os.makedirs(image_dir, exist_ok=True)
+image_links = {}
+
+if "result" in json_response and "pages" in json_response["result"]:
+    for page in json_response["result"]["pages"]:
+        for content in page.get("content", []):
+            if content.get("type") == "image":
+                img_id = content.get("id", "unknown")
+                img_data = content.get("data", {})
+                img_base64 = img_data.get("base64")
+                img_ext = "png"  # 你可以根据实际情况判断类型
+                img_filename = f"{image_dir}/img_{img_id}.{img_ext}"
+                if img_base64:
+                    with open(img_filename, "wb") as f:
+                        f.write(base64.b64decode(img_base64))
+                    # 记录图片链接
+                    image_links[img_id] = img_filename
+                    import re
+
+# 读取 markdown 内容
+with open("result.md", "r", encoding="utf-8") as f:
+    markdown_content = f.read()
+
+# 替换 base64 图片为本地图片链接
+def replace_img(match):
+    # 你可以根据实际情况提取 img_id
+    # 这里假设你能从 match.group(0) 里提取 img_id
+    img_id = ...  # 需要根据实际 markdown 结构提取
+    img_path = image_links.get(img_id, "images/unknown.png")
+    return f"![]({img_path})"
+
+# 假设你能匹配到原始图片语法
+markdown_content = re.sub(r'!\[.*?\]\(data:image/.*?base64,.*?\)', replace_img, markdown_content)
+
+# 保存替换后的 markdown
+with open("result_with_links.md", "w", encoding="utf-8") as f:
+    f.write(markdown_content)
+```
+
+如果用 image_output_type="default"，接口会返回图片 url，可以直接替换 markdown 里的图片为 url 链接，无需保存本地图片。
+
+```python
+image_links = {}
+
+if "result" in json_response and "pages" in json_response["result"]:
+    for page in json_response["result"]["pages"]:
+        for content in page.get("content", []):
+            if content.get("type") == "image":
+                img_id = content.get("id", "unknown")
+                img_data = content.get("data", {})
+                img_url = img_data.get("url")  # 这里是图片的URL
+                if img_url:
+                    image_links[img_id] = img_url
+                    
+import re
+
+# 读取 markdown 内容
+with open("result.md", "r", encoding="utf-8") as f:
+    markdown_content = f.read()
+
+# 假设 markdown 里图片引用格式为 ![](img_id)，你需要根据实际情况调整正则
+def replace_img(match):
+    img_id = match.group(1)
+    img_url = image_links.get(img_id, "")
+    return f"![]({img_url})" if img_url else match.group(0)
+
+# 例如匹配 ![](img_123)
+markdown_content = re.sub(r'!\[\]\((img_\w+)\)', replace_img, markdown_content)
+
+# 保存替换后的 markdown
+with open("result_with_url.md", "w", encoding="utf-8") as f:
+    f.write(markdown_content)
+```
+
+- 如果您想了解更多详细信息，可以在[API文档](https://www.textin.com/document/pdf_to_markdown)中查看。
