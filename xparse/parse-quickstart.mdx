@@ -57,14 +57,6 @@ def main():
 当您使用智能文档解析API想要解析单个本地文件时，您可以参考以下示例代码。
 
 ```python
-        # 设置请求头
-        headers = {
-            "x-ti-app-id": self.app_id,
-            "x-ti-secret-code": self.secret_code,
-            # 读取本地文件
-            "Content-Type": "application/octet-stream"
-
-
     # 在main函数中插入
     # 读取本地文件
     with open("你的文件.pdf", "rb") as f:
@@ -89,18 +81,18 @@ def main():
 
     try:
         response = client.recognize(file_content, options)
-        
+
         # 保存完整的JSON响应到result.json文件
         with open("result.json", "w", encoding="utf-8") as f:
             f.write(response)
-        
+
         # 解析JSON响应以提取markdown内容
         json_response = json.loads(response)
         if "result" in json_response and "markdown" in json_response["result"]:
             markdown_content = json_response["result"]["markdown"]
             with open("result.md", "w", encoding="utf-8") as f:
                 f.write(markdown_content)
-        
+
         print(response)
     except Exception as e:
         print(f"Error: {e}")
@@ -114,14 +106,6 @@ if __name__ == "__main__":
 当您使用智能文档解析API想要解析多个本地文件时，您可以参考以下示例代码。
 
 ```python
-        # 设置请求头
-        headers = {
-            "x-ti-app-id": self.app_id,
-            "x-ti-secret-code": self.secret_code,
-            # 读取本地文件
-            "Content-Type": "application/octet-stream"
-
-
     # 在main函数中插入
     # 读取本地文件夹
     input_dir = "./tmp"  # 你可以修改为自己的文件夹
@@ -180,10 +164,7 @@ if __name__ == "__main__":
 
 ```python
         # 设置请求头
-        headers = {
-            "x-ti-app-id": self.app_id,
-            "x-ti-secret-code": self.secret_code,
-            # 使用URL方式
+        # 使用URL方式
             "Content-Type": "text/plain"
 
 
@@ -210,18 +191,18 @@ if __name__ == "__main__":
 
     try:
         response = client.recognize(file_content, options)
-        
+
         # 保存完整的JSON响应到result.json文件
         with open("result.json", "w", encoding="utf-8") as f:
             f.write(response)
-        
+
         # 解析JSON响应以提取markdown内容
         json_response = json.loads(response)
         if "result" in json_response and "markdown" in json_response["result"]:
             markdown_content = json_response["result"]["markdown"]
             with open("result.md", "w", encoding="utf-8") as f:
                 f.write(markdown_content)
-        
+
         print(response)
     except Exception as e:
         print(f"Error: {e}")
@@ -258,7 +239,7 @@ if __name__ == "__main__":
 
 当您使用智能文档解析API时，解析后的结果数据将按照以下JSON格式返回，下面为您提供了一段返回示例。如果您想了解最全面的返回结果，可以在[API文档](https://www.textin.com/document/pdf_to_markdown)中查看。
 
-```json
+```json [expandable]
 {
   "code": 200, // 状态码，200表示成功
   "message": "success", // 返回信息
