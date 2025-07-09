@@ -2,13 +2,14 @@
 title: "获取图片并替换链接"
 ---
 
-当您使用智能文档解析API想要获取图片并替换为链接时，您可以参考以下示例代码。
+接口返回的图片链接有效期为30天，当您想要获取图片并替换为本地图片文件链接时，您可以参考以下示例代码。
 
 - 在 options 中设置参数 get_image 为 objects 或 both，让API返回页面内的图片对象；设置参数 image_output_type 为 base64str 或 default，以下为image_output_type="base64str"的示例。
 
 ```python
 import base64
 import os
+import re
 
 image_dir = "images"
 os.makedirs(image_dir, exist_ok=True)
@@ -28,7 +29,6 @@ if "result" in json_response and "pages" in json_response["result"]:
                         f.write(base64.b64decode(img_base64))
                     # 记录图片链接
                     image_links[img_id] = img_filename
-                    import re
 
 # 读取 markdown 内容
 with open("result.md", "r", encoding="utf-8") as f:
@@ -53,6 +53,8 @@ with open("result_with_links.md", "w", encoding="utf-8") as f:
 如果用 image_output_type="default"，接口会返回图片 url，可以直接替换 markdown 里的图片为 url 链接，无需保存本地图片。
 
 ```python
+import re
+
 image_links = {}
 
 if "result" in json_response and "pages" in json_response["result"]:
@@ -65,7 +67,6 @@ if "result" in json_response and "pages" in json_response["result"]:
                 if img_url:
                     image_links[img_id] = img_url
                     
-import re
 
 # 读取 markdown 内容
 with open("result.md", "r", encoding="utf-8") as f:

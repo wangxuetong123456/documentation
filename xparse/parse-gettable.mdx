@@ -2,7 +2,9 @@
 title: "获取表格"
 ---
 
-当您使用智能文档解析API想要获取表格时，您可以参考以下示例代码，将表格保存为 md 和 json 文件。
+您可以将解析获取到的表格元素保存为 md 和 json 以及 excel 格式的文件。
+
+## 将表格保存为 md 和 json 文件。
 
 - 在 options 中设置参数 table_flavor 为 md 或 html，这样API会以Markdown或HTML格式输出表格。
 
@@ -30,7 +32,7 @@ with open("tables.json", "w", encoding="utf-8") as f:
     json.dump(tables_json, f, ensure_ascii=False, indent=2)   
 ```
 
-如果您需要将表格导出为Excel等格式，您可以参考以下示例代码。
+## 将表格保存为 excel 文件。
 
 - 在 options 中设置参数 get_excel=1，让API返回 excel_base64 字段（Excel文件的base64编码）。
 
