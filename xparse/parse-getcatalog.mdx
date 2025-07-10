@@ -4,7 +4,7 @@ title: "获取目录树"
 
 当您想要获取文档目录树(即大纲结构)时，您可以参考以下示例代码。
 
-- 参考[快速启动](/xparse/parse-quickstart)，在 options 中设置参数 catalog_details=1，API会在返回结果中包含目录相关信息。
+- 参考[快速启动](/xparse/parse-quickstart)，在 options 中设置参数 catalog_details=1，API会在返回结果中包含目录相关信息，您可以参考以下示例代码获取目录。
 
 ```python
 if "result" in json_response and "catalog" in json_response["result"]:
@@ -14,9 +14,41 @@ if "result" in json_response and "catalog" in json_response["result"]:
     import json
     with open("catalog.json", "w", encoding="utf-8") as f:
         json.dump(catalog, f, ensure_ascii=False, indent=2)
-    print("目录树已保存为 catalog.json")
+    print("目录已保存为 catalog.json")
 else:
-    print("未检测到目录树字段，可能文档没有目录或参数设置有误。")
+    print("未检测到目录字段，可能文档没有目录或参数设置有误。")
+```
+
+- 文档解析API的目录返回结果中并没有直接的父子层级关系，您可以参考以下示例代码获取目录树状结构。
+
+```python
+    toc_list = data['catalog']['toc']
+    result = []
+    parent_stack = []  # 用于跟踪当前路径上的父节点
+    
+    for item in toc_list:
+        # 复制当前项目，避免修改原始数据
+        current_item = item.copy()
+        current_item['children'] = []
+        
+        current_level = item.get('hierarchy', 1)
+        
+        # 根据层级调整父节点栈
+        # 移除层级大于等于当前层级的节点
+        while parent_stack and parent_stack[-1]['hierarchy'] >= current_level:
+            parent_stack.pop()
+        
+        # 如果有父节点，将当前项目添加到父节点的children中
+        if parent_stack:
+            parent_stack[-1]['children'].append(current_item)
+        else:
+            # 如果没有父节点，说明是根节点
+            result.append(current_item)
+        
+        # 将当前项目添加到父节点栈中
+        parent_stack.append(current_item)
+    
+    return result
 ```
 
 - 如果您想了解更多详细信息，可以在[API文档](/api-reference/endpoint/parse)中查看。
