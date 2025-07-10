@@ -4,7 +4,7 @@ title: "快速启动"
 
 ### 先决条件：获取API Key
 
-使用智能文档抽取API处理文档时，您需要先获取API Key。请先登录后前往 [TextIn工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取您的API Key。
+使用文档抽取API处理文档时，您需要先获取API Key。请先登录后前往 [TextIn工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取您的API Key。
 
 ### 前置准备
 
@@ -54,10 +54,10 @@ class TextinWebApiClient:
                                 ie_type: ENTITY_EXTRACTION = ENTITY_EXTRACTION.close_ie
                                 ) -> Any:
         """
-        调用智能文档抽取API
+        调用文档抽取API
 
         Args:
-            body (any): 调用智能文档抽取接口所需的body
+            body (any): 调用文档抽取接口所需的body
             file_name (str): 文档的文件名
             ie_type (enum): 抽取模式，默认`close_ie`
 
@@ -99,7 +99,7 @@ asyncio.run(main())
 
 ### prompt模式抽取
 
-当您使用智能文档抽取API想要以prompt模式对文档做结构化抽取时，您可以参考以下示例代码。
+当您使用文档抽取API想要以prompt模式对文档做结构化抽取时，您可以参考以下示例代码。
 
 ```python
     # 在main函数中插入
@@ -116,7 +116,7 @@ asyncio.run(main())
 
 ### 字段模式抽取
 
-当您使用智能文档抽取API想要以自定义字段模式对文档做结构化抽取时，您可以参考以下示例代码。
+当您使用文档抽取API想要以自定义字段模式对文档做结构化抽取时，您可以参考以下示例代码。
 
 ```python
     # 在main函数中插入
@@ -158,11 +158,11 @@ asyncio.run(main())
 
 ### 返回结果示例
 
-当您使用智能文档抽取API时，抽取后的结果数据将按照以下JSON格式返回，下面为您提供了3段返回示例。如果您想了解最全面的返回结果说明，可以在[API文档](https://www.textin.com/document/open_kie_vlm_engine)中查看。
+当您使用文档抽取API时，抽取后的结果数据将按照以下JSON格式返回，下面为您提供了3段返回示例。如果您想了解最全面的返回结果说明，可以在[API文档](/api-reference/endpoint/extract)中查看。
 
 **示例1: prompt模式-返回对象**
 
-```json [expandable]
+```json expandable
 {
   "result": {
     "pages": [ // 文档每一页的元信息列表
@@ -257,7 +257,7 @@ asyncio.run(main())
 
 **示例2: prompt模式-返回数组**
 
-```json [expandable]
+```json expandable
 {
   "x_request_id": "f6cd2d7e8cdd21a717a89b13e74bb6f9", // 本次请求的唯一标识
   "result": {
@@ -425,7 +425,7 @@ asyncio.run(main())
 
 **示例3: 自定义key模式**
 
-```json [expandable]
+```json expandable
 {
   "version": "v1.6.5", // 返回结果的版本号
   "code": 200, // 状态码，200表示成功

@@ -2,10 +2,13 @@
 title: "多并发请求"
 ---
 
-当您使用智能文档抽取API想要多并发请求时，以下为您提供了一份可参考的示例代码，您可根据具体需求进行调整。
+当您使用文档抽取API想要多并发请求时，以下为您提供了一份可参考的示例代码，您可根据具体需求进行调整。
+
+- 参考[异步请求示例](/xparse/extract-asyncio)，main函数前面部分代码不变
 
 ```python
 # 参考异步请求示例，main函数前面部分代码不变
+# main函数中修改如下部分代码
 
 async def process_file(apiClient, file_path, prompt, semaphore):
     async with semaphore:

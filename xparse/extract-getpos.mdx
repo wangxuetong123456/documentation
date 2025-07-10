@@ -2,10 +2,10 @@
 title: "前端可视化：获取精确坐标"
 ---
 
-智能文档抽取API的返回结果中，每个字段的识别结果里都包含了精确的坐标信息，您可以参考以下示例代码获取这些坐标。
+文档抽取API的返回结果中，每个字段的识别结果里都包含了精确的坐标信息，您可以参考以下示例代码获取这些坐标。
 
 ```python
-# res 是你的抽取结果
+	# res 是你的抽取结果
     res = await apiClient.entity_extraction(body=post_body, file_name=os.path.basename(file_path))
     print(res)
 

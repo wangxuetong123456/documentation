@@ -2,12 +2,12 @@
 title: "获取表格"
 ---
 
-当您使用智能文档抽取API想要将结果保存为表格文件时，您可以参考以下示例代码。
+当您想要将结果保存为表格文件时，您可以参考以下示例代码。
 
 ```python
 import pandas as pd  # 记得加上这个import
 
-# res 是你的抽取结果
+	# res 是你的抽取结果
     res = await apiClient.entity_extraction(body=post_body, file_name=os.path.basename(file_path))
     print(res)
 

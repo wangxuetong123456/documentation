@@ -2,10 +2,10 @@
 title: "获取JSON"
 ---
 
-当您使用智能文档抽取API想要获取JSON文件时，您可以参考以下示例代码。
+当您想要获取JSON文件时，您可以参考以下示例代码。
 
 ```python
-# res 是你的抽取结果
+	# res 是你的抽取结果
     res = await apiClient.entity_extraction(body=post_body, file_name=os.path.basename(file_path))
     print(res)
 
