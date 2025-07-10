@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
 当您使用文档解析API想要解析位于URL的文件时，您可以参考以下示例代码。
 
-修改请求头设置。
+- 修改请求头设置。
 
 ```python
         # 在前置准备中设置请求头
@@ -162,12 +162,12 @@ if __name__ == "__main__":
         }
 ```
 
-复制以下函数部分代码，粘贴至前置准备代码的main函数中。
+- 复制以下代码粘贴至前置准备代码的main函数中。
 
 ```python
     # 在main函数中插入
-    # 使用URL方式
-    file_content = "https://example.com/path/to/your.pdf"
+    # 使用URL方式，这里为你提供了一份真实可用的示例URL
+    file_content = "https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf"
 
     # 设置URL参数，可按需设置，这里已为你默认设置了一些参数
     options = dict(
@@ -202,269 +202,71 @@ if __name__ == "__main__":
 
 以下是文档解析API的URL参数，参数会影响文档的解析结果和JSON输出内容，您可按需进行设置。
 
-- **pdf_pwd**：当pdf为加密文档时，需要提供密码。前端封装该接口时，需要自行对密码进行安全防护。
-- **char_details**：当为1或true时，返回char_pos字段，保存每一行的位置信息。默认关闭。
-- **page_details**：当为1或true时，返回pages字段，保存每一页更加详细的解析结果。默认打开。
-- **catalog_details**：当为1或true时，返回catalog details。
-- **dpi**：pdf文档的坐标基准，默认144 dpi。支持72，144，216。
+- **pdf_pwd**：当pdf为加密文档时，需要提供密码。
+  - 备注：对前端封装该接口时，需要自行对密码进行安全防护。
+- **char_details**：当为1或true时，可以返回char_pos字段，保存每一行的位置信息。默认关闭。
+- **page_details**：当为1或true时，可以返回pages字段，保存每一页更加详细的解析结果。默认打开。
+- **catalog_details**：当为1或true时，可以返回catalog details。
+- **dpi**：pdf文档的坐标基准，默认144 dpi。 与parse_mode参数联动
+  - 当parse_mode=auto时，默认动态，支持72，144，216； 
+  - 当parse_mode=scan时，默认144，支持72，144，216。
 - **page_start**：当上传的是pdf时，表示从第几页开始转。
 - **page_count**：当上传的是pdf时，表示要进行转换的pdf页数。总页数不得超过1000页，默认为1000页。
-- **apply_document_tree**：是否生成标题，默认为1，生成标题。0 不生成，1 生成标题。
-- **markdown_details**：是否生成markdown details，默认为1，生成markdown details。0 不生成，1 生成。
-- **table_flavor**：markdown里的表格格式，默认为html。md 按md语法输出表格，html 按html语法输出表格，none 不进行表格识别，把表格图像当成普通文字段落来识别。
-- **get_image**：获取markdown里的图片，默认为none，不返回任何图像。none 不返回任何图像，page 返回每一页的整页图像，objects 返回页面内的图像对象，both 返回整页图像和图像对象。
-- **image_output_type**：指定引擎返回的图片对象输出类型，默认返回子图片url和页图片id。base64str 指定所有图片对象为base64字符串，default 指定子图片对象为图片url,页图片对象为图片id。
-- **parse_mode**：PDF解析模式，默认为scan模式，仅按文字识别方式处理。auto 综合文字识别和解析模式，scan 仅按文字识别模式。
-- **get_excel**：是否返回excel结果，结果字段为excel_base64，默认为0，不返回。0 不返回，1 返回。
-- **raw_ocr**：是否返回全文识别结果，结果字段为raw_ocr。默认为0，不返回。0 不返回，1 返回。
-- **切边矫正**（需联系商务获取参数名）：是否进行切边矫正处理，默认为0，不进行切边矫正。0 不进行切边矫正，1 进行切边矫正。
-- **去水印**（需联系商务获取参数名）：是否进行去水印处理，默认为0，不去水印。0 不去水印，1 去水印。
-- **图表识别**（需联系商务获取参数名）：是否开启图表识别，开启图表识别会将识别到的图表以表格形式输出。默认为0，不进行图表识别。0 不开启图表识别，1 开启图表识别。
+- **apply_document_tree**：是否生成标题，默认为1，生成标题。
+  - 0 不生成
+  - 1 生成标题
+- **markdown_details**：是否生成markdown details，默认为1，生成markdown details。
+  - 0 不生成
+  - 1 生成
+- **table_flavor**：markdown里的表格格式，默认为html，按html语法输出表格。
+  - md 按md语法输出表格
+  - html 按html语法输出表格
+  - none 不进行表格识别，把表格图像当成普通文字段落来识别。
+- **get_image**：获取markdown里的图片，默认为none，不返回任何图像。
+  - none 不返回任何图像
+  - page 返回每一页的整页图像
+  - objects 返回页面内的图像对象
+  - both 返回整页图像和图像对象
+- **image_output_type**：指定引擎返回的图片对象输出类型，默认返回子图片url和页图片id。
+  - base64str 指定所有图片对象为base64字符串，适用于没有云存储的用户，但是引擎返回结果体积会很大。
+  - default 指定子图片对象为图片url，页图片对象为图片id
+- **parse_mode**：PDF解析模式，默认为scan模式，仅按文字识别方式处理。图片不用设置，均按文字识别方式处理。
+  - auto 综合文字识别和解析模式
+  - scan 仅按文字识别模式
+- **get_excel**：是否返回excel结果，结果字段为excel_base64，默认为0，不返回。
+  - 0 不返回
+  - 1 返回
+- **raw_ocr**：是否返回全文识别结果，结果字段为raw_ocr。默认为0，不返回。与page_details参数联动，当page_details为0或false时不返回。
+  - 0 不返回
+  - 1 返回
+- **切边矫正**（需联系商务获取参数名）：是否进行切边矫正处理，默认为0，不进行切边矫正。
+  - 0 不进行切边矫正
+  - 1 进行切边矫正
+- **去水印**（需联系商务获取参数名）：是否进行去水印处理，默认为0，不去水印。
+  - 0 不去水印
+  - 1 去水印
+- **图表识别**（需联系商务获取参数名）：是否开启图表识别，开启图表识别会将识别到的图表以表格形式输出。默认为0，不进行图表识别。
+  - 0 不开启图表识别
+  - 1 开启图表识别
 - **paratext_mode**：markdown中非正文文本内容展示模式。默认为annotation。非正文内容包括页眉页脚，子图中的文本。
+  - none 不展示
+  - annotation 以注释格式插入到markdown中。页眉页脚中的图片只保留文本，图片base64或url不保留
+  - body 以正文格式插入到markdown中
+- **formula_level**：公式识别等级，默认为0，全识别。
+  - 0 全识别
+  - 1 仅识别行间公式，行内公式不识别
+  - 2 不识别
+- **apply_merge**：是否进行段落合并和表格合并。默认为1，合并段落和表格。
+  - 0 不合并
+  - 1 合并
 
 ### 返回结果示例
 
 当您使用文档解析API时，解析后的结果数据将按照以下JSON格式返回，下面为您提供了一段返回示例。如果您想了解最全面的返回结果，可以在[API文档](/api-reference/endpoint/parse)中查看。
 
+<Tip>
+  示例文件URL：https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf
+</Tip>
+
 ```json expandable
-{
-  "code": 200, // 状态码，200表示成功
-  "message": "success", // 返回信息
-  "result": {
-    "total_page_number": 10, // PDF总页数
-    "document_type": "pdf", // 文档类型
-    "valid_page_number": 3, // 实际识别的有效页数
-    "paragraph_number": 18, // 段落总数
-    "character_number": 3280, // 字符总数
-    "pages": [ // 每一页的详细信息
-      {
-        "status": "success", // 当前页识别状态
-        "page_id": 0, // 页码（从0开始）
-        "durations": 612.5, // 识别耗时（毫秒）
-        "image_id": "90u12adcad08r2", // 页图片ID
-        "width": 0, // 页宽（像素）
-        "height": 0, // 页高（像素）
-        "angle": 0, // 旋转角度
-        "content": [ // 页内内容块
-          {
-            "id": 0, // 内容块ID
-            "type": "line", // 类型：文本行
-            "text": "string", // 文本内容
-            "angle": 0, // 角度
-            "pos": [0,0,0,0,0,0,0,0], // 位置（四个角点坐标）
-            "sub_type": "handwriting", // 子类型（如手写）
-            "direction": 0, // 方向
-            "score": 1, // 置信度
-            "char_pos": [[0,0,0,0,0,0,0,0]], // 每个字符的位置
-            "char_cand": [["string"]], // 字符候选
-            "char_cand_score": [[1]] // 候选置信度
-          },
-          {
-            "id": 0,
-            "type": "image", // 类型：图片
-            "pos": [0,0,0,0,0,0,0,0], // 位置
-            "sub_type": "string", // 子类型
-            "stamp_type": "公章", // 印章类型
-            "stamp_shape": "园章", // 印章形状
-            "stamp_color": "红色", // 印章颜色
-            "size": [0,0], // 图片尺寸
-            "data": {
-              "base64": "string", // 图片base64字符串
-              "region": [0,0,0,0,0,0,0,0], // 图片区域
-              "path": "string" // 图片路径
-            }
-          }
-        ],
-        "structured": [ // 结构化内容
-          {
-            "type": "textblock", // 类型：文本块
-            "pos": [0,0,0,0,0,0,0,0], // 位置
-            "content": [0,1,2], // 内容块ID列表
-            "sub_type": "title", // 子类型
-            "continue": true // 是否为连续块
-          },
-          {
-            "type": "table", // 类型：表格
-            "sub_type": "bordered", // 表格子类型
-            "pos": [0,0,0,0,0,0,0,0], // 位置
-            "rows": 0, // 行数
-            "cols": 0, // 列数
-            "columns_width": [0], // 列宽
-            "rows_height": [0], // 行高
-            "continue": true, // 是否为连续块
-            "cells": [ // 单元格内容
-              {
-                "row": 0, // 行号
-                "col": 0, // 列号
-                "row_span": 0, // 行合并
-                "col_span": 0, // 列合并
-                "pos": [10,10,100,10,100,50,10,50], // 单元格位置
-                "content": [
-                  {
-                    "type": "textblock", // 单元格内文本块
-                    "pos": [0,0,0,0,0,0,0,0],
-                    "content": [0,1,2],
-                    "sub_type": "title",
-                    "continue": true
-                  },
-                  {
-                    "type": "image", // 单元格内图片
-                    "pos": [0,0,0,0,0,0,0,0],
-                    "lines": [1],
-                    "zorder": 0,
-                    "content": [0]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "type": "image", // 页内图片
-            "pos": [0,0,0,0,0,0,0,0],
-            "lines": [1],
-            "zorder": 0,
-            "content": [0]
-          },
-          {
-            "type": "footer", // 页脚
-            "pos": [0,0,0,0,0,0,0,0],
-            "blocks": [
-              {
-                "type": "textblock",
-                "pos": [0,0,0,0,0,0,0,0],
-                "content": [0,1,2],
-                "sub_type": "title",
-                "continue": true
-              },
-              {
-                "type": "image",
-                "pos": [0,0,0,0,0,0,0,0],
-                "lines": [1],
-                "zorder": 0,
-                "content": [0]
-              },
-              {
-                "type": "table",
-                "sub_type": "bordered",
-                "pos": [0,0,0,0,0,0,0,0],
-                "rows": 0,
-                "cols": 0,
-                "columns_width": [0],
-                "rows_height": [0],
-                "continue": true,
-                "cells": [
-                  {
-                    "row": 0,
-                    "col": 0,
-                    "row_span": 0,
-                    "col_span": 0,
-                    "pos": [10,10,100,10,100,50,10,50],
-                    "content": [
-                      {
-                        "type": "textblock",
-                        "pos": [0,0,0,0,0,0,0,0],
-                        "content": [0,1,2],
-                        "sub_type": "title",
-                        "continue": true
-                      },
-                      {
-                        "type": "image",
-                        "pos": [0,0,0,0,0,0,0,0],
-                        "lines": [1],
-                        "zorder": 0,
-                        "content": [0]
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "type": "header", // 页眉
-            "pos": [0,0,0,0,0,0,0,0],
-            "blocks": [
-              {
-                "type": "textblock",
-                "pos": [0,0,0,0,0,0,0,0],
-                "content": [0,1,2],
-                "sub_type": "title",
-                "continue": true
-              },
-              {
-                "type": "image",
-                "pos": [0,0,0,0,0,0,0,0],
-                "lines": [1],
-                "zorder": 0,
-                "content": [0]
-              },
-              {
-                "type": "table",
-                "sub_type": "bordered",
-                "pos": [0,0,0,0,0,0,0,0],
-                "rows": 0,
-                "cols": 0,
-                "columns_width": [0],
-                "rows_height": [0],
-                "continue": true,
-                "cells": [
-                  {
-                    "row": 0,
-                    "col": 0,
-                    "row_span": 0,
-                    "col_span": 0,
-                    "pos": [10,10,100,10,100,50,10,50],
-                    "content": [
-                      {
-                        "type": "textblock",
-                        "pos": [0,0,0,0,0,0,0,0],
-                        "content": [0,1,2],
-                        "sub_type": "title",
-                        "continue": true
-                      },
-                      {
-                        "type": "image",
-                        "pos": [0,0,0,0,0,0,0,0],
-                        "lines": [1],
-                        "zorder": 0,
-                        "content": [0]
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    ],
-    "detail": [ // 详细段落信息
-      {
-        "page_id": 1, // 所在页码
-        "paragraph_id": 0, // 段落ID
-        "outline_level": -1, // 大纲级别
-        "text": "hellomarkdown", // 段落文本
-        "type": "paragraph", // 类型
-        "image_url": "string", // 图片URL
-        "content": 0, // 内容ID
-        "position": [217,390,1336,390,1336,460,217,460] // 位置
-      }
-    ],
-    "markdown": "#hellomarkdown" // 识别生成的Markdown内容
-  },
-  "version": "2.1.0", // 接口版本
-  "duration": 999, // 总耗时（毫秒）
-  "metrics": [ // 识别过程中的统计信息
-    {
-      "page_image_width": 1024, // 页图片宽度
-      "page_image_height": 768, // 页图片高度
-      "dpi": 72, // DPI
-      "durations": 0, // 识别耗时
-      "status": "string", // 状态
-      "page_id": 0, // 页码
-      "angle": 90, // 角度
-      "image_id": "string" // 图片ID
-    }
-  ]
-}
 ```
