@@ -2,51 +2,48 @@
 title: "前端可视化：获取精确坐标"
 ---
 
-
-本教程基于如下pdf示例文件，您可点击下载或使用该url：
-https://web-api.textin.com/open/image/download?filename=a2bd40607faa4be7ba975d41c96b9a47
+本教程基于pdf示例文件，您可点击下载或使用该链接：[文档解析pdf示例.pdf](https://web-api.textin.com/open/image/download?filename=a2bd40607faa4be7ba975d41c96b9a47)
 
 ## 上传pdf文件，获取解析结果
 
 参考[快速启动](/xparse/parse-quickstart)，上传pdf文件，获取解析结果。
 
-本次示例文件解析结果如下（为方便展示，此处只解析一页，仅列出部分核心字段）：
+本次示例文件解析结果如下（为方便展示，此处只解析一页，仅列出坐标相关数据）：
 
 ```python
 {
-    "code": 200,
-    "message": "success",
-    "duration": 1751,
-    "result": {
-       "pages": [
-                    {
-                        "status": "Success",
-                        "angle": 0,
-                        "page_id": 1,
-                        "width": 1191,
-                        "height": 1684,
-                        "image_id":"e5e82362aeb451fd.jpg" # 页面截图
-                        # ...
-                    }
-                ],
-        "detail": [
-            {
-                "page_id": 1,
-                "text": "**某服装企业（600398.SH）**"
-                "position": [71,146,549,144,548,185,70,187]
-                 # ...
-            },
-            {
-                "page_id": 1,
-                "text": "**第三季度收入下滑11%，费用率提升盈利承压**"
-                "position": [69,203,781,203,781,238,69,238]
-                 # ...
-            }
-            # ...
-        ]
-    }
+  "code": 200,
+  "message": "success",
+  "duration": 1751,
+  "result": {
+     "pages": [
+                {
+                  "status": "Success",
+                  "angle": 0,
+                  "page_id": 1,
+                  "width": 1191,
+                  "height": 1684,
+                  "image_id":"e5e82362aeb451fd.jpg" # 页面截图
+                  # ...
+                }
+              ],
+      "detail": [
+          {
+            "page_id": 1,
+            "text": "**某服装企业（600398.SH）**"
+            "position": [71,146,549,144,548,185,70,187]
+             # ...
+          },
+          {
+            "page_id": 1,
+            "text": "**第三季度收入下滑11%，费用率提升盈利承压**"
+            "position": [69,203,781,203,781,238,69,238]
+             # ...
+          }
+          # ...
+      ]
+  }
 }
-
 ```
 
 `pages`字段包含每一页的信息，detail中包含元素（文字、段落等）块的详细信息，通过`page_id`与页码关联，`position`字段表示该块的坐标信息。
@@ -76,18 +73,16 @@ https://web-api.textin.com/open/image/download?filename=a2bd40607faa4be7ba975d41
 │(0,0)
 │
 │
-│    (69,203) ──────────────── (781,203)
-│    │                            │     
-│    │           文本区域          │ 
-│    │                            │
-│    (69,238) ──────────────── (781,238)
+│    (69,203) ───────────── (781,203)
+│    │                                     │     
+│    │             文本区域                 │ 
+│    │                                     │
+│    (69,238) ───────────── (781,238)
 │
 │
 │
 │
-
 ```
-
 
 ## 从API返回结果中获取坐标数据
 
@@ -156,7 +151,7 @@ def extract_coordinates_from_parse_result(parse_result: Dict[str, Any]) -> List[
     return pages_coordinates
 ```
 
-## 绘制坐标到原图(python示例)
+## 绘制坐标框到原图
 
 ```python
 import json
@@ -479,18 +474,18 @@ def draw_coordinates_on_pdf(pdf_path: str, coordinates: List[List[Dict[str, Any]
 
 if __name__ == "__main__":
     main()
-
 ```
 
-### 使用说明
+### 代码使用说明
 
-**1. 环境准备**
+**1. 准备环境**
 
 ```bash
 pip install PyMuPDF opencv-python pillow
 ```
 
 **2. 绘制图片和坐标**
+
 ```python
 # 创建绘制器
 drawer = PDFCoordinateDrawer(pdf_path, coordinates)
@@ -510,21 +505,19 @@ drawer.close()
 
 **3. 输出结果**
 
-+ 每页生成一个标注后的PNG图片
-+ 坐标框用不同颜色表示不同类型
-+ 生成坐标类型图例
+- 每页生成一个标注后的PNG图片
+- 坐标框用不同颜色表示不同类型
+- 生成坐标类型图例
 
-该示例中生成的标注最终效果如下：
+该示例生成的标注最终效果如下：
 
-<img src="/images/parse-getpos-generated.png" />
+![](/images/parse-getpos-generated.png)
 
 可以看到，Textin xParse针对复杂布局的文档，能够精准识别并快速还原坐标，方便您将解析结果与原文件进行对比校注，快去[上手体验](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown)吧，登录就送大量免费额度！
 
-
-
 ## 前端开源项目
 
-此外，我们开源了web前端项目[xparse-frontend](https://github.com/intsig-textin/xparse-frontend/)，该项目包含跟我们[在线web平台](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown)效果一致的全套前端代码。一键上手，开箱即用，欢迎体验！
+此外，我们开源了web前端项目[xparse-frontend](https://github.com/intsig-textin/xparse-frontend/)，该项目包含跟我们[在线web平台](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown)效果一致的全套前端代码。上手方便，开箱即用，欢迎体验！
 
 ## 常见问题
 
@@ -536,6 +529,7 @@ drawer.close()
 - 页面旋转角度未正确处理
 
 **解决方案**
+
 - 调整DPI与实际识别所用DPI一致
 - 确认页面是否经过旋转(angle)，绘制时设置angle修正角度
 
@@ -544,6 +538,7 @@ drawer.close()
 **输出结果表现：** 大表格被分割到多页，无法完整提取
 
 **解决方案**
+
 ```python
 def handle_cross_page_tables(api_response):
     """处理跨页表格的智能合并 - 适配最新API格式"""
