@@ -486,21 +486,10 @@ pip install PyMuPDF opencv-python pillow
 
 **2. 绘制图片和坐标**
 
-```python
-# 创建绘制器
-drawer = PDFCoordinateDrawer(pdf_path, coordinates)
+将上述代码保存为`pdf_coordinate_drawer.py`文件，替换main函数中的`your_document.pdf`和`parse_result.json`为真实文件路径，运行：
 
-# 自定义绘制参数
-annotated_images = drawer.draw_all_pages(
-    output_dir="./my_output",
-    dpi=144,
-    show_text=True  # 显示文本标签
-)
-
-# 创建图例
-drawer.create_coordinate_legend()
-
-drawer.close()
+```bash
+python3 pdf_coordinate_drawer.py
 ```
 
 **3. 输出结果**
