@@ -208,7 +208,7 @@ if __name__ == "__main__":
 - **page_details**：当为1或true时，可以返回pages字段，保存每一页更加详细的解析结果。默认打开。
 - **catalog_details**：当为1或true时，可以返回catalog details。
 - **dpi**：pdf文档的坐标基准，默认144 dpi。 与parse_mode参数联动
-  - 当parse_mode=auto时，默认动态，支持72，144，216； 
+  - 当parse_mode=auto时，默认动态，支持72，144，216；
   - 当parse_mode=scan时，默认144，支持72，144，216。
 - **page_start**：当上传的是pdf时，表示从第几页开始转。
 - **page_count**：当上传的是pdf时，表示要进行转换的pdf页数。总页数不得超过1000页，默认为1000页。
@@ -262,11 +262,94 @@ if __name__ == "__main__":
 
 ### 返回结果示例
 
-当您使用文档解析API时，解析后的结果数据将按照以下JSON格式返回，下面为您提供了一段返回示例。如果您想了解最全面的返回结果，可以在[API文档](/api-reference/endpoint/parse)中查看。
+当您使用文档解析API时，解析后的结果数据将按照以下JSON格式返回，下面为您提供了一段返回示例。如果您想了解最全面的返回结果，可以在[API文档](/api-reference/endpoint/parse)中查看和调试。
 
 <Tip>
   示例文件URL：https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf
 </Tip>
 
-```json expandable
+```json
+{
+  "image_process": [], // 图像处理结果数组，当前为空
+  "code": 200, // 响应状态码，200表示成功
+  "result": {
+    "markdown": "# 劳动人事争议仲裁申请书\n\n致:广东省劳动人事争议调解仲裁院\n\n[完整表格内容...]", // 生成的markdown格式文档内容正文字符串
+    "success_count": 5, // 成功处理的页面数量
+    "pages": [
+      {
+        "angle": 0, // 页面旋转角度，0表示无旋转
+        "page_id": 1, // 页面ID
+        "content": [
+          {
+            "pos": [276, 243, 970, 243, 970, 291, 276, 291], // 文本行四个角点坐标
+            "id": 0, // 内容块ID
+            "score": 1, // 识别置信度分数
+            "type": "line", // 内容类型，line表示文本行
+            "text": "劳动人事争议仲裁申请书" // 识别的文本内容
+          },
+          {
+            "pos": [181, 400, 560, 400, 560, 424, 181, 424], // 文本行四个角点坐标
+            "id": 1, // 内容块ID
+            "score": 1, // 识别置信度分数
+            "type": "line", // 内容类型，line表示文本行
+            "text": "致:广东省劳动人事争议调解仲裁院" // 识别的文本内容
+          }
+          // [更多content条目...]
+        ],
+        "status": "Success", // 页面处理状态，Success表示成功
+        "height": 1684, // 页面高度（像素）
+        "structured": [
+          {
+            "pos": [278, 244, 967, 242, 967, 293, 278, 295], // 结构化内容的位置坐标
+            "type": "textblock", // 结构化内容类型，textblock表示文本块
+            "id": 0, // 结构化内容ID
+            "content": [0], // 关联的content数组索引
+            "text": "劳动人事争议仲裁申请书", // 结构化文本内容
+            "outline_level": 0, // 大纲级别，0表示顶级标题
+            "sub_type": "text_title" // 子类型，text_title表示文本标题
+          }
+          // [更多structured条目...]
+        ],
+        "durations": 459.98861694336, // 页面处理耗时（毫秒）
+        "image_id": "", // 页面图像ID
+        "width": 1191 // 页面宽度（像素）
+      }
+      // [更多pages条目...]
+    ],
+    "valid_page_number": 5, // 有效页面数量
+    "total_page_number": 5, // 总页面数量
+    "total_count": 5, // 总处理数量
+    "detail": [
+      {
+        "paragraph_id": 0, // 段落ID
+        "page_id": 1, // 所属页面ID
+        "tags": [], // 标签数组
+        "outline_level": 0, // 大纲级别
+        "text": "劳动人事争议仲裁申请书", // 段落文本内容
+        "type": "paragraph", // 内容类型，paragraph表示段落
+        "position": [278, 244, 967, 242, 967, 293, 278, 295], // 段落位置坐标
+        "content": 0, // 关联的content索引
+        "sub_type": "text_title" // 子类型，text_title表示文本标题
+      }
+      // [更多detail条目...]
+    ]
+  },
+  "x_request_id": "f36effda6a0141ed0583bea0d596f597", // 请求唯一标识符
+  "metrics": [
+    {
+      "angle": 0, // 页面旋转角度
+      "status": "Success", // 处理状态
+      "dpi": 144, // 图像DPI值
+      "image_id": "", // 图像ID
+      "page_id": 1, // 页面ID
+      "duration": 464.10571289062, // 处理耗时（毫秒）
+      "page_image_width": 1191, // 页面图像宽度
+      "page_image_height": 1684 // 页面图像高度
+    }
+    // [更多metrics条目...]
+  ],
+  "duration": 1459, // 引擎耗时（毫秒）
+  "message": "Success", // 响应消息
+  "version": "3.17.12" // doc_restore 引擎版本号
+}
 ```
