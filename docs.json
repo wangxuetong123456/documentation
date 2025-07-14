@@ -36,7 +36,7 @@
             ]
           },
           {
-            "group": "智能抽取",
+            "group": "文档抽取",
             "pages": [
               "xparse/extract-quickstart",
               "xparse/extract-getjson",
