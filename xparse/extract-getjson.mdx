@@ -2,17 +2,12 @@
 title: "获取JSON"
 ---
 
-当您想要获取JSON文件时，您可以参考以下示例代码。
+当您想要获取JSON结果并以.json格式文件保存时，您可以参考以下示例代码。
+
+这部分代码在[**快速启动**](/xparse/extract-quickstart)中已有示例，您可以直接使用。
 
 ```python
-	# res 是你的抽取结果
-    res = await apiClient.entity_extraction(body=post_body, file_name=os.path.basename(file_path))
-    print(res)
-
-    # 在main函数中插入
-    # 保存为json文件
-    with open("抽取结果.json", "w", encoding="utf-8") as f:
-        json.dump(res, f, ensure_ascii=False, indent=4)
-
-asyncio.run(main())
+# 保存完整的JSON响应到result.json文件
+with open("prompt_extract_result.json", "w", encoding="utf-8") as f:
+	f.write(response)
 ```

@@ -2,44 +2,306 @@
 title: "多并发请求"
 ---
 
-当您使用文档抽取API想要多并发请求时，以下为您提供了一份可参考的示例代码，您可根据具体需求进行调整。
-
-- 参考[异步请求示例](/xparse/extract-asyncio)，main函数前面部分代码不变
+当您使用文档抽取API想要多并发请求时，以下为您提供了一份完整的示例代码，您可根据具体需求进行调整。
 
 ```python
-# 参考异步请求示例，main函数前面部分代码不变
-# main函数中修改如下部分代码
+import json
+import aiohttp
+import asyncio
+from typing import Dict, Any, List
+from pathlib import Path
+import os
 
-async def process_file(apiClient, file_path, prompt, semaphore):
-    async with semaphore:
-        file_bytes = file_to_base64(file_path)
-        post_body = {
-            "file": file_bytes,
-            "prompt": prompt
+class AsyncExtractClient:
+    def __init__(self, app_id: str, secret_code: str):
+        self.app_id = app_id
+        self.secret_code = secret_code
+
+    async def extract(self, file_content: bytes, options: dict, request_body: dict) -> str:
+        # 构建请求参数
+        params = {}
+        for key, value in options.items():
+            params[key] = str(value)
+
+        # 设置请求头
+        headers = {
+            "x-ti-app-id": self.app_id,
+            "x-ti-secret-code": self.secret_code,
+            "Content-Type": "application/octet-stream"
         }
-        res = await apiClient.entity_extraction(body=post_body, file_name=os.path.basename(file_path))
-        print(f"{file_path} 处理完成")
-        # 保存为json文件
-        out_name = os.path.splitext(os.path.basename(file_path))[0] + "_result.json"
-        with open(out_name, "w", encoding="utf-8") as f:
-            json.dump(res, f, ensure_ascii=False, indent=4)
-        return res
+
+        # 发送异步请求
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                "https://api.textin.com/ai/service/v2/entity_extraction",
+                params=params,
+                headers=headers,
+                data=file_content,
+                json=request_body
+            ) as response:
+                # 检查响应状态
+                response.raise_for_status()
+                return await response.text()
+
+    async def extract_file(self, file_path: str, options: dict, request_body: dict) -> tuple:
+        """处理单个文件的提取任务"""
+        try:
+            # 读取文件
+            with open(file_path, "rb") as f:
+                file_content = f.read()
+            
+            # 执行提取
+            response = await self.extract(file_content, options, request_body)
+            
+            # 生成输出文件名
+            file_name = Path(file_path).stem
+            output_file = f"{file_name}_extract_result.json"
+            
+            # 保存结果
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(response)
+            
+            return file_path, response, None
+        except Exception as e:
+            return file_path, None, str(e)
+
+async def process_multiple_files(file_paths: List[str], app_id: str, secret_code: str, 
+                               max_concurrent: int = 5) -> None:
+    """并发处理多个文件"""
+    
+    # 创建客户端实例
+    client = AsyncExtractClient(app_id, secret_code)
+
+    # 设置URL参数
+    options = dict(
+        ie_type="close_ie"
+    )
+
+    # 设置请求体参数，prompt模式
+    request_body = dict(
+        prompt="请抽取这张小票中的实付金额、消费日期、店铺名称、订单号并以字段格式返回，请抽取货号、商品名称、数量、单价，并以表格格式返回"
+    )
+
+    # 创建信号量来控制并发数
+    semaphore = asyncio.Semaphore(max_concurrent)
+    
+    async def extract_with_semaphore(file_path: str):
+        async with semaphore:
+            return await client.extract_file(file_path, options, request_body)
+
+    # 创建所有任务
+    tasks = [extract_with_semaphore(file_path) for file_path in file_paths]
+    
+    print(f"开始处理 {len(file_paths)} 个文件，最大并发数: {max_concurrent}")
+    
+    # 并发执行所有任务
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # 处理结果
+    success_count = 0
+    error_count = 0
+    
+    for result in results:
+        if isinstance(result, Exception):
+            print(f"任务执行异常: {result}")
+            error_count += 1
+        else:
+            file_path, response, error = result
+            if error:
+                print(f"文件 {file_path} 处理失败: {error}")
+                error_count += 1
+            else:
+                print(f"文件 {file_path} 处理成功，结果已保存")
+                success_count += 1
+    
+    print(f"\n处理完成！成功: {success_count}, 失败: {error_count}")
 
 async def main():
-    apiClient = TextinWebApiClient("你的x-ti-app-id", "你的x-ti-secret-code")
-    folder = "你的文件夹路径"  # 这里是你的文件夹路径
-    # 自动获取文件夹下所有文件（自动过滤文件类型）
-    file_list = [
-        os.path.join(folder, f)
-        for f in os.listdir(folder)
-        if os.path.isfile(os.path.join(folder, f)) and f.lower().endswith(('.pdf','.jpg','.jpeg','.png','.doc','.docx','.ofd','.xlsx','.xls'))
+    # 配置参数
+    app_id = "你的x-ti-app-id"
+    secret_code = "你的x-ti-secret-code"
+    
+    # 要处理的文件列表（支持多种格式）
+    file_paths = [
+        "文件1.pdf",
+        "文件2.jpg", 
+        "文件3.png",
+        # 可以添加更多文件路径
     ]
-    prompt = "这里是你的抽取prompt"
-    max_concurrent = 3  # 最大并发数，可根据实际情况修改
-    semaphore = asyncio.Semaphore(max_concurrent)
-    tasks = [process_file(apiClient, file_path, prompt, semaphore) for file_path in file_list]
-    results = await asyncio.gather(*tasks)
-    print("全部处理完成")
+    
+    # 过滤出存在的文件
+    existing_files = [f for f in file_paths if os.path.exists(f)]
+    
+    if not existing_files:
+        print("没有找到要处理的文件！")
+        return
+    
+    print(f"找到 {len(existing_files)} 个文件待处理")
+    
+    # 设置最大并发数（可以根据需要调整）
+    max_concurrent = 3
+    
+    # 并发处理文件
+    await process_multiple_files(existing_files, app_id, secret_code, max_concurrent)
 
-asyncio.run(main())
+# 批量处理指定目录下的所有文件
+async def process_directory(directory_path: str, app_id: str, secret_code: str, 
+                          max_concurrent: int = 5, file_extensions: List[str] = None):
+    """处理指定目录下的所有文件"""
+    
+    if file_extensions is None:
+        file_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.bmp']
+    
+    # 获取目录下所有指定格式的文件
+    file_paths = []
+    for ext in file_extensions:
+        file_paths.extend(Path(directory_path).glob(f"*{ext}"))
+        file_paths.extend(Path(directory_path).glob(f"*{ext.upper()}"))
+    
+    if not file_paths:
+        print(f"在目录 {directory_path} 中没有找到支持的文件格式")
+        return
+    
+    print(f"在目录 {directory_path} 中找到 {len(file_paths)} 个文件")
+    
+    # 转换为字符串列表
+    file_paths = [str(f) for f in file_paths]
+    
+    # 并发处理
+    await process_multiple_files(file_paths, app_id, secret_code, max_concurrent)
+
+if __name__ == "__main__":
+    # 运行异步主函数
+    asyncio.run(main())
+    
+    # 如果需要处理整个目录，可以取消下面的注释
+    # asyncio.run(process_directory("./documents", "你的x-ti-app-id", "你的x-ti-secret-code", max_concurrent=5))
 ```
+
+### 使用方式说明
+
+**方式1：处理指定文件列表**
+
+```python
+file_paths = [
+    "发票1.pdf",
+    "发票2.jpg", 
+    "发票3.png"
+]
+```
+
+**方式2：处理整个目录**
+
+```python
+# 处理 ./documents 目录下的所有支持格式的文件
+await process_directory("./documents", app_id, secret_code, max_concurrent=5)
+```
+
+**方式3：自定义并发数**
+
+```python
+# 设置最大并发数为10
+await process_multiple_files(file_paths, app_id, secret_code, max_concurrent=10)
+```
+
+### 与[异步请求](/xparse/extract-asyncio)的对比
+
+**1. 新增并发控制机制**
+
+```python
+# 新增：信号量控制并发数
+semaphore = asyncio.Semaphore(max_concurrent)
+
+async def extract_with_semaphore(file_path: str):
+    async with semaphore:  # 控制并发数
+        return await client.extract_file(file_path, options, request_body)
+
+# 新增：批量任务创建
+tasks = [extract_with_semaphore(file_path) for file_path in file_paths]
+results = await asyncio.gather(*tasks, return_exceptions=True)
+```
+
+**2. 文件处理方式改变**
+
+```python
+# 新增：专门的文件处理方法
+async def extract_file(self, file_path: str, options: dict, request_body: dict) -> tuple:
+    with open(file_path, "rb") as f:
+        file_content = f.read()
+    response = await self.extract(file_content, options, request_body)
+    # 自动生成输出文件名
+    output_file = f"{Path(file_path).stem}_extract_result.json"
+    return file_path, response, None
+```
+
+**3. 主函数结构重构**
+
+```python
+# 新增：专门的多文件处理函数
+async def process_multiple_files(file_paths: List[str], app_id: str, secret_code: str, max_concurrent: int = 5):
+    client = AsyncExtractClient(app_id, secret_code)
+    # 创建多个任务
+    tasks = [extract_with_semaphore(file_path) for file_path in file_paths]
+    # 并发执行
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    # 处理结果统计
+    for result in results:
+        # 统计成功/失败数量
+```
+
+**4. 新增错误处理和统计**
+
+```python
+# 新增：详细的错误处理和统计
+success_count = 0
+error_count = 0
+
+for result in results:
+    if isinstance(result, Exception):
+        print(f"任务执行异常: {result}")
+        error_count += 1
+    else:
+        file_path, response, error = result
+        if error:
+            print(f"文件 {file_path} 处理失败: {error}")
+            error_count += 1
+        else:
+            print(f"文件 {file_path} 处理成功，结果已保存")
+            success_count += 1
+
+print(f"处理完成！成功: {success_count}, 失败: {error_count}")
+```
+
+**5. 新增目录处理功能**
+
+```python
+# 完全新增的功能
+async def process_directory(directory_path: str, app_id: str, secret_code: str, max_concurrent: int = 5):
+    # 自动扫描目录下的文件
+    file_paths = []
+    for ext in file_extensions:
+        file_paths.extend(Path(directory_path).glob(f"*{ext}"))
+    
+    # 批量处理
+    await process_multiple_files(file_paths, app_id, secret_code, max_concurrent)
+```
+
+**总结修改要点：**
+
+| **方面**   | **异步版本**    | **并发版本** |
+| :------- | :---------- | :------- |
+| **处理对象** | 单个文件        | 多个文件     |
+| **并发控制** | 无           | 信号量控制    |
+| **任务管理** | 单个任务        | 批量任务创建   |
+| **错误处理** | 简单try-catch | 详细统计和报告  |
+| **输出管理** | 固定文件名       | 自动生成文件名  |
+| **扩展功能** | 无           | 目录扫描处理   |
+
+**核心改进：**
+
+1. **从单文件到多文件**：支持批量处理
+2. **从无控制到有控制**：添加并发数限制
+3. **从简单到复杂**：增强错误处理和统计
+4. **从手动到自动**：自动文件扫描和命名
+
+这些修改使得多并发请求示例代码能够高效地处理大量文件，同时保持良好的性能和错误处理能力。

@@ -2,39 +2,83 @@
 title: "获取表格"
 ---
 
-当您想要将结果保存为表格文件时，您可以参考以下示例代码。
+当您想要将表格抽取结果保存为excel文件时，参考[**快速启动**](/xparse/extract-quickstart)中的返回结果示例，您可以参考以下代码保存excel文件。
 
 ```python
-import pandas as pd  # 记得加上这个import
+import pandas as pd
+import os
 
-	# res 是你的抽取结果
-    res = await apiClient.entity_extraction(body=post_body, file_name=os.path.basename(file_path))
-    print(res)
+# 其余部分代码不变
 
-# 在main函数中插入
-# 1. 保存普通字段
-fields = res["result"].get("fields", {})
-fields_data = {k: v["value"] for k, v in fields.items()}
-fields_df = pd.DataFrame([fields_data])  # 单行DataFrame
+# 新增 save_tables_to_excel 函数
+def save_tables_to_excel(json_response: str, original_file_path: str):
+    """将JSON响应中的表格数据保存为Excel文件"""
+    # 解析JSON响应
+    data = json.loads(json_response)
+    
+    # 获取表格数据
+    tables = data.get('result', {}).get('detail_structure', [{}])[0].get('tables_relationship', [])
+    
+    if not tables:
+        print("未找到表格数据")
+        return
+    
+    # 获取原始文件的目录路径
+    original_dir = os.path.dirname(original_file_path)
+    original_filename = os.path.splitext(os.path.basename(original_file_path))[0]
+    excel_path = os.path.join(original_dir, f"{original_filename}_tables.xlsx")
+    
+    # 创建Excel写入器
+    with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
+        for i, table in enumerate(tables):
+            # 提取表格标题
+            table_title = table.get('title', f'表格{i+1}')
+            
+            # 提取表格行数据
+            rows = []
+            for cell in table.get('cells', []):
+                row_data = {}
+                for field_name, field_data in cell.items():
+                    row_data[field_name] = field_data.get('value', '')
+                rows.append(row_data)
+            
+            if rows:
+                # 创建DataFrame
+                df = pd.DataFrame(rows)
+                
+                # 写入Excel，使用表格标题作为工作表名称
+                # 清理工作表名称（Excel工作表名称不能包含特殊字符）
+                sheet_name = "".join(c for c in table_title if c.isalnum() or c in (' ', '-', '_'))[:31]
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                
+                print(f"已保存表格 '{table_title}' 到工作表 '{sheet_name}'")
+    
+    print(f"Excel文件已保存到: {excel_path}")
 
-# 2. 保存表格字段（以第一个表为例）
-table_fields = res["result"].get("table_fields", [])
-if table_fields:
-    table = table_fields[0]  # 只取第一个表
-    # 假设每个表格字段是一个字典，key为字段名，value为{"value": ...}
-    table_data = []
-    for row in table.get("fields", []):
-        row_data = {k: v["value"] for k, v in row.items()}
-        table_data.append(row_data)
-    table_df = pd.DataFrame(table_data)
-else:
-    table_df = pd.DataFrame()
 
-# 3. 写入Excel
-with pd.ExcelWriter("抽取结果.xlsx") as writer:
-    fields_df.to_excel(writer, sheet_name="普通字段", index=False)
-    if not table_df.empty:
-        table_df.to_excel(writer, sheet_name="购物表", index=False)
-        
-asyncio.run(main())
+def main():
+
+# 其余部分代码不变
+
+    try:
+        response = client.extract(file_content, options, request_body)
+
+        # 保存完整的JSON响应到result.json文件
+        with open("key_extract_result.json", "w", encoding="utf-8") as f:
+            f.write(response)
+
+        print(response)
+
+        # 保存表格数据到Excel文件
+        save_tables_to_excel(response, file_path)
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+if __name__ == "__main__":
+    main()
 ```
+
+- 保存后的表格如下图，表格文件位置在抽取的原始文件同目录下。
+
+![Extract Getexcel Pn](/images/extract-getexcel.png)
