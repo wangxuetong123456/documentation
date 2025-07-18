@@ -2,6 +2,15 @@
 title: "前端可视化：获取精确坐标"
 ---
 
+Textin xParse支持返回块级`position`以及字符级`char_pos`（当设置`char_details=true`）坐标的，代表每一块内容在原文档中的精确位置。
+
+将解析结果和坐标可视化，有助于：
+
+- 与原文档对比，验证解析的效果
+- 审核校正解析结果
+
+下面一步步带您实现如何利用python实现坐标可视化。
+
 <Tip>
   本教程基于pdf示例文件，您可点击下载或使用该链接：[文档解析pdf示例.pdf](https://web-api.textin.com/open/image/download?filename=a2bd40607faa4be7ba975d41c96b9a47)
 </Tip>
@@ -504,7 +513,7 @@ python3 pdf_coordinate_drawer.py
 
 ![](/images/parse-getpos-generated.png)
 
-可以看到，Textin xParse针对复杂布局的文档，能够精准识别并快速还原坐标，方便您将解析结果与原文件进行对比校注，快去[上手体验](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown)吧，登录就送大量免费额度！
+可以看到，Textin xParse针对复杂布局的文档，能够精准识别并细粒度还原坐标，方便您将解析结果与原文件进行对比，查看解析效果以及审核校正。
 
 ## 前端开源项目
 
@@ -512,7 +521,7 @@ python3 pdf_coordinate_drawer.py
 
 ## 常见问题
 
-### **问题1：坐标偏移不准确，有错位**
+### **坐标偏移不准确，有错位**
 
 **可能原因：**
 
@@ -523,69 +532,5 @@ python3 pdf_coordinate_drawer.py
 
 - 调整DPI与实际识别所用DPI一致
 - 确认页面是否经过旋转(angle)，绘制时设置angle修正角度
-
-### **问题2：表格跨页处理**
-
-**输出结果表现：** 大表格被分割到多页，无法完整提取
-
-**解决方案**
-
-```python
-def handle_cross_page_tables(api_response):
-    """处理跨页表格的智能合并 - 适配最新API格式"""
-    detail_items = api_response.get("result", {}).get("detail", [])
-    
-    # 收集所有表格项
-    tables = []
-    for item in detail_items:
-        if item.get("type") == "table":
-            tables.append(item)
-    
-    # 按页面ID分组表格
-    tables_by_page = {}
-    for table in tables:
-        page_id = table.get("page_id")
-        if page_id notin tables_by_page:
-            tables_by_page[page_id] = []
-        tables_by_page[page_id].append(table)
-    
-    # 处理跨页表格
-    cross_page_tables = []
-    
-    for table in tables:
-        # 检查是否为跨页表格
-        split_section_page_ids = table.get("split_section_page_ids", [])
-        
-        if len(split_section_page_ids) > 1:
-            print(f"发现跨页表格：段落ID {table.get('paragraph_id')}")
-            print(f"跨越页面：{split_section_page_ids}")
-            
-            # 构建跨页表格信息
-            cross_page_table = {
-                "paragraph_id": table.get("paragraph_id"),
-                "main_page_id": table.get("page_id"),
-                "span_pages": split_section_page_ids,
-                "split_positions": table.get("split_section_positions", []),
-                "full_text": table.get("text", ""),
-                "sub_type": table.get("sub_type"),
-                "cells_info": table.get("cells", [])
-            }
-            
-            cross_page_tables.append(cross_page_table)
-            
-            # 打印详细信息
-            print(f"  - 主页面：{table.get('page_id')}")
-            print(f"  - 表格子类型：{table.get('sub_type')}")
-            print(f"  - 单元格范围：{table.get('cells')}")
-            
-            # 处理每个分割部分的位置信息
-            split_positions = table.get("split_section_positions", [])
-            for idx, positions in enumerate(split_positions):
-                if idx < len(split_section_page_ids):
-                    page_id = split_section_page_ids[idx]
-                    print(f"  - 页面 {page_id} 部分位置：{positions}")
-    
-    return cross_page_tables
-```
 
 如果您想了解更多详细信息，可以在[API文档](/api-reference/endpoint/parse)中查看。
