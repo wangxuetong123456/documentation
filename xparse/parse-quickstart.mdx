@@ -3,15 +3,31 @@ title: "快速启动"
 description: "参考示例，快速将文档解析API接入到您的系统和应用流程中。"
 ---
 
+## 为什么使用文档解析API ？
+
+大模型时代，文档(尤其是复杂文档)中蕴含着海量高价值的数据内容，借助文档解析API将其结构化为大模型更容易理解的格式(如markdown)，可以更大程度上增强大模型的能力、发挥更大价值，快速实现业务AI升级。
+
+TextIn xParse 文档解析API，是专为大模型应用重新设计的文档理解引擎，可以解决AI开发者的核心痛点：✅ 文档结构完整保持 ✅ 语义关系准确理解 ✅ 大模型原生友好
+
+使用文档解析API解析一个或多个文档，您可以选择将输出结果作为markdown或JSON文件保存在指定的目录中，也可以对输出结果做进一步的处理以满足您的业务需求。如果您正在进行知识库、RAG、大模型原生应用、Agent等业务方向的产品建设，文档解析API会为您提供帮助。
+
+## 如何使用文档解析API ？
+
+您可以参考以下示例文件和示例代码，快速验证并将文档解析API接入到您的系统和应用流程中。
+
 <Tip>
-  示例文件URL：https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf
+  示例文件：您可以保存至本地或直接使用URL
+
+  [**https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf**](https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf)
 </Tip>
 
 ### 先决条件：获取API Key
 
-使用文档解析API处理文档时，您需要先获取[API Key](/xparse/api-key)。请先登录后前往 [TextIn工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取您的API Key。
+使用文档解析API处理文档时，您需要先获取API Key。请先登录后前往 [TextIn工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取您的 x-ti-app-id 和 x-ti-secret-code 。
 
 ### 前置准备
+
+您可以参考以下示例代码完成文档解析API请求的前置准备工作，替换您自己的 x-ti-app-id 和 x-ti-secret-code ，后续步骤可根据实际使用场景在main函数中插入代码。
 
 ```python
 import json
@@ -62,6 +78,8 @@ if __name__ == "__main__":
 
 ### 解析单个本地文件并保存结果
 
+复制以下示例代码，粘贴至前置准备代码的main函数中；运行脚本来解析本地目录中的文件并将结果作为markdown和JSON文件保存。
+
 <Tip>
   请注意：请求体的数据格式为本地文件的二进制流，非 FormData 或其他格式。文件大小不超过 500M，长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内。
 
@@ -69,8 +87,6 @@ if __name__ == "__main__":
   - 如果是xls/xlsx/csv文件，每个sheet行数不能超过2000，列数不能超过100。
   - 如果是txt文件，文件大小不超过100k。
 </Tip>
-
-当您使用文档解析API想要解析单个本地文件时，您可以参考以下示例代码。复制以下代码，粘贴至前置准备代码的main函数中。
 
 ```python
     # 在main函数中插入
@@ -109,7 +125,7 @@ if __name__ == "__main__":
 
 ### 解析多个本地文件并保存结果至指定目录
 
-当您使用文档解析API想要解析多个本地文件时，您可以参考以下示例代码。复制以下代码，粘贴至前置准备代码的main函数中。
+复制以下示例代码，粘贴至前置准备代码的main函数中；运行脚本来解析本地目录中的多个文件并将结果作为markdown和JSON文件保存至指定目录中。
 
 ```python
  	# 在main函数中插入
@@ -157,29 +173,29 @@ if __name__ == "__main__":
 
 ### 解析位于URL的文件并保存结果
 
+您可以参考以下步骤，解析位于URL的文件。
+
 <Tip>
-  请注意：请求体的数据格式为文本，内容为在线文件的URL链接（支持http以及https协议）。在线文件大小不超过 500M，长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内。
+  请注意：请求体的数据格式为文本，内容为在线文件的URL链接（支持http以及https协议）。在线文件大小不超过 500M，长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内。为了快速验证接入，这里为您提供了示例文件URL。
 </Tip>
 
-当您使用文档解析API想要解析位于URL的文件时，您可以参考以下示例代码。
-
-- 修改请求头设置。
+- 步骤一：在前置准备代码中修改请求头设置。
 
 ```python
-        # 在前置准备中设置请求头
+        # 在前置准备中修改请求头设置
         headers = {
             "x-ti-app-id": self.app_id,
             "x-ti-secret-code": self.secret_code,
-            # 方式二：使用URL方式
+            # 方式：使用URL方式
             "Content-Type": "text/plain"
         }
 ```
 
-- 复制以下代码粘贴至前置准备代码的main函数中。
+- 步骤二：复制以下示例代码，粘贴至前置准备代码的main函数中；运行脚本来解析位于URL的文件并将结果作为markdown和JSON文件保存。
 
 ```python
     # 在main函数中插入
-    # 使用URL方式，这里为你提供了一份真实可用的示例URL
+    # 文件URL，这里为你提供了一份真实可用的示例URL
     file_content = "https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf"
 
     # 设置URL参数，可按需设置，这里已为你默认设置了一些参数
@@ -275,11 +291,10 @@ if __name__ == "__main__":
 
 ### 返回结果示例
 
-当您使用文档解析API时，解析后的结果数据将按照以下JSON格式返回，下面为您提供了一段返回示例。如果您想了解最全面的返回结果，可以在[API文档](/api-reference/endpoint/parse)中查看和调试。
+解析后的结果数据将按照以下JSON格式返回，下面为您提供了一段节选的返回示例。如果您想了解最全面的返回结果说明，可以在[JSON结构说明](/xparse/parse-getjson)中查看，也可以在[API](/api-reference/endpoint/parse)中查看和调试。
 
 ```json
 {
-  "image_process": [], // 图像处理结果数组，当前为空
   "code": 200, // 响应状态码，200表示成功
   "result": {
     "markdown": "# 劳动人事争议仲裁申请书\n\n致:广东省劳动人事争议调解仲裁院\n\n[完整表格内容...]", // 生成的markdown格式文档内容正文字符串

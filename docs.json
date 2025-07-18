@@ -25,7 +25,6 @@
             "group": "文档解析",
             "pages": [
               "xparse/parse-quickstart",
-              "xparse/parse-getmarkdown",
               "xparse/parse-getjson",
               "xparse/parse-gettable",
               "xparse/parse-getcatalog",
