@@ -2,17 +2,21 @@
 title: "前端可视化：获取精确坐标"
 ---
 
-Textin xParse支持返回块级`position`以及字符级`char_pos`（当设置`char_details=true`）坐标的，代表每一块内容在原文档中的精确位置。
+Textin xParse支持返回块级坐标`position`以及字符级坐标`char_pos`（请求时设置`char_details=true`），代表解析结果片段在原文档中的精确位置。
 
 将解析结果和坐标可视化，有助于：
 
-- 与原文档对比，细粒度验证解析的效果
+- 与原文档对照，细粒度验证解析的效果
 - 审核校正解析结果
 
-下面一步步带您实现如何利用python实现坐标可视化。
+例如，下面是一个原文档（带坐标回显，左）和解析结果（Markdown，右）的对比图：
+
+![](/images/parse-get-pos-compare.png)
+
+接下来详细介绍如何利用python实现坐标可视化。
 
 <Tip>
-  本教程基于pdf示例文件，您可点击下载或使用该链接：[文档解析pdf示例.pdf](https://web-api.textin.com/open/image/download?filename=a2bd40607faa4be7ba975d41c96b9a47)
+  本教程基于Textin官方pdf示例文件，您可点击下载或使用该链接：[文档解析pdf示例.pdf](https://web-api.textin.com/open/image/download?filename=a2bd40607faa4be7ba975d41c96b9a47)
 </Tip>
 
 ## 上传pdf文件，获取解析结果
@@ -517,7 +521,7 @@ python3 pdf_coordinate_drawer.py
 
 ## 前端开源项目
 
-此外，我们开源了web前端项目[xparse-frontend](https://github.com/intsig-textin/xparse-frontend/)，该项目包含跟我们[在线web平台](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown)效果一致的全套前端代码。上手方便，开箱即用，欢迎体验！
+此外，我们开源了web前端项目[xparse-frontend](https://github.com/intsig-textin/xparse-frontend/)，该项目包含跟我们[在线web平台](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown)效果一致的全套前端代码，具备文件预览、坐标回显、动态交互对照、编辑校正、导出多种格式结果文件等丰富功能。上手方便，开箱即用，欢迎体验！
 
 ## 常见问题
 
