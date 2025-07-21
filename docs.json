@@ -26,6 +26,7 @@
             "pages": [
               "xparse/parse-quickstart",
               "xparse/parse-getjson",
+              "xparse/parse-getstructured",
               "xparse/parse-gettable",
               "xparse/parse-getcatalog",
               "xparse/parse-getimage",
