@@ -3,15 +3,25 @@ title: "快速启动"
 description: "参考示例，快速将文档抽取API接入到您的系统和应用流程中。"
 ---
 
+## 为什么使用文档抽取API ？
+
+TextIn xParse 文档抽取API 是基于LLM的智能语义抽取，是让您解放数据处理团队的好帮手，可以让数据处理更轻松。
+
+## 如何使用文档抽取API ？
+
+您可以参考以下示例文件和步骤，快速验证并将文档抽取API接入到您的系统和应用流程中。
+
 <Tip>
   示例图片URL：https://textin-sandbox.intsig.com/image/download?filename=65a27abc197e4ffe8cdc171c49.png
 </Tip>
 
 ### 先决条件：获取API Key
 
-使用文档抽取API处理文档时，您需要先获取[API Key](/xparse/api-key)。请先登录后前往 [TextIn工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取您的API Key。
+使用文档抽取API处理文档时，您需要先获取[API Key](/xparse/api-key)。请先登录后前往 [TextIn工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取您的x-ti-app-id 和 x-ti-secret-code 。
 
 ### 前置准备
+
+您可以参考以下示例代码完成文档抽取API请求的前置准备工作，替换您自己的 x-ti-app-id 和 x-ti-secret-code ，后续步骤可根据实际使用场景在main函数中插入代码。
 
 ```python
 import json
@@ -32,7 +42,7 @@ class ExtractClient:
         headers = {
             "x-ti-app-id": self.app_id,
             "x-ti-secret-code": self.secret_code,
-            "Content-Type": "application/octet-stream"
+            "Content-Type": "multipart/form-data"
         }
 
         # 发送请求
@@ -68,9 +78,9 @@ if __name__ == "__main__":
 
 ### prompt模式抽取
 
-提供一个prompt，系统将根据该prompt进行抽取。
+提供prompt，系统将根据prompt进行抽取。
 
-当您使用文档抽取API想要以prompt模式对文档做结构化抽取时，您可以参考以下示例代码。
+复制以下示例代码，粘贴至前置准备代码的main函数中；替换要抽取的文件和抽取prompt；运行脚本以prompt模式对文档做结构化抽取并将结果作为JSON文件保存。
 
 ```python
     # 在main函数中插入
@@ -80,7 +90,7 @@ if __name__ == "__main__":
 
     # 设置URL参数
     options = dict(
-        ie_type="close_ie"
+        parse_mode="scan"
     )
 
     # 设置请求体参数，prompt模式
@@ -102,9 +112,9 @@ if __name__ == "__main__":
 
 ### 字段模式抽取
 
-提供一个fields与table_fields列表，系统将根据该列表进行抽取。
+提供fields与table_fields列表，系统将根据列表进行抽取。
 
-当您使用文档抽取API想要以自定义字段模式对文档做结构化抽取时，您可以参考以下示例代码。
+复制以下示例代码，粘贴至前置准备代码的main函数中；替换要抽取的文件以及自定义的fields与table_fields；运行脚本以字段模式对文档做结构化抽取并将结果作为JSON文件保存。
 
 ```python
     # 在main函数中插入
@@ -114,7 +124,7 @@ if __name__ == "__main__":
 
     # 设置URL参数
     options = dict(
-        ie_type="close_ie"
+        parse_mode="scan"
     )
 
     # 设置请求体参数，自定义key模式
@@ -151,9 +161,32 @@ if __name__ == "__main__":
         print(f"Error: {e}")
 ```
 
+### URL参数说明
+
+以下是文档抽取API的URL参数，URL参数指以 参数名=参数值 形式拼接到 URL 上的键值对。它以 `?` 开头，不同参数之间使用 `&` 连接，形如 `?p1=v1&p2=v2`。URL参数会影响文档的抽取结果和JSON输出内容，您可按需进行设置。
+
+- **page_start**：当上传的是pdf时，page_start 表示从第几页开始抽取。
+- **page_count**：当上传的是pdf时，page_count 表示要进行抽取的pdf页数。
+  - Prompt模式总页数不得超过20页，默认为20页。
+  - 自定义key模式总页数不得超过100页，默认为100页。
+- **parse_mode**：PDF解析模式，默认为scan模式，仅按文字识别方式处理。图片不用设置，均按文字识别方式处理。
+  - auto 综合文字识别和解析模式
+  - scan 仅按文字识别模式
+- **crop_image**：是否进行切边矫正处理，默认为0，不进行切边矫正。
+  - 0 不进行切边矫正
+  - 1 进行切边矫正
+- **remove_watermark**：是否进行去水印处理，默认为0，不去水印。
+  - 0 不去水印
+  - 1 去水印
+- **formula_level**：公式识别等级，默认为0，全识别。
+  - 0 全识别
+  - 1 仅识别行间公式，行内公式不识别
+  - 2 不识别
+- **file_name**：待抽取样本的文件名（含后缀名）
+
 ### 返回结果示例
 
-当您使用文档抽取API时，抽取后的结果数据将按照以下JSON格式返回，下面为您提供了2段返回示例。如果您想了解最全面的返回结果说明，可以在[API文档](/api-reference/endpoint/extract)中查看。
+抽取后的结果数据将按照以下JSON格式返回，下面为您提供了两段返回示例。如果您想了解最全面的返回结果说明，可以在[**返回JSON结构说明**](/xparse/extract-getjson)中查看，也可以在[**API**](/api-reference/endpoint/extract)中查看和调试。
 
 **示例1: prompt模式返回**
 

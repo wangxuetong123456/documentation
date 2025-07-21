@@ -1,13 +1,332 @@
 ---
-title: "获取JSON"
+title: "返回JSON结构说明"
 ---
 
-当您想要获取JSON结果并以.json格式文件保存时，您可以参考以下示例代码。
+当您使用文档抽取API对文档进行结构化抽取时，抽取后的数据将按照以下结构的JSON格式返回。
 
-这部分代码在[**快速启动**](/xparse/extract-quickstart)中已有示例，您可以直接使用。
+```json expandable
+{
+  "version": "v1.6.5",
+  "code": 200,
+  "message": "success",
+  "duration": 2825,
+  "result": {
+    "llm_json": {
+      "确认日期": "2024/4/3",
+      "基金代码": "011892",
+      "持仓金额": "74178.80"
+    },
+    "raw_json": {
+      "value": "011892",
+      "pages": [
+        1
+      ],
+      "bounding_regions": [
+        {
+          "position": [
+            201,
+            199,
+            308,
+            199,
+            308,
+            230,
+            201,
+            230
+          ],
+          "char_pos": [
+            [
+              202,
+              202,
+              218,
+              201,
+              218,
+              230,
+              201,
+              229
+            ],
+            [
+              220,
+              202,
+              235,
+              202,
+              236,
+              228,
+              220,
+              229
+            ]
+          ],
+          "page_id": 1,
+          "value": "011892"
+        }
+      ]
+    },
+    "category": {
+      "row": "item_list"
+    },
+    "rotated_image_width": 1000,
+    "rotated_image_height": 2000,
+    "page_count": 10,
+    "image_angle": 90,
+    "details": {
+      "row": [
+        {}
+      ]
+    },
+    "detail_structure": [
+      {
+        "doc_type": "doc",
+        "page_range": [
+          1,
+          2
+        ],
+        "tables": [
+          {
+            "position": [
+              343,
+              56,
+              459,
+              56,
+              459,
+              90,
+              343,
+              90
+            ],
+            "page_number": 1,
+            "text": "<table><tr><td>姓名</td><td>年龄</td></tr><tr><td>张三</td><td>18</td></tr></table>"
+          }
+        ],
+        "tables_relationship": [
+          {
+            "row_count": 2,
+            "column_count": 2,
+            "cells": [
+              {}
+            ],
+            "title": "row"
+          }
+        ],
+        "category": [
+          "标题",
+          "性别"
+        ],
+        "fields": {},
+        "stamps": [
+          {
+            "color": "红色",
+            "position": [
+              956,
+              583,
+              1362,
+              590,
+              1355,
+              990,
+              950,
+              983
+            ],
+            "stamp_shape": "圆章",
+            "type": "公章",
+            "value": "电力公司专用章"
+          }
+        ]
+      }
+    ],
+    "finish_reason": "stop",
+    "documents": [
+      [
+        {
+          "page_id": 0,
+          "position": [
+            956,
+            583,
+            1362,
+            590,
+            1355,
+            990,
+            950,
+            983
+          ],
+          "paragraph_id": 10,
+          "type": "paragraph",
+          "text": "<string>"
+        }
+      ]
+    ]
+  }
+}
+```
+
+## **常规字段说明**
+
+- x_request_id：该请求的唯一标识。
+- version：版本号，例如”v1.6.5”。
+- code：错误码，200表示成功。详情见[**快速启动-错误码说明**](/xparse/extract-quickstart)。
+- message：错误信息，成功时为”success”。
+- duration：推理时间(毫秒)，例如”2825”。
+
+## **主要结果说明：result对象**
+
+文档抽取API会在返回结果的result对象中包含以下关键信息。
+
+- **page_count**：智能文档抽取处理的文档页数，超过最大页数限制时（100页），返回为最大页数。
+- **finish_reason**：推理结束的原因
+  - stop：正常推理结束
+  - length：token超出限制而结束
+- **rotated_image_width**：正方向时文档的宽，仅文档为图片时其值有效；取值范围**x \> 0**；例如"1000"。
+- **rotated_image_height**：正方向时文档高，仅文档为图片时其值有效；取值范围**x \> 0**；例如"2000"。
+- **image_angle**：文档角度，指原文档需要经过逆时针旋转多少度，才能得到正方向的文档，仅文档为图片时其值有效；取值范围**0,90,180,270**；例如"90"。
+
+### llm_json：大模型抽取处理后的原始抽取结果
+
+仅当传入prompt参数时返回，返回简化的键值对结构，方便直接使用。
+
+由于使用大模型对用户输入的信息进行抽取，具体的字段名称和数据类型由用户的prompt决定，无法预先确定。例如：
+
+```json
+{
+  "确认日期": "2024/4/3",
+  "基金代码": "011892",
+  "持仓金额": "74178.80"
+}
+```
+
+### raw_json：大模型抽取带坐标信息的抽取结果
+
+仅当传入prompt参数时返回，包含详细的位置信息和边界框数据，用于高级处理场景。
+
+由于使用大模型对用户输入的信息进行抽取，具体的字段名称无法预先确定，但每个字段值都遵循统一的结构格式，包含抽取值、页码信息和详细的坐标数据。
+
+- **value**：字段的抽取值，即为**llm_json**中对应的字段值，例如"011892"
+- **pages**：字段所在的页码列表，例如[1]
+- **bounding_regions**：字段的边界框信息，包含详细的位置和字符坐标。
+  - **position**：字段在文档中的坐标位置，例如[201,199,308,199,308,230,201,230]
+  - **char_pos**：每个字符的详细坐标信息，例如[[202,202,218,201,218,230,201,229],[220,202,235,202,236,228,220,229]]
+  - **page_id**：所在页码ID，例如"1"
+  - **value**：该边界框内的文本内容，"011892"
+
+### pages：大模型抽取带坐标信息的抽取结果，按页组织
+
+仅当传入prompt参数时返回，当文档为多页结构时，返回每一页的详细信息，用于坐标回显。
+
+- **status**：表示当前页的引擎输出状态，或者error_message。
+- **page_id**：当前页码 (若为流式文件, 页码置为0)
+- **durations**：当前页总耗时(毫秒)
+- **image_id**：当前页图片id 。受URL参数影响，\_<u>当URL参数image_output_type=default且get_image=page/both时返回，</u>\_详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。
+  - 下载方式：[**https://api.textin.com/ocr_image/download?image_id=xxx**](https://api.textin.com/ocr_image/download?image_id=xxx) ,需要在headers里添加appid和key。例如使用curl下载：
+    - curl '[**https://api.textin.com/ocr_image/download?image_id=xxx**](https://api.textin.com/ocr_image/download?image_id=xxx)'\
+      --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
+      --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
+- **origin_image_id**：切边或去水印前的原始页图片。受URL参数切边矫正或去水印影响，详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。仅当开启切边或去水印，_<u>image_output_type=default且get_image=page/both时返回。</u>_
+  - 下载方式同image_id
+- **width**：文档页宽度
+- **height**：文档页高度
+- **angle**：图像（中文字）的角度（当输入为图像时，默认为0， 可选值0, 90, 180, 270)
+
+### usage：大模型抽取的token消耗情况
+
+仅当传入prompt参数时返回。
+
+- **prompt_tokens**：大模型抽取消耗输入token数量。
+- **completion_tokens**：大模型抽取消耗输出token数量。
+- **total_tokens**：大模型抽取消耗token总量。
+
+### details：文档抽取结果
+
+- **additionalProp1**
+  - **value**：字段识别结果
+  - **position**：文档被转正后，value在文档中的坐标，是一个长度为8的数组 [0,1,2,3,4,5,6,7]
+    - (0, 1) 左上角坐标
+    - (2, 3) 右上角坐标
+    - (4, 5) 右下角坐标
+    - (6, 7) 左下角坐标
+  - **description**：字段中文描述
+  - _<u>lines</u>_
+- **additionalProp2**
+  - 同**additionalProp1**
+- **additionalProp3**
+  - 同**additionalProp1**
+- **row**：_<u>table_header的抽取结果</u>_
+
+### category：`details`字段里的数据类型
+
+one_to_one：表示单值抽取的key；item_list：表示表格的抽取
+
+- **additionalProp1**：one_to_one
+- **additionalProp2**：one_to_one
+- **additionalProp3**：one_to_one
+- **row**：表格类型
+
+### detail_structure：字段的识别信息
+
+- **doc_type**：文档的类型
+- **page_range**：抽取的信息所在页范围
+- **tables**：表格信息
+  - **position**：坐标
+  - **page_number**：所在页
+  - **text**：html形式的表格
+- **tables_relationship**：表格的结构化信息
+  - **row_count**：行数
+  - **column_count**：列数
+  - **cells**：单元格信息
+  - **title**：_<u>title</u>_
+- **category**：结构化抽取出来的所有字段
+- **fields**：提取的字段结构化结果
+  - **additionalProp1**
+    - **value**：字段识别结果
+    - **bounding_regions**：边界框信息
+      - **page_number**：所在页码
+      - **value**：文本内容
+      - **position**：文本的坐标
+      - **char_pos**：每个字符的坐标
+  - **additionalProp2**
+    - 同**additionalProp1**
+  - **additionalProp3**
+    - 同**additionalProp1**
+- **stamps**：印章识别结果
+  - **color**：当前印章颜色
+    - 红色
+    - 蓝色
+    - 黑色
+    - 其他
+  - **position**：印章的坐标信息
+  - **stamp_shape**：当前印章形状
+    - 圆章
+    - 椭圆章
+    - 方章
+    - 三角章
+    - 菱形章
+    - 其他
+  - **type**：当前印章类型
+    - 公章
+    - 个人章
+    - 专用章
+    - 其他
+    - 合同专用章
+    - 财务专用章
+    - 发票专用章
+    - 业务专用章
+  - **value**：印章的文本内容
+
+### documents：文档每一页的文档元素信息
+
+- **page_id**：所在页
+- **position**：坐标信息
+- **paragraph_id**：当前段落id
+- **type**：当前元素的类型
+  - **paragraph**：段落类型，包括正文、标题、公式等文字信息
+  - **image**：图片
+  - **table**：表格，当为表格时，text里存储的为表格的html信息
+- **text**：文字信息
+
+<Tip>
+  **另外您也可以在**[**API**](/api-reference/endpoint/extract)**中查看Response说明。**
+</Tip>
+
+## **将结果保存为JSON文件**
+
+参考[**快速启动**](/xparse/extract-quickstart)中的使用示例，您可以将API返回的结果保存为JSON文件。以下示例代码在快速启动中已提供，您可以直接使用。
 
 ```python
-# 保存完整的JSON响应到result.json文件
+# prompt模式，保存完整的JSON响应到result.json文件
 with open("prompt_extract_result.json", "w", encoding="utf-8") as f:
 	f.write(response)
 ```
