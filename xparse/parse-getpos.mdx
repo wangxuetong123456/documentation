@@ -2,7 +2,7 @@
 title: "前端可视化：获取精确坐标"
 ---
 
-Textin xParse支持返回块级坐标`position`以及字符级坐标`char_pos`（请求时设置`char_details=true`），代表解析结果片段在原文档中的精确位置。
+Textin xParse支持返回块级坐标`position`以及字符级坐标`char_pos`（请求时设置URL参数`char_details=true`），代表解析结果片段在原文档中的精确位置。
 
 将解析结果和坐标可视化，有助于：
 
@@ -536,5 +536,3 @@ python3 pdf_coordinate_drawer.py
 
 - 调整DPI与实际识别所用DPI一致
 - 确认页面是否经过旋转(angle)，绘制时设置angle修正角度
-
-如果您想了解更多详细信息，可以在[API文档](/api-reference/endpoint/parse)中查看。

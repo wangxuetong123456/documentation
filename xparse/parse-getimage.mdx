@@ -2,14 +2,15 @@
 title: "获取图片并持久化"
 ---
 
-Textin xParse为保护您的数据隐私，从文档解析API返回的图片链接有效期为30天，30天后平台会自动删除图片资源。当您想要获取图片到本地并持久化时，有两种选择：
+Textin xParse为保护您的数据隐私，从文档解析API返回的图片链接有效期为30天，30天后平台会自动删除图片资源。当您想要获取图片到本地并持久化时，有两种方法供您选择：
 
-1. 设置[image-output-type](https://docs.textin.com/api-reference/endpoint/parse#parameter-image-output-type)参数为base64str，此时图片直接以base64格式在AP结果中返回（长文档不推荐）。
-2. 设置[image-output-type](https://docs.textin.com/api-reference/endpoint/parse#parameter-image-output-type)参数为default（不传时默认为该至），此时图片直接以textin平台链接方式返回，您可通过链接下载图片到本地，或上传到您的云存储。
+1. 设置[image-output-type](https://docs.textin.com/api-reference/endpoint/parse#parameter-image-output-type)参数为base64str，此时图片直接以base64格式在API结果中返回（长文档不推荐）。
+2. 设置[image-output-type](https://docs.textin.com/api-reference/endpoint/parse#parameter-image-output-type)参数为default（不传时默认为该值），此时图片直接以textin平台链接方式返回，您可通过链接下载图片到本地，或上传到您的云存储。
 
-对于方法2，您可参考如下示例代码：
+**对于方法2，您可参考如下步骤：**
 
 - 参考[快速启动](/xparse/parse-quickstart)，在 options 中设置参数 get_image 为 objects 或 both，让API返回页面内的图片对象；设置参数 image_output_type 为  default，API会返回图片 url。
+- 参考如下示例代码：提取返回结果中的图片URL将图片下载保存至本地，并将markdown中的图片链接替换为本地图片。
 
 ```python
 import os
@@ -230,5 +231,3 @@ def main():
 if __name__ == "__main__":
     main() 
 ```
-
-- 如果您想了解更多详细信息，可以在[API文档](/api-reference/endpoint/parse)中查看。
