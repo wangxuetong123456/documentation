@@ -430,9 +430,9 @@ title: "返回JSON结构说明"
     - **text**：单元格文本内容。
     - **type**：类型，固定为cell，表示单元格。
 
-### pages：文档按页为单位展开时， 存储每一页的详情和状态 （适用于PDF）
+### pages：每一页的详情和状态
 
-- **pages**：部分信息跟**metrics**字段重复。为兼容旧接口，保留metrics信息。
+- **pages**：文档按页为单位展开时， 存储每一页的详情和状态（适用于PDF）。部分信息跟**metrics**字段重复，为兼容旧接口，保留metrics信息。
   - **status**：表示当前页的引擎输出状态，或者error_message，例如"success"。
   - **page_id**：当前页码 (若为流式文件, 页码置为0)，例如"0"。
   - **durations**：当前页总耗时(毫秒)，例如"612.5"。
@@ -501,7 +501,7 @@ title: "返回JSON结构说明"
     - 270: ◀
   - **image_id**：当前页图片id。
     - 下载方式：https://api.textin.com/ocr_image/download?image_id=xxx, 需要在headers里添加appid和key, 有效期30天）例如使用curl下载：
-      - curl 'https://api.textin.com/ocr_image/download?image_id=xxx'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+      - curl 'https://api.textin.com/ocr_image/download?image_id=xxx'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
         --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
         --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
 
