@@ -2,7 +2,13 @@
 title: "获取表格"
 ---
 
-当您想要将表格抽取结果保存为excel文件时，参考[**快速启动**](/xparse/extract-quickstart)中的示例代码和返回结果示例，您可以参考以下代码保存excel文件。
+在TextIn xParse文档抽取API中，抽取结果的输出是JSON格式；如果您的系统或任务中更常见的文件格式是Excel格式，则可以参考以下教程，将抽取结果保存为Excel文件。
+
+这里提供一个简单的实现方式：
+
+## 如何获取表格
+
+参考[**快速启动**](/xparse/extract-quickstart)中的示例代码和返回结果，您可以参考以下代码将抽取结果保存为Excel文件。
 
 ```python
 import pandas as pd
@@ -58,7 +64,7 @@ def save_tables_to_excel(json_response: str, original_file_path: str):
 
 def main():
 
-# 其余部分代码不变
+# main函数中其余部分代码不变，修改添加以下代码
 
     try:
         response = client.extract(file_content, options, request_body)
