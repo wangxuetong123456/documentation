@@ -31,7 +31,6 @@
               "xparse/parse-getcatalog",
               "xparse/parse-getimage",
               "xparse/parse-getpos",
-              "xparse/parse-chunk",
               "xparse/parse-max-workers"
             ]
           },

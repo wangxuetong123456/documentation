@@ -385,10 +385,7 @@ title: "返回JSON结构说明"
 文档解析API会在返回结果的result对象中包含以下关键信息。
 
 - **total_page_number**：输入PDF时， 返回文档的总页数。
-- **document_type**：记录文档类型，若引擎判断文档类型非法，则无法进行正确的解析过程。
 - **valid_page_number**：记录本次解析成功的总页数。
-- **paragraph_number**：记录本次解析文档的段落数，适用于所有文件类型。
-- **character_number**：记录本次解析文档的字符数，适用于所有文件类型。
 - **excel_base64**：excel的base64结果，受URL参数get_excel影响，仅当get_excel=1时返回。详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
 
 ### markdown：正文字符串
@@ -501,7 +498,7 @@ title: "返回JSON结构说明"
     - 270: ◀
   - **image_id**：当前页图片id。
     - 下载方式：https://api.textin.com/ocr_image/download?image_id=xxx, 需要在headers里添加appid和key, 有效期30天）例如使用curl下载：
-      - curl 'https://api.textin.com/ocr_image/download?image_id=xxx'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+      - curl 'https://api.textin.com/ocr_image/download?image_id=xxx'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
         --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
         --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
 

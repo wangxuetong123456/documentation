@@ -83,7 +83,7 @@ if __name__ == "__main__":
 <Tip>
   请注意：请求体的数据格式为本地文件的二进制流，非 FormData 或其他格式。文件大小不超过 500M，长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内。
 
-  - 支持的文件格式：png, jpg, jpeg, pdf, bmp, tiff, webp, doc, docx, html, mhtml, xls, xlsx, csv, ppt, pptx, txt, ofd
+  - 支持的文件格式：png, jpg, jpeg, pdf, bmp, tiff, webp, doc, docx, html, mhtml, xls, xlsx, csv, ppt, pptx, txt, ofd, rtf
   - 如果是xls/xlsx/csv文件，每个sheet行数不能超过2000，列数不能超过100。
   - 如果是txt文件，文件大小不超过100k。
 </Tip>
@@ -229,29 +229,29 @@ if __name__ == "__main__":
 
 ### URL参数说明
 
-以下是文档解析API的URL参数，URL参数指以 {参数名}={参数值} 形式拼接到 URL 上的键值对。它以 `?` 开头，不同参数之间使用 `&` 连接，形如 `?p1=v1&p2=v2`。URL参数会影响文档的解析结果和JSON输出内容，您可按需进行设置。
+以下是文档解析API的URL参数，URL参数指以 参数名=参数值 形式拼接到 URL 上的键值对。它以 `?` 开头，不同参数之间使用 `&` 连接，形如 `?p1=v1&p2=v2`。URL参数会影响文档的解析结果和JSON输出内容，您可按需进行设置。
 
 - **pdf_pwd**：当pdf为加密文档时，需要提供密码。
   - 备注：对前端封装该接口时，需要自行对密码进行安全防护。
-- **char_details**：当为1或true时，可以返回char_pos字段，保存每一行的位置信息。默认关闭。
-- **page_details**：当为1或true时，可以返回pages字段，保存每一页更加详细的解析结果。默认打开。
-- **catalog_details**：当为1或true时，可以返回catalog details。
-- **dpi**：pdf文档的坐标基准，默认144 dpi。 与parse_mode参数联动
+- **char_details**：当为1或true时，可以返回**char_pos**字段，保存每个字符的位置信息。默认关闭。
+- **page_details**：当为1或true时，可以返回**pages**字段，保存每一页更加详细的解析结果。默认打开。
+- **catalog_details**：当为1或true时，可以返回**catalog**字段，保存目录相关信息。
+- **dpi**：pdf文档的坐标基准，默认144 dpi。 与**parse_mode**参数联动
   - 当parse_mode=auto时，默认动态，支持72，144，216；
   - 当parse_mode=scan时，默认144，支持72，144，216。
-- **page_start**：当上传的是pdf时，表示从第几页开始转。
-- **page_count**：当上传的是pdf时，表示要进行转换的pdf页数。总页数不得超过1000页，默认为1000页。
+- **page_start**：当上传的是pdf时，表示从第几页开始解析。
+- **page_count**：当上传的是pdf时，表示要进行解析的pdf页数。总页数不得超过1000页，默认为1000页。
 - **apply_document_tree**：是否生成标题，默认为1，生成标题。
   - 0 不生成
   - 1 生成标题
-- **markdown_details**：是否生成markdown details，默认为1，生成markdown details。
+- **markdown_details**：是否生成**markdown details**，默认为1，生成markdown details。
   - 0 不生成
   - 1 生成
-- **table_flavor**：markdown里的表格格式，默认为html，按html语法输出表格。
+- **table_flavor**：**markdown**里的表格格式，默认为html，按html语法输出表格。
   - md 按md语法输出表格
   - html 按html语法输出表格
   - none 不进行表格识别，把表格图像当成普通文字段落来识别。
-- **get_image**：获取markdown里的图片，默认为none，不返回任何图像。
+- **get_image**：获取**markdown**里的图片，默认为none，不返回任何图像。
   - none 不返回任何图像
   - page 返回每一页的整页图像
   - objects 返回页面内的图像对象
@@ -262,22 +262,22 @@ if __name__ == "__main__":
 - **parse_mode**：PDF解析模式，默认为scan模式，仅按文字识别方式处理。图片不用设置，均按文字识别方式处理。
   - auto 综合文字识别和解析模式
   - scan 仅按文字识别模式
-- **get_excel**：是否返回excel结果，结果字段为excel_base64，默认为0，不返回。
+- **get_excel**：是否返回excel结果，结果字段为**excel_base64**，默认为0，不返回。
   - 0 不返回
   - 1 返回
-- **raw_ocr**：是否返回全文识别结果，结果字段为raw_ocr。默认为0，不返回。与page_details参数联动，当page_details为0或false时不返回。
+- **raw_ocr**：是否返回全文识别结果，结果字段为**raw_ocr**。默认为0，不返回。与**page_details**参数联动，当page_details为0或false时不返回。
   - 0 不返回
   - 1 返回
-- **切边矫正**（需联系商务获取参数名）：是否进行切边矫正处理，默认为0，不进行切边矫正。
+- **crop_image**（**切边矫正**）：是否进行切边矫正处理，默认为0，不进行切边矫正。
   - 0 不进行切边矫正
   - 1 进行切边矫正
-- **去水印**（需联系商务获取参数名）：是否进行去水印处理，默认为0，不去水印。
+- **remove_watermark**（**去水印**）：是否进行去水印处理，默认为0，不去水印。
   - 0 不去水印
   - 1 去水印
-- **图表识别**（需联系商务获取参数名）：是否开启图表识别，开启图表识别会将识别到的图表以表格形式输出。默认为0，不进行图表识别。
+- （**图表识别**）：是否开启图表识别，开启图表识别会将识别到的图表以表格形式输出。默认为0，不进行图表识别。
   - 0 不开启图表识别
   - 1 开启图表识别
-- **paratext_mode**：markdown中非正文文本内容展示模式。默认为annotation。非正文内容包括页眉页脚，子图中的文本。
+- **paratext_mode**：**markdown**中非正文文本内容展示模式。默认为annotation。非正文内容包括页眉页脚，子图中的文本。
   - none 不展示
   - annotation 以注释格式插入到markdown中。页眉页脚中的图片只保留文本，图片base64或url不保留
   - body 以正文格式插入到markdown中
