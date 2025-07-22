@@ -386,7 +386,7 @@ title: "返回JSON结构说明"
 
 - **total_page_number**：输入PDF时， 返回文档的总页数。
 - **valid_page_number**：记录本次解析成功的总页数。
-- **excel_base64**：excel的base64结果，受URL参数get_excel影响，仅当get_excel=1时返回。详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
+- **excel_base64**：excel的base64结果，受URL参数**get_excel**影响，仅当get_excel=1时返回。详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
 
 ### markdown：正文字符串
 
@@ -394,7 +394,7 @@ title: "返回JSON结构说明"
 
 ### detail：markdown 详细信息
 
-- **detail**：markdown详细信息，受URL参数markdown_details影响，默认生成markdown details。详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
+- **detail**：markdown详细信息，受URL参数**markdown_details**影响，默认生成markdown details。详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
   - **page_id**：当前段落所在页码，例如"1"。
   - **paragraph_id**：当前段落id。
   - **outline_level**：标题级别(最多支持5级标题) -1表示正文，0表示一级标题，1表示二级标题 ...
@@ -403,12 +403,12 @@ title: "返回JSON结构说明"
     - paragraph（段落类型，包括正文、标题、公式等文字信息）
     - image（图片类型）
     - table（表格类型）
-  - **image_url**：受URL参数get_image和image_output_type影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
-    - 当get_image = objects, image_output_type = default时，返回图片的url，图片默认保存30天，如需长久保存，请在有效期内下载图片并自行保存；
+  - **image_url**：受URL参数**get_image**和**image_output_type**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
+    - 当get_image = objects, image_output_type = default时，返回图片的url，图片默认保存30天；如需长久保存，请在有效期内下载图片并自行保存，可参考[获取图片并持久化](/xparse/parse-getimage)；
     - 或者使用image_output_type = base64str，图片以base64的方式返回。
   - **content**：内容类型。0 正文(段落、图片、表格)；1 非正文(页眉、页脚、侧边栏)
   - **position**：以长度为8的整型数组表示四边形，8个数两两一组为一个点的横纵坐标，分别是左上，右上，右下，左下。 当输入是PDF时, 此坐标是基于72dpi的；当输入是图片时，此坐标是原图里的坐标。 单位：像素。例如[217, 390, 1336, 390, 1336, 460, 217, 460]
-  - **origin_position**：受URL参数切边矫正影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。仅当打开切边时返回，表示该段落在原图中的坐标。格式同position。
+  - **origin_position**：受URL参数**切边矫正**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。仅当打开切边时返回，表示该段落在原图中的坐标。格式同position。
   - **sub_type**：子类型，受**type**影响。
     - 当**type**为paragraph时，取值范围为catalog(目录),header(页眉),footer(页脚),sidebar(侧边栏),text(正文普通文本),text_title(文本标题),image_title(图片标题),table_title(表格标题)；
     - 当**type**是image时，取值范围为stamp(印章),chart(图表),qrcode(二维码),barcode(条形码)；
@@ -422,36 +422,36 @@ title: "返回JSON结构说明"
     - **col**：单元格列号。
     - **row_span**：单元格行跨度,默认为1。
     - **col_span**：单元格列跨度,默认为1。
-    - **position**：单元格的四个角点坐标，依次为left-top,right-top,right-bottom,left-bottom.例如[10, 10, 100, 10, 100, 50, 10, 50]
-    - **origin_position**：受URL参数切边矫正影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。仅当打开切边时返回，表示该单元格在原图中的坐标。格式同position。
+    - **position**：单元格的四个角点坐标，依次为左上，右上，右下，左下。例如[10, 10, 100, 10, 100, 50, 10, 50]
+    - **origin_position**：受URL参数**切边矫正**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。仅当打开切边时返回，表示该单元格在原图中的坐标。格式同position。
     - **text**：单元格文本内容。
     - **type**：类型，固定为cell，表示单元格。
 
 ### pages：每一页的详情和状态
 
-- **pages**：文档按页为单位展开时， 存储每一页的详情和状态（适用于PDF）。部分信息跟**metrics**字段重复，为兼容旧接口，保留metrics信息。
+- **pages**：文档按页为单位展开时， 存储每一页的详情和状态（适用于PDF），部分信息与**metrics**字段重复。受URL参数**page_details**影响，默认返回pages，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
   - **status**：表示当前页的引擎输出状态，或者error_message，例如"success"。
   - **page_id**：当前页码 (若为流式文件, 页码置为0)，例如"0"。
   - **durations**：当前页总耗时(毫秒)，例如"612.5"。
-  - **image_id**：当前页图片id 。受URL参数影响，当URL参数image_output_type=default且get_image=page/both时返回，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
+  - **image_id**：当前页图片id 。受URL参数**get_image**和**image_output_type**影响，当URL参数image_output_type=default且get_image=page/both时返回，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
     - 下载方式：[**https://api.textin.com/ocr_image/download?image_id=xxx**](https://api.textin.com/ocr_image/download?image_id=xxx) ,需要在headers里添加appid和key。例如使用curl下载：
-      - curl '[**https://api.textin.com/ocr_image/download?image_id=xxx**](https://api.textin.com/ocr_image/download?image_id=xxx)'\
+      - curl '\*\*https://api.textin.com/ocr_image/download?image_id=xxx\\\*\\\*'\\\\
         --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
         --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
-  - **origin_image_id**：切边或去水印前的原始页图片。受URL参数切边矫正或去水印影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。仅当开启切边或去水印，image_output_type=default且get_image=page/both时返回。
+  - **origin_image_id**：切边或去水印前的原始页图片。受URL参数**切边矫正**或**去水印**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。仅当开启切边或去水印，image_output_type=default且get_image=page/both时返回。
     - 下载方式同image_id
-  - **base64**：当前页图片的base64字符串，受URL参数image_output_type影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。当输入参数image_output_type=base64str且get_image=page/both时返回。
-  - **origin_base64**：切边或去水印前的原始页图片base64字符串。受URL参数切边矫正或去水印影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。仅当开启切边或去水印，image_output_type=base64str且get_image=page/both时返回。
+  - **base64**：当前页图片的base64字符串，受URL参数**image_output_type**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。当输入参数image_output_type=base64str且get_image=page/both时返回。
+  - **origin_base64**：切边或去水印前的原始页图片base64字符串。受URL参数**切边矫正**或**去水印**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。仅当开启切边或去水印，image_output_type=base64str且get_image=page/both时返回。
   - **width**：文档页宽度
   - **height**：文档页高度
   - **angle**：图像（中文字）的角度（当输入为图像时，默认为0， 可选值0, 90, 180, 270)
-  - **raw_ocr**：全文识别结果，只包含文字结果。
+  - **raw_ocr**：全文识别结果，只包含文字结果。受URL参数**page_details**和**raw_ocr**影响，默认不返回，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
     - **text**：识别内容字符串，例如"这是一个例子。"
     - **score**：识别置信度（0 \<= x \<= 1），例如"0.99"。
     - **type**：文本类型，用于表示文字的形态。 当前版本下，文本类型包括：
       - text(文本)
       - formula(公式)
-    - **position**：文本行的四个角点坐标，依次left-top,right-top,right-bottom,left-bottom，例如[10, 10, 100, 10, 100, 50, 10, 50]
+    - **position**：文本行的四个角点坐标，依次为左上，右上，右下，左下。例如[10, 10, 100, 10, 100, 50, 10, 50]
     - **angle**：图像（中文字）的角度（当输入为图像时，默认为0， 可选值0, 90, 180, 270)
     - **direction**：文字阅读方向。
       - -1: 其他
@@ -462,32 +462,32 @@ title: "返回JSON结构说明"
       - -1: 未知
       - 0: 非手写文字, 一般为印刷文字
       - 1: 文字手写, 一般具备明显的书写特征
-    - **char_scores**：字符置信度，值域范围0-1。 受URL参数char_details影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。设置char_details=1时输出。
-    - **char_centers**：字符中心点。_<u>设置character=1时输出。</u>_
-    - **char_positions**：字符四边形点坐标，以顺时针构成闭合区域。 受URL参数char_details影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。设置char_details=1时输出。
-    - **char_candidates**：候选字数组，表示每一个字符的候选，与候选置信度配套使用。受URL参数char_details影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。 设置char_details=1时输出。
-    - **char_candidates_score**：候选字置信度数组，表示每一个候选字符的置信度，与候选字符配套使用。 受URL参数char_details影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。 设置char_details=1时输出。
+    - **char_scores**：字符置信度，值域范围0-1。 受URL参数**char_details**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。设置char_details=1时输出。
+    - **char_centers**：字符中心点。
+    - **char_positions**：字符四边形点坐标，以顺时针构成闭合区域。 受URL参数**char_details**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。设置char_details=1时输出。
+    - **char_candidates**：候选字数组，表示每一个字符的候选，与候选置信度配套使用。受URL参数**char_details**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。 设置char_details=1时输出。
+    - **char_candidates_score**：候选字置信度数组，表示每一个候选字符的置信度，与候选字符配套使用。 受URL参数**char_details**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。 设置char_details=1时输出。
   - **content**：基础数据，为文字行、图像中的其中一种，详情参考[**结构体说明**](/xparse/parse-getstructured)。
   - **structured**：结构化数据，为段落块、图像块、表格块、页脚块、页眉块中的一种。详情参考[**结构体说明**](/xparse/parse-getstructured)。
 
 ### catalog：描述目录树的结构
 
-- **catalog**：目录树结构
+- **catalog**：目录树结构。受URL参数**catalog_details**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
   - **toc**：返回的table of contents
     - **sub_type**：标题类型 text_title、 image_title、 table_title
-    - **hierarchy**：标题层级， 1 是 1级标题, 2 是 2级标题，依次类推
+    - **hierarchy**：标题层级， 1 是 一级标题, 2 是 二级标题，依次类推
     - **title**：标题内容
     - **page_id**：标题所在页码 （最小页码为 1)
-    - **pos**：该目录区域的四个角点坐标，依次left-top,right-top,right-bottom,left-bottom.
+    - **pos**：该目录区域的四个角点坐标，依次为左上，右上，右下，左下。
 
-## metrics：每一页的信息（兼容旧接口）
+## metrics：每一页的信息
 
-部分信息跟**pages**字段重复。为兼容旧接口，保留metrics信息。
+部分信息跟**pages**字段重复，当URL参数**page_details**设置为不返回**pages**字段时，可以在**metrics**字段获取每一页的信息。
 
 - **metrics**：每一页信息
-  - **page_image_width**：当前段落所在页的图片宽或者pdf转成的图片宽
-  - **page_image_height**：当前段落所在页的图片高或者pdf转成的图片高
-  - **dpi**：当前pdf页转成图片所用的dpi
+  - **page_image_width**：当前段落所在页的图片宽或者pdf转成的图片宽，例如"1024"。
+  - **page_image_height**：当前段落所在页的图片高或者pdf转成的图片高，例如"768"。
+  - **dpi**：当前pdf页转成图片所用的dpi，例如"72"。
   - **durations**：当前页总耗时(毫秒)
   - **status**：当前页状态
   - **page_id**：当前页码
@@ -498,12 +498,12 @@ title: "返回JSON结构说明"
     - 270: ◀
   - **image_id**：当前页图片id。
     - 下载方式：https://api.textin.com/ocr_image/download?image_id=xxx, 需要在headers里添加appid和key, 有效期30天）例如使用curl下载：
-      - curl 'https://api.textin.com/ocr_image/download?image_id=xxx'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+      - curl 'https://api.textin.com/ocr_image/download?image_id=xxx'
         --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
         --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
 
 <Tip>
-  **另外您也可以在**[**API**](/api-reference/endpoint/parse)**中查看Response说明。**
+  **另外您也可以在**[**API**](/api-reference/endpoint/parse)**中查看Response说明以及调试查看结果。**
 </Tip>
 
 ## 将结果保存为JSON或markdown文件
