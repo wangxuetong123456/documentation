@@ -203,23 +203,23 @@ title: "返回JSON结构说明"
   - **page_id**：所在页码ID，例如"1"
   - **value**：该边界框内的文本内容，"011892"
 
-### pages：大模型抽取带坐标信息的抽取结果，按页组织
+### pages：大模型抽取的页面信息，按页组织
 
 仅当传入prompt参数时返回，当文档为多页结构时，返回每一页的详细信息，用于坐标回显。
 
 - **status**：表示当前页的引擎输出状态，或者error_message。
 - **page_id**：当前页码 (若为流式文件, 页码置为0)
 - **durations**：当前页总耗时(毫秒)
-- **image_id**：当前页图片id 。受URL参数影响，_\_<u>当URL参数image_output_type=default且get_image=page/both时返回，</u>\__详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。
-  - 下载方式：**https://api.textin.com/ocr_image/download?image_id=xxx** ,需要在headers里添加appid和key。例如使用curl下载：
-    - curl '**https://api.textin.com/ocr_image/download?image_id=xxx**'\
+- **image_id**：当前页图片id 。受URL参数影响，\_\_<u>当URL参数image_output_type=default且get_image=page/both时返回，</u>\_\_详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。
+  - 下载方式：[**https://api.textin.com/ocr_image/download?image_id=xxx**](https://api.textin.com/ocr_image/download?image_id=xxx) ,需要在headers里添加appid和key。例如使用curl下载：
+    - curl '\*\*https://api.textin.com/ocr_image/download?image_id=xxx\*\*'\\
       --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
       --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
 - **origin_image_id**：切边或去水印前的原始页图片。受URL参数切边矫正或去水印影响，详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。仅当开启切边或去水印，_<u>image_output_type=default且get_image=page/both时返回。</u>_
   - 下载方式同image_id
 - **width**：文档页宽度
 - **height**：文档页高度
-- **angle**：图像（中文字）的角度（当输入为图像时，默认为0， 可选值0, 90, 180, 270)
+- **angle**：图像的角度（当输入为图像时，默认为0， 可选值0, 90, 180, 270)
 
 ### usage：大模型抽取的token消耗情况
 
