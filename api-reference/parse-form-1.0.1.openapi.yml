@@ -38,7 +38,7 @@ paths:
             default: 0
             enum: [0, 1]
           description: |
-            当为1 或 true时，可以返回 char_pos 字段, 保存了每一行的位置信息。默认关闭
+            当为1 或 true时，可以返回 char_pos 字段, 保存了每个字符的位置信息。默认关闭
 
         - in: query
           required: false
@@ -388,27 +388,27 @@ components:
               type: integer
               description: 输入Pdf时， 返回文档的总页数
               example: 10
-            document_type:
-              type: string
-              description: 记录文档类型，若引擎判断文档类型非法，则无法进行正确的解析过程
-              example: pdf
-              default: unknown
-              enum:
-                - unknown
-                - image
-                - pdf
+            # document_type:
+            #   type: string
+            #   description: 记录文档类型，若引擎判断文档类型非法，则无法进行正确的解析过程
+            #   example: pdf
+            #   default: unknown
+            #   enum:
+            #     - unknown
+            #     - image
+            #     - pdf
             valid_page_number:
               type: integer
               description: 记录本次解析成功的总页数
               example: 3
-            paragraph_number:
-              type: integer
-              description: 记录本次解析文档的段落数，适用于所有文件类型
-              example: 18
-            character_number:
-              type: integer
-              description: 记录本次解析文档的字符数，适用于所有文件类型
-              example: 3280
+            # paragraph_number:
+            #   type: integer
+            #   description: 记录本次解析文档的段落数，适用于所有文件类型
+            #   example: 18
+            # character_number:
+            #   type: integer
+            #   description: 记录本次解析文档的字符数，适用于所有文件类型
+            #   example: 3280
             pages:
               type: array
               description: 文档按照页为单位展开时， 存储每一页的详情和状态 （适用于PDF）,部分信息跟metrics字段重复。为兼容旧接口，保留metrics信息。
@@ -1348,28 +1348,28 @@ components:
             format: float
             example: 0.98
           example: [0.99, 0.98, 0.95, 0.95, 0.99, 0.93, 0.87]
-        char_centers:
-          type: array
-          description: |
-            字符中心点。
-            设置character=1时输出。
-          items:
-            type: array
-            minItems: 2
-            maxItems: 2
-            items:
-              type: integer
-              example: 10
-          example:
-            [
-              [20, 10],
-              [30, 10],
-              [40, 10],
-              [50, 10],
-              [60, 10],
-              [70, 10],
-              [80, 10],
-            ]
+        # char_centers:
+        #   type: array
+        #   description: |
+        #     字符中心点。
+        #     设置character=1时输出。
+        #   items:
+        #     type: array
+        #     minItems: 2
+        #     maxItems: 2
+        #     items:
+        #       type: integer
+        #       example: 10
+        #   example:
+        #     [
+        #       [20, 10],
+        #       [30, 10],
+        #       [40, 10],
+        #       [50, 10],
+        #       [60, 10],
+        #       [70, 10],
+        #       [80, 10],
+        #     ]
         char_positions:
           type: array
           description: |
