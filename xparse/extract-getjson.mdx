@@ -158,9 +158,9 @@ title: "返回JSON结构说明"
 ## **常规字段说明**
 
 - x_request_id：该请求的唯一标识。
-- version：版本号，例如”v1.6.5”。
 - code：错误码，200表示成功。详情见[**快速启动-错误码说明**](/xparse/extract-quickstart)。
 - message：错误信息，成功时为”success”。
+- version：版本号，例如”v1.6.5”。
 - duration：推理时间(毫秒)，例如”2825”。
 
 ## **主要结果说明：result对象**
@@ -210,9 +210,9 @@ title: "返回JSON结构说明"
 - **status**：表示当前页的引擎输出状态，或者error_message。
 - **page_id**：当前页码 (若为流式文件, 页码置为0)
 - **durations**：当前页总耗时(毫秒)
-- **image_id**：当前页图片id 。受URL参数影响，\_<u>当URL参数image_output_type=default且get_image=page/both时返回，</u>\_详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。
-  - 下载方式：[**https://api.textin.com/ocr_image/download?image_id=xxx**](https://api.textin.com/ocr_image/download?image_id=xxx) ,需要在headers里添加appid和key。例如使用curl下载：
-    - curl '[**https://api.textin.com/ocr_image/download?image_id=xxx**](https://api.textin.com/ocr_image/download?image_id=xxx)'\
+- **image_id**：当前页图片id 。受URL参数影响，_\_<u>当URL参数image_output_type=default且get_image=page/both时返回，</u>\__详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。
+  - 下载方式：**https://api.textin.com/ocr_image/download?image_id=xxx** ,需要在headers里添加appid和key。例如使用curl下载：
+    - curl '**https://api.textin.com/ocr_image/download?image_id=xxx**'\
       --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
       --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
 - **origin_image_id**：切边或去水印前的原始页图片。受URL参数切边矫正或去水印影响，详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。仅当开启切边或去水印，_<u>image_output_type=default且get_image=page/both时返回。</u>_
