@@ -11,8 +11,15 @@ TextIn xParse为了保护您的数据隐私安全，从文档解析API返回的�
 
 **您可以参考如下教程：使用上述方法2让API返回图片链接，并完成markdown中的图片链接替换。**
 
-- 参考[快速启动](/xparse/parse-quickstart)，在 options 中设置参数 get_image 为 objects 或 both，让API返回页面内的图片对象；设置参数 image_output_type 为  default，API会返回图片URL。
-- 参考如下示例代码：提取返回结果中的图片URL将图片下载保存至本地，并将markdown中的图片链接替换为本地图片链接。
+<Tip>
+  这里为您提供了一份Textin官方pdf示例文件，您可点击下载或使用该链接：[文档解析pdf示例.pdf](https://web-api.textin.com/open/image/download?filename=c9cf7431eb314c7ba3f43ee716c799a3)
+</Tip>
+
+- 参考[快速启动](/xparse/parse-quickstart)，在 options 中设置参数 get_image 为 objects 或 both，让API返回页面内的图片对象；设置参数 image_output_type 为  default，API会返回图片URL。如下图：
+
+![Parse Image Ori Pn](/images/parse-image-ori.png)
+
+- 参考如下示例代码：提取返回结果markdown中的图片URL将图片下载保存至本地，并将markdown中的图片链接替换为本地图片链接。
 
 ```python
 import os
@@ -233,3 +240,7 @@ def main():
 if __name__ == "__main__":
     main() 
 ```
+
+- 如下图：可以看到图片已经保存到本地指定目录下，打开markdown文件可以看到图片链接已经替换为本地图片链接。
+
+![Parse Image Re Pn](/images/parse-image-re.png)

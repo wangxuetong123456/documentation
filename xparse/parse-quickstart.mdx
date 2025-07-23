@@ -16,9 +16,7 @@ TextIn xParse 文档解析API 是专为大模型重新设计的文档理解引�
 您可以参考以下示例文件和步骤，快速验证并将文档解析API接入到您的系统和应用流程中。
 
 <Tip>
-  示例文件：您可以保存至本地或直接使用URL
-
-  [**https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf**](https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf)
+  这里为您提供了一份Textin官方pdf示例文件，您可以点击下载或使用该链接：[文档解析pdf示例.pdf](https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf)
 </Tip>
 
 ### 先决条件：获取API Key
@@ -271,11 +269,17 @@ if __name__ == "__main__":
   - 0 不生成
   - 1 生成
 - **page_details**：当为1或true时，可以返回**pages**字段，保存每一页更加详细的解析结果。默认为1，返回pages字段。
+  - 0 不返回
+  - 1 返回
 - **raw_ocr**：是否返回全部文字识别结果(包含字符坐标信息)，结果字段为**raw_ocr**。默认为0，不返回。与**page_details**参数联动，当page_details为0或false时不返回。
   - 0 不返回
   - 1 返回
 - **char_details**：当为1或true时，可以返回**char_pos**字段（保存每个字符的位置信息）和**raw_ocr**中的**char\_**相关字段。默认关闭，不返回。
+  - 0 不返回
+  - 1 返回
 - **catalog_details**：当为1或true时，可以返回**catalog**字段，保存目录相关信息。与**apply_document_tree**参数联动，当apply_document_tree为0时不返回。
+  - 0 不返回
+  - 1 返回
 - **get_excel**：是否返回excel结果，结果字段为**excel_base64**，默认为0，不返回。
   - 0 不返回
   - 1 返回

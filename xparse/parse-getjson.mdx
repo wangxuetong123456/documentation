@@ -388,11 +388,11 @@ title: "返回JSON结构说明"
 
 - **markdown**：解析结果 markdown 的正文字符串。
 
-### detail：markdown 不同类型元素的详细信息
+### detail：markdown 各类型元素详细信息
 
-detail包含markdown中不同类型元素的详细信息。受URL参数**markdown_details**影响，默认生成markdown details。详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
+detail包含markdown中不同类型元素的详细信息。受URL参数**markdown_details**影响，默认返回detail字段，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
 
-- **detail**：markdown详细信息
+- **detail**：markdown各类型元素详细信息
   - **page_id**：当前元素所在页码，例如"1"。
   - **paragraph_id**：当前元素id。
   - **outline_level**：标题级别(最多支持5级标题) -1表示正文，0表示一级标题，1表示二级标题 ...
@@ -411,7 +411,7 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
   - **image_url**：图片链接，仅在**type**为**image**时返回。受URL参数**get_image**和**image_output_type**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
     - 当get_image = objects, image_output_type = default时，返回图片的url，图片默认保存30天；如需长久保存，请在有效期内下载图片并自行保存，可参考[获取图片并持久化](/xparse/parse-getimage)；
     - 或者使用image_output_type = base64str，图片以base64的方式返回。
-  - **tags**：表示段落内是否存在特殊文本，类型包括公式formula和手写体handwritten。，仅在**type**为**paragraph**时返回。
+  - **tags**：表示段落内是否存在特殊文本，类型包括公式formula和手写体handwritten，仅在**type**为**paragraph**时返回。
   - **caption_id**：表格或图片的标题id，仅在**type**为**image**或**table**时返回。
     - **page_id**：标题所在页码。
     - **paragraph_id**：标题所在段落id。
@@ -421,7 +421,7 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
     - **row_span**：单元格行跨度,默认为1。
     - **col_span**：单元格列跨度,默认为1。
     - **position**：单元格的四个角点坐标，依次为左上，右上，右下，左下。例如[10, 10, 100, 10, 100, 50, 10, 50]
-    - **origin_position**：受URL参数**切边矫正**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。仅当打开切边时返回，表示该单元格在原图中的坐标。格式同position。
+    - **origin_position**：受URL参数**切边矫正**或**去水印**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。仅当打开切边或去水印时返回，表示该单元格在原图中的坐标。格式同position。
     - **text**：单元格文本内容。
     - **type**：类型，固定为cell，表示单元格。
 
@@ -437,10 +437,10 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
   - **height**：文档页高度
   - **angle**：图像的角度（可选值0, 90, 180, 270)
   - **image_id**：当前页图片id 。受URL参数**get_image**和**image_output_type**影响，当URL参数image_output_type=default且get_image=page/both时返回，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
-    - 下载方式：[**https://api.textin.com/ocr_image/download?image_id=xxx**](https://api.textin.com/ocr_image/download?image_id=xxx) ,需要在headers里添加appid和key。例如使用curl下载：
-      - curl '\*\*https://api.textin.com/ocr_image/download?image_id=xxx\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-        --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
-        --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
+    - 下载方式：例如使用curl下载
+      - curl 'https://api.textin.com/ocr_image/download?image_id=xxx'\
+        --header 'x-ti-app-id: 你的x-ti-app-id'\
+        --header 'x-ti-secret-code: 你的x-ti-secret-code'
   - **origin_image_id**：切边或去水印前的原始页图片。受URL参数**切边矫正**或**去水印**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。仅当开启切边或去水印，image_output_type=default且get_image=page/both时返回。
     - 下载方式同image_id
   - **base64**：当前页图片的base64字符串，受URL参数**image_output_type**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。当输入参数image_output_type=base64str且get_image=page/both时返回。
@@ -463,7 +463,7 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
       - 0: 非手写文字, 一般为印刷文字
       - 1: 文字手写, 一般具备明显的书写特征
     - **char_scores**：字符置信度，值域范围0-1。 受URL参数**char_details**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。设置char_details=1时输出。
-    - **char_centers**：字符中心点坐标。
+    - **char_centers**：字符中心点坐标。受URL参数**char_details**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。设置char_details=1时输出。
     - **char_positions**：字符四边形点坐标，以顺时针构成闭合区域。 受URL参数**char_details**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。设置char_details=1时输出。
     - **char_candidates**：候选字数组，表示每一个字符的候选，与候选置信度配套使用。受URL参数**char_details**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。 设置char_details=1时输出。
     - **char_candidates_score**：候选字置信度数组，表示每一个候选字符的置信度，与候选字符配套使用。 受URL参数**char_details**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。 设置char_details=1时输出。
@@ -474,10 +474,10 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
       - **text**：文本行文字内容, 当sub_type=stamp时， text为印章上的文字。
       - **angle**：文本行文字方向, 默认为0(angle为0时， json中可能不包含angle属性)。
       - **pos**：文本行四个角点坐标。
-      - **origin_position**：表示文本行在原图中的坐标。受URL参数切边矫正影响，详情见[**快速启动-URL参数说明**](https://docs.textin.com/xparse/parse-quickstart)。仅当打开切边时返回，格式同pos。
+      - **origin_position**：表示文本行在原图中的坐标。受URL参数**切边矫正**或**去水印**影响，详情见[**快速启动-URL参数说明**](https://docs.textin.com/xparse/parse-quickstart)。仅当打开切边或去水印时返回，格式同pos。
       - **sub_type**：子类型。
-        - 当type为line时，取值范围有handwriting, formula;
-        - 当type为image时，取值范围有stamp(印章),chart(图表),qrcode(二维码),barcode(条形码)
+        - 当**type**为line时，取值范围有handwriting, formula;
+        - 当**type**为image时，取值范围有stamp(印章),chart(图表),qrcode(二维码),barcode(条形码)
       - **direction**：文字方向, 默认为0。
         - 0:横向文本;
         - 1:竖向文本;
@@ -498,7 +498,7 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
     - **textblock：段落块**
       - **type**：段落块类型， 固定为 textblock
       - **pos**：文本行四个角点
-      - **origin_position**：表示该段落在原图中的坐标。受URL参数切边矫正影响，详情见[**快速启动-URL参数说明**](https://docs.textin.com/xparse/parse-quickstart)。仅当打开切边时返回，格式同pos。
+      - **origin_position**：表示该段落在原图中的坐标。受URL参数**切边矫正**或**去水印**影响，详情见[**快速启动-URL参数说明**](https://docs.textin.com/xparse/parse-quickstart)。仅当打开切边或去水印时返回，格式同pos。
       - **content**：段落块内文本行id数据组
       - **sub_type**：段落块子类型，包括catalog(目录),text(正文普通文本),text_title(文本标题),image_title(图片标题),table_title(表格标题)
       - **continue**：段落块连续属性，用于判断完整的段落块是否被页面或栏分割，为true表示该段落块和下一个段落块连续（即两个段落块可合成一个逻辑段落块）。
@@ -513,7 +513,7 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
     - **imageblock：图像块**
       - **type**：图像块类型， 值为 image
       - **pos**：文本行四个角点坐标
-      - **origin_position**：表示该子图在原图中的坐标。受URL参数切边矫正影响，详情见[**快速启动-URL参数说明**](https://docs.textin.com/xparse/parse-quickstart)。仅当打开切边时返回，格式同pos。
+      - **origin_position**：表示该子图在原图中的坐标。受URL参数**切边矫正**或**去水印**影响，详情见[**快速启动-URL参数说明**](https://docs.textin.com/xparse/parse-quickstart)。仅当打开切边或去水印时返回，格式同pos。
       - **lines**：图像包含的文本行id
       - **content**：图像资源数据id数组
       - **caption_id**：图片的标题id
@@ -524,7 +524,7 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
       - **type**：表格块类型, 固定为table
       - **sub_type**：表格子属性，取值为bordered(有线表)或borderless(无线表)，默认为bordered(即json中无该字段时，默认值为bordered)
       - **pos**：文本行四个角点坐标
-      - **origin_position**：表示该表格在原图中的坐标。受URL参数切边矫正影响，详情见[**快速启动-URL参数说明**](https://docs.textin.com/xparse/parse-quickstart)。仅当打开切边时返回，格式同pos。
+      - **origin_position**：表示该表格在原图中的坐标。受URL参数**切边矫正**或**去水印**影响，详情见[**快速启动-URL参数说明**](https://docs.textin.com/xparse/parse-quickstart)。仅当打开切边或去水印时返回，格式同pos。
       - **rows**：表格行数
       - **cols**：表格列数
       - **columns_width**：表格列宽度列表
@@ -552,7 +552,7 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
 
 ### catalog：描述目录树的结构
 
-- **catalog**：目录树结构。受URL参数**catalog_details**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
+- **catalog**：目录树结构。受URL参数**catalog_details**和**apply_document_tree**影响，详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。
   - **toc**：返回的table of contents
     - **sub_type**：标题类型 text_title、 image_title、 table_title
     - **hierarchy**：标题层级， 1 是 一级标题, 2 是 二级标题，依次类推
@@ -568,7 +568,7 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
 
 ## metrics：每一页的信息
 
-部分信息跟**pages**字段重复，当URL参数**page_details**设置为不返回**pages**字段时，可以在**metrics**字段获取每一页的信息。
+部分信息跟**pages**字段重复，当URL参数**page_details**设置为不返回pages字段时，可以在**metrics**字段获取每一页的信息。
 
 - **metrics**：每一页信息
   - **page_image_width**：当前段落所在页的图片宽或者pdf转成的图片宽，例如"1024"。
@@ -583,10 +583,10 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
     - 180: ▼
     - 270: ◀
   - **image_id**：当前页图片id。
-    - 下载方式：https://api.textin.com/ocr_image/download?image_id=xxx, 需要在headers里添加appid和key, 有效期30天）例如使用curl下载：
-      - curl 'https://api.textin.com/ocr_image/download?image_id=xxx'
-        --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
-        --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
+    - 下载方式：例如使用curl下载
+      - curl 'https://api.textin.com/ocr_image/download?image_id=xxx'\
+        --header 'x-ti-app-id: 你的x-ti-app-id'\
+        --header 'x-ti-secret-code: 你的x-ti-secret-code'
 
 <Tip>
   **另外您也可以在**[**API**](/api-reference/endpoint/parse)**中查看Response说明以及调试查看结果。**
