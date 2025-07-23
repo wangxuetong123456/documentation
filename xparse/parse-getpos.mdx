@@ -23,7 +23,7 @@ TextIn xParse文档解析API支持返回块级坐标`position`以及字符级坐
 
 ## 上传pdf文件，获取解析结果
 
-参考[快速启动](/xparse/parse-quickstart)，上传pdf文件，获取解析结果。
+参考[快速启动](/xparse/parse-quickstart)，上传pdf文件，获取解析结果。为获得详细的页面信息和坐标数据，解析时需要设置URL参数page_details=1和markdown_details=1。
 
 本次示例文件解析结果如下（为方便展示，此处只解析一页，仅列出坐标相关数据）：
 
@@ -40,7 +40,31 @@ TextIn xParse文档解析API支持返回块级坐标`position`以及字符级坐
                   "page_id": 1,
                   "width": 1191,
                   "height": 1684,
-                  "image_id":"e5e82362aeb451fd.jpg" # 页面截图
+                  "structured": [
+                    {
+                        "blocks": [
+                            {
+                                "id": 0,
+                                "pos": [71,146,549,144,548,185,70,187],
+                                "text": "某服装企业（600398.SH）",
+                                "type": "textblock"
+                                # ...
+                            }
+                        ],
+                        "type": "header"
+                    },
+                    {
+                        "type": "header",
+                        "blocks": [
+                            {   "id": 2,
+                                "pos": [69,203,781,203,781,238,69,238],
+                                "text": "第三季度收入下滑11%，费用率提升盈利承压",
+                                "type": "textblock",
+                            }
+                        ],
+                    }
+                  ]
+
                   # ...
                 }
               ],
@@ -63,7 +87,9 @@ TextIn xParse文档解析API支持返回块级坐标`position`以及字符级坐
 }
 ```
 
-`pages`字段包含每一页的信息，detail中包含元素（文字、段落等）块的详细信息，通过`page_id`与页码关联，`position`字段表示该块的坐标信息。
+`pages`字段包含每一页的信息，其中`page_id`表示页码（从1开始），`width, height`表示识别时文档转成图像的宽高，`angle`表示将图像转正的角度（如需要），`structured`表示解析后对应页的结构化数据，包含元素块内容以及对应的坐标`pos`。
+
+`detail`中包含所有markdown块级元素（文字、段落、表格等）的详细信息，每一块通过`page_id`与页码关联，`position`字段表示该块的坐标信息。与`pages`不同的是，detail中是将markdown内容规整后元素块，比如跨页段落、跨页表格在detail中已经合并，采用了更好的语义上的分割，可以直接用于下游需要分块的应用，而`pages`中最大限度地保留了每一页的原始信息。
 
 **坐标系统说明**
 
@@ -76,9 +102,12 @@ TextIn xParse文档解析API支持返回块级坐标`position`以及字符级坐
           ↑左上    ↑右上    ↑右下    ↑左下
 ```
 
+该坐标表示在识别时以页面左上角为原点，宽高为`page.width`、`page.height`画布下的绝对坐标，单位为像素（px）。
+
 比如上述接口返回：
 
 ```json
+"pages": [{ "width": 1191, "height": 1684}]
 "position": [69,203,781,203,781,238,69,238]
 ```
 
@@ -86,411 +115,132 @@ TextIn xParse文档解析API支持返回块级坐标`position`以及字符级坐
 
 ```
 图像坐标系 (原点在左上角)
-┌─────────────────────────────────────────┐
+┌───────────────1191────────────────── x
 │(0,0)
 │
 │
-│    (69,203) ───────────── (781,203)
-│    │                                     │     
-│    │             文本区域                 │ 
-│    │                                     │
-│    (69,238) ───────────── (781,238)
+│      (69,203) ───────────── (781,203)
+│          │                        │     
+1684                 文本区域           
+│          │                        │
+│      (69,238) ───────────── (781,238)
 │
 │
 │
 │
+y
 ```
+
+下面演示如何从pages中和detail中获取页面和元素块坐标信息，并在原文档上绘制标注。
+
+原文档页面图片可以通过设置参数`get_image="page"或"both"`返回，
+您将获得每一页的image_id或者base64（详见[JSON结构说明](/xparse/parse-getjson)）用于预览，也可以手动将您的原文档转成图片，
+只要保证每一页的图片跟上述`page.width`、`page.height`同比例渲染，`position`中的坐标值也需要跟随页面同比例缩放，，即可准确绘制。
+
 
 ## 从API返回结果中获取坐标数据
 
 从json结果提取出每一页的元素坐标信息，输出到二维数组：
 
 ```python
-import json
-from typing import List, Dict, Any
+def extract_coordinates_from_parse_result(parse_result):
+    """
+    从API返回的解析结果中提取每页的宽高、角度和所有detail块的坐标信息
+    返回: [{width, height, angle, details: [detail, ...]}, ...]
+    """
+    result = parse_result.get("result", {})
+    pages = result.get("pages", [])
+    details = result.get("detail", [])
 
-def extract_coordinates_from_parse_result(parse_result: Dict[str, Any]) -> List[List[Dict[str, Any]]]:
-    """
-    从API返回结果中提取每页的坐标信息
-    
-    Args:
-        parse_result: 接口返回的完整结果
-        
-    Returns:
-        二维数组，每个元素包含该页的所有坐标信息
-        格式: [[page1_coords], [page2_coords], ...]
-    """
-    
-    # 检查结果结构
-    if 'result' not in parse_result:
-        print("警告: 未找到result字段")
-        return []
-    
-    result = parse_result['result']
-    pages_coordinates = []
-    
-    # 获取页面信息
-    pages_info = {}
-    if 'pages' in result:
-        for page in result['pages']:
-            page_id = page.get('page_id', 1)
-            pages_info[page_id] = {
-                'width': page.get('width', 0),
-                'height': page.get('height', 0),
-                'angle': page.get('angle', 0)
-            }
-    
-    # 从detail字段提取坐标信息
-    if 'detail' in result:
-        # 按页面分组
-        pages_dict = {}
-        
-        for detail in result['detail']:
-            page_id = detail.get('page_id', 1)
-            if page_id not in pages_dict:
-                pages_dict[page_id] = []
-            
-            # 提取坐标信息
-            if 'position' in detail:
-                coord_info = {
-                    'text': detail.get('text', ''),
-                    'position': detail['position'],
-                    'page_id': page_id,
-                    'type': detail.get('type', 'paragraph')
-                }
-                pages_dict[page_id].append(coord_info)
-        
-        # 转换为二维数组，按页码排序
-        max_page = max(pages_dict.keys()) if pages_dict else 0
-        for page_id in range(1, max_page + 1):  # 页码从1开始
-            pages_coordinates.append(pages_dict.get(page_id, []))
-    
-    return pages_coordinates
+    # 按页组织details
+    page_map = {}
+    for page in pages:
+        page_id = page.get("page_id", 1)
+        page_map[page_id] = {
+            "width": page.get("width", 0),
+            "height": page.get("height", 0),
+            "angle": page.get("angle", 0),
+            "details": []
+        }
+    for d in details:
+        page_id = d.get("page_id", 1)
+        if page_id in page_map:
+            page_map[page_id]["details"].append(d)
+    # 保证顺序
+    return [page_map[pid] for pid in sorted(page_map.keys())]
 ```
 
 ## 绘制坐标框到原图
 
-```python expandable
-import json
-import cv2
-from PIL import Image, ImageDraw, ImageFont
+```python
 import fitz  # PyMuPDF
+from PIL import Image, ImageDraw
 import os
-from typing import List, Dict, Any
 
-class PDFCoordinateDrawer:
-    """PDF坐标框绘制器"""
-    
-    def __init__(self, pdf_path: str, coordinates: List[List[Dict[str, Any]]]):
-        """
-        初始化绘制器
-        
-        Args:
-            pdf_path: PDF文件路径
-            coordinates: 坐标信息二维数组
-        """
-        self.pdf_path = pdf_path
-        self.coordinates = coordinates
-        self.doc = fitz.open(pdf_path)
-        
-    def pdf_to_images(self, output_dir: str = "./temp_images", dpi: int = 144) -> List[str]:
-        """
-        将PDF转换为图片
-        
-        Args:
-            output_dir: 输出目录
-            dpi: 分辨率
-            
-        Returns:
-            图片文件路径列表
-        """
-        os.makedirs(output_dir, exist_ok=True)
-        image_paths = []
-        
-        # 计算缩放因子
-        zoom = dpi / 72  # 72是PDF的默认DPI
-        mat = fitz.Matrix(zoom, zoom)
-        
-        for page_num in range(len(self.doc)):
-            page = self.doc[page_num]
-            pix = page.get_pixmap(matrix=mat)
-            
-            # 保存图片
-            image_path = os.path.join(output_dir, f"page_{page_num + 1}.png")
-            pix.save(image_path)
-            image_paths.append(image_path)
-            
-        return image_paths
-    
-    def draw_coordinates_on_image(self, image_path: str, page_coordinates: List[Dict[str, Any]], 
-                                 output_path: str = None, show_text: bool = True,
-                                 line_width: int = 2, font_size: int = 12) -> str:
-        """
-        在图片上绘制坐标框
-        
-        Args:
-            image_path: 图片路径
-            page_coordinates: 该页的坐标信息
-            output_path: 输出路径
-            show_text: 是否显示文本
-            line_width: 线条宽度
-            font_size: 字体大小
-            
-        Returns:
-            输出图片路径
-        """
-        # 读取图片
-        image = cv2.imread(image_path)
-        if image is None:
-            raise Exception(f"无法读取图片: {image_path}")
-        
-        # 转换为RGB格式
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        pil_image = Image.fromarray(image_rgb)
-        draw = ImageDraw.Draw(pil_image)
-        
-        # 定义颜色映射
-        color_map = {
-            'paragraph': (255, 0, 0, 128),      # 红色
-            'title': (0, 255, 0, 128),          # 绿色
-            'table': (0, 0, 255, 128),          # 蓝色
-            'image': (255, 255, 0, 128),        # 黄色
-            'formula': (255, 0, 255, 128),      # 紫色
-            'stamp': (0, 255, 255, 128),        # 青色
-            'unknown': (128, 128, 128, 128)     # 默认灰色
-        }
-        
-        # 尝试加载字体
-        try:
-            font = ImageFont.truetype("arial.ttf", font_size)
-        except:
-            try:
-                font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", font_size)  # macOS
-            except:
-                font = ImageFont.load_default()
-        
-        # 绘制每个坐标区域
-        for i, coord in enumerate(page_coordinates):
-            position = coord['position']
-            coord_type = coord.get('type', 'paragraph')
-            text = coord.get('text', '')
-            
-            if len(position) < 8:
-                continue
-            
-            # 获取颜色
-            color = color_map.get(coord_type, color_map['unknown'])
-            
-            # 绘制矩形
+# pdf转图片，获取页面图片
+def pdf_to_images(pdf_path, output_dir="./temp_images"):
+    os.makedirs(output_dir, exist_ok=True)
+    doc = fitz.open(pdf_path)
+    zoom = 144 / 72 # dpi=144，图片更清晰
+    mat = fitz.Matrix(zoom, zoom)
+    image_paths = []
+    for i, page in enumerate(doc):
+        pix = page.get_pixmap(matrix=mat)
+        img_path = os.path.join(output_dir, f"page_{i+1}.png")
+        pix.save(img_path)
+        image_paths.append(img_path)
+    doc.close()
+    return image_paths
+
+# 绘制一页坐标
+def draw_boxes_on_image(image_path, details, page_width, page_height, color=(26,102,255), line_width=2):
+    image = Image.open(image_path).convert("RGB")
+    draw = ImageDraw.Draw(image)
+    img_w, img_h = image.size
+    # 根据解析时的页面宽高缩放适配，确保绘制坐标准确
+    scale_x = img_w / page_width if page_width else 1
+    scale_y = img_h / page_height if page_height else 1
+    for d in details:
+        pos = d.get("position")
+        if pos and len(pos) == 8:
             points = [
-                (position[0], position[1]),  # 左上
-                (position[2], position[3]),  # 右上
-                (position[4], position[5]),  # 右下
-                (position[6], position[7])   # 左下
+                (pos[0]*scale_x, pos[1]*scale_y),
+                (pos[2]*scale_x, pos[3]*scale_y),
+                (pos[4]*scale_x, pos[5]*scale_y),
+                (pos[6]*scale_x, pos[7]*scale_y),
+                (pos[0]*scale_x, pos[1]*scale_y)
             ]
-            
-            # 绘制边框
-            draw.polygon(points, outline=color[:3], width=line_width)     
-        
-        # 保存结果
-        if output_path is None:
-            base_name = os.path.splitext(image_path)[0]
-            output_path = f"{base_name}_annotated.png"
-        
-        pil_image.save(output_path)
-        print(f"标注图片已保存到: {output_path}")
-        
-        return output_path
-    
-    def draw_all_pages(self, output_dir: str = "./annotated_images", 
-                      dpi: int = 144, show_text: bool = True) -> List[str]:
-        """
-        绘制所有页面的坐标框
-        
-        Args:
-            output_dir: 输出目录
-            dpi: 分辨率
-            show_text: 是否显示文本
-            
-        Returns:
-            标注后的图片路径列表
-        """
-        os.makedirs(output_dir, exist_ok=True)
-        annotated_images = []
-        
-        # 转换PDF为图片
-        print("正在转换PDF为图片...")
-        temp_dir = "./temp_pdf_images"
-        image_paths = self.pdf_to_images(temp_dir, dpi)
-        
-        # 为每页绘制坐标框
-        for page_idx, (image_path, page_coordinates) in enumerate(zip(image_paths, self.coordinates)):
-            print(f"正在处理第 {page_idx + 1} 页...")
-            
-            output_path = os.path.join(output_dir, f"page_{page_idx + 1}_annotated.png")
-            annotated_path = self.draw_coordinates_on_image(
-                image_path, page_coordinates, output_path, show_text
-            )
-            annotated_images.append(annotated_path)
-        
-        # 清理临时文件
-        import shutil
-        if os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
-        
-        return annotated_images
-    
-    def create_coordinate_legend(self, output_path: str = "./coordinate_legend.png") -> str:
-        """
-        创建坐标类型图例
-        
-        Args:
-            output_path: 输出路径
-            
-        Returns:
-            图例图片路径
-        """
-        # 创建图例图片
-        legend_width = 400
-        legend_height = 300
-        legend_image = Image.new('RGB', (legend_width, legend_height), (255, 255, 255))
-        draw = ImageDraw.Draw(legend_image)
-        
-        # 定义颜色映射
-        color_map = {
-            'paragraph': (255, 0, 0),
-            'title': (0, 255, 0),
-            'table': (0, 0, 255),
-            'image': (255, 255, 0),
-            'formula': (255, 0, 255),
-            'stamp': (0, 255, 255),
-            'unknown': (128, 128, 128)
-        }
-        
-        try:
-            font = ImageFont.truetype("arial.ttf", 14)
-        except:
-            font = ImageFont.load_default()
-        
-        y_offset = 20
-        for coord_type, color in color_map.items():
-            # 绘制颜色示例
-            draw.rectangle([20, y_offset, 60, y_offset + 20], fill=color, outline=(0, 0, 0))
-            
-            # 绘制文本
-            draw.text((80, y_offset), coord_type, fill=(0, 0, 0), font=font)
-            
-            y_offset += 30
-        
-        # 添加标题
-        draw.text((20, 10), "坐标类型图例", fill=(0, 0, 0), font=font)
-        
-        legend_image.save(output_path)
-        print(f"图例已保存到: {output_path}")
-        
-        return output_path
-    
-    def close(self):
-        """关闭PDF文档"""
-        if self.doc:
-            self.doc.close()
+            draw.line(points, fill=color, width=line_width)
+    out_path = image_path.replace('.png', '_boxed.png')
+    image.save(out_path)
+    return out_path
 
-def extract_coordinates_from_parse_result(parse_result: Dict[str, Any]) -> List[List[Dict[str, Any]]]:
-    """从解析结果中提取坐标信息"""
-    if 'result' not in parse_result:
-        return []
-    
-    result = parse_result['result']
-    pages_coordinates = []
-    
-    if 'detail' in result:
-        pages_dict = {}
-        
-        for detail in result['detail']:
-            page_id = detail.get('page_id', 1)
-            if page_id not in pages_dict:
-                pages_dict[page_id] = []
-            
-            if 'position' in detail:
-                coord_info = {
-                    'text': detail.get('text', ''),
-                    'position': detail['position'],
-                    'page_id': page_id,
-                    'type': detail.get('type', 'paragraph')
-                }
-                pages_dict[page_id].append(coord_info)
-        
-        max_page = max(pages_dict.keys()) if pages_dict else 0
-        for page_id in range(1, max_page + 1):
-            pages_coordinates.append(pages_dict.get(page_id, []))
-    
-    return pages_coordinates
+# 绘制所有页面全部坐标
+def annotate_pdf_with_boxes(pdf_path, page_details, output_dir="./annotated_images"):
+    os.makedirs(output_dir, exist_ok=True)
+    image_paths = pdf_to_images(pdf_path, output_dir=output_dir)
+    result_paths = []
+    for i, page in enumerate(page_details):
+        img_path = image_paths[i]
+        out_path = draw_boxes_on_image(
+            img_path, 
+            page["details"], 
+            page["width"], 
+            page["height"]
+        )
+        result_paths.append(out_path)
+    return result_paths
 
 # 使用示例
-def main():
-    """主函数示例"""
-    
-    # 配置参数
-    PDF_PATH = "your_document.pdf"  # 替换为实际的PDF路径
-    PARSE_RESULT_FILE = "parse_result.json"  # 解析结果文件
-    
-    # 1. 加载解析结果
-    print("正在加载解析结果...")
-    with open(PARSE_RESULT_FILE, 'r', encoding='utf-8') as f:
-        parse_result = json.load(f)
-    
-    # 2. 提取坐标信息
-    print("正在提取坐标信息...")
-    coordinates = extract_coordinates_from_parse_result(parse_result)
-    print(f"提取到 {len(coordinates)} 页的坐标信息")
-    
-    # 3. 创建绘制器
-    drawer = PDFCoordinateDrawer(PDF_PATH, coordinates)
-    
-    try:
-        # 4. 绘制所有页面的坐标框
-        print("正在绘制坐标框...")
-        annotated_images = drawer.draw_all_pages(
-            output_dir="./annotated_images",
-            dpi=144,
-            show_text=True
-        )
-        
-        # 5. 创建图例
-        drawer.create_coordinate_legend()
-        
-        print("\n=== 处理完成 ===")
-        print(f"标注后的图片保存在: ./annotated_images/")
-        for i, img_path in enumerate(annotated_images):
-            print(f"  第{i+1}页: {img_path}")
-        
-    finally:
-        drawer.close()
-
-# 简化版使用函数
-def draw_coordinates_on_pdf(pdf_path: str, coordinates: List[List[Dict[str, Any]]], 
-                           output_dir: str = "./output") -> List[str]:
-    """
-    简化版PDF坐标绘制函数
-    
-    Args:
-        pdf_path: PDF文件路径
-        coordinates: 坐标信息二维数组
-        output_dir: 输出目录
-        
-    Returns:
-        标注后的图片路径列表
-    """
-    drawer = PDFCoordinateDrawer(pdf_path, coordinates)
-    
-    try:
-        annotated_images = drawer.draw_all_pages(output_dir)
-        return annotated_images
-    finally:
-        drawer.close()
-
 if __name__ == "__main__":
-    main()
+    import json
+    PDF_PATH = "your_document.pdf"
+    JSON_PATH = "parse_result.json"
+    with open(JSON_PATH, "r", encoding="utf-8") as f:
+        parse_result = json.load(f)
+    page_details = extract_coordinates_from_parse_result(parse_result)
+    result_imgs = annotate_pdf_with_boxes(PDF_PATH, page_details)
+    print("标注图片：", result_imgs)
 ```
 
 ### 代码使用说明
@@ -498,7 +248,7 @@ if __name__ == "__main__":
 **1. 准备环境**
 
 ```bash
-pip install PyMuPDF opencv-python pillow
+pip install PyMuPDF pillow
 ```
 
 **2. 绘制图片和坐标**
@@ -512,12 +262,12 @@ python3 pdf_coordinate_drawer.py
 **3. 输出结果**
 
 - 每页生成一个标注后的PNG图片
-- 坐标框用不同颜色表示不同类型
+- 坐标框用指定颜色绘制，您也可以自定义颜色，不同类型元素用不同颜色绘制
 - 生成坐标类型图例
 
 该示例生成的标注最终效果如下：
 
-![](/images/parse-getpos-generated.png)
+![](/images/parse-getpos-annotate.png)
 
 可以看到，Textin xParse针对复杂布局的文档，能够精准识别并细粒度还原坐标，方便您将解析结果与原文件进行对比，查看解析效果以及审核校正。
 
@@ -531,10 +281,19 @@ python3 pdf_coordinate_drawer.py
 
 **可能原因：**
 
-- DPI设置与实际图片DPI不匹配
+- 文档转图片使用了跟解析时不同的DPI，且坐标没有根据解析返回的页面宽高缩放适配
 - 页面旋转角度未正确处理
 
 **解决方案**
 
-- 调整DPI与实际识别所用DPI一致
+- 文档转图片的时候使用跟解析相同的DPI，或者渲染时将页面和坐标值根据解析返回的页面宽高缩放适配（推荐，参考上述代码示例）
 - 确认页面是否经过旋转(angle)，绘制时设置angle修正角度
+
+### **如何处理跨页段落和表格**
+
+跨页信息可以在两个位置获取：
+
+- 在pages的structure中：跨页信息通过continue和next_page_id、next_para_id表示
+- 在detail中：跨页信息通过通过split_section_page_ids和split_section_positions表示
+
+更多信息请参考[JSON结构说明](/xparse/parse-getjson)。

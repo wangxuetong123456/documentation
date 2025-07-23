@@ -181,16 +181,16 @@ paths:
             - 1 返回
         # - in: query
         #   required: false
-          #name: crop_dewarp
-          # name: 切边矫正(****联系商务获取参数名****)
-          # schema:
-          #   type: integer
-          #   default: 0
-          #   enum: [0, 1]
-          # description: |
-          #   是否进行切边矫正处理，默认为0，不进行切边矫正
-          #   - 0 不进行切边矫正
-          #   - 1 进行切边矫正
+        #name: crop_dewarp
+        # name: 切边矫正(****联系商务获取参数名****)
+        # schema:
+        #   type: integer
+        #   default: 0
+        #   enum: [0, 1]
+        # description: |
+        #   是否进行切边矫正处理，默认为0，不进行切边矫正
+        #   - 0 不进行切边矫正
+        #   - 1 进行切边矫正
 
         # - in: query
         #   required: false
@@ -857,22 +857,27 @@ components:
               type:
                 type: string
                 description: 类型，固定为cell，表示单元格
-        #split_section_page_ids:灰度使用中，暂不在公有云公开
-        #  type: array
-        #  description: 当表格有合并时，记录合并前各个子表格所在的页的id，方便前端渲染
-        #  example: [1, 2, 3]
-        #  items:
-        #    type: integer
-        #split_section_positions:
-        #  type: array
-        #  description: 当表格有合并时，记录合并前各个子表格所在页的位置，方便前端渲染
-        #  items:
-        #    type: array
-        #    items:
-        #      maxItems: 8
-        #      minItems: 8
-        #      type: integer
-        #  example: [[0, 0, 100, 100, 100, 200 ,0, 200], [0, 0, 100, 100, 100, 200 ,0, 200],[0, 0, 100, 100, 100, 200 ,0, 200]]
+        split_section_page_ids:
+          type: array
+          description: 当表格/段落有合并时，记录合并前各个子表格/段落所在的页的id
+          example: [1, 2, 3]
+          items:
+            type: integer
+        split_section_positions:
+          type: array
+          description: 当表格/段落有合并时，记录合并前各个子表格/段落所在页的位置，位置所属的页码与split_section_page_ids按索引一一对应，如split_section_positions[2]所属的页码为split_section_page_ids[2]
+          items:
+            type: array
+            items:
+              maxItems: 8
+              minItems: 8
+              type: integer
+          example:
+            [
+              [0, 0, 100, 100, 100, 200, 0, 200],
+              [0, 0, 100, 100, 100, 200, 0, 200],
+              [0, 0, 100, 100, 100, 200, 0, 200],
+            ]
       required:
         - page_id
         - paragraph_id
