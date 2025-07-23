@@ -209,7 +209,7 @@ title: "返回JSON结构说明"
   - 下载方式：例如使用curl下载：
     - curl '[https://api.textin.com/ocr_image/download?image_id=xxx'](https://api.textin.com/ocr_image/download?image_id=xxx)
 
-       --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
+      --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
       --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
 - **origin_image_id**：切边或去水印前的原始页图片。受URL参数**切边矫正**或**去水印**影响，详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。仅当开启切边或去水印时返回。
   - 下载方式同image_id
@@ -250,7 +250,7 @@ title: "返回JSON结构说明"
 one_to_one：表示单值抽取的key；item_list：表示表格的抽取
 
 - **row**：表格类型，"item_list"
-- **{key}**：虚拟字段，真实调用时为抽取的key，"one_to_one"，例如：
+- ：虚拟字段，真实调用时为抽取的key，"one_to_one"，例如：
   - **additionalProp1**：one_to_one
   - **additionalProp2**：one_to_one
   - **additionalProp3**：one_to_one
