@@ -4,7 +4,7 @@ title: "多并发请求"
 
 在实际使用过程中，您可能会需要在一定时间内集中性的批量解析文档；在这种情况下，即使TextIn xParse 文档解析API本身的速度足够快，但依次逐个解析大批量文档所需要的总耗时也可能会较长。
 
-针对这种情况，TextIn xParse 文档解析API支持多并发请求，默认2 QPS，最大可支持10 QPS。帮助您快速高效的完成大批量文档解析工作。
+针对这种情况，TextIn xParse 文档解析API支持多并发请求，默认2 QPS，如果您有更大并发的需求，可以联系我们进行[商务咨询](https://www.textin.com/contact?type=28)。帮助您快速高效的完成大批量文档解析工作。
 
 ### 多并发测试
 
@@ -117,7 +117,7 @@ def main():
             with open("result.md", "w", encoding="utf-8") as f:
                 f.write(markdown_content)
 
-        print(response)
+        print("request time: ", resp.elapsed.total_seconds())
     except Exception as e:
         print(f"Error: {e}")
 

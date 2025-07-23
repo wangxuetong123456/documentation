@@ -250,7 +250,7 @@ title: "返回JSON结构说明"
 one_to_one：表示单值抽取的key；item_list：表示表格的抽取
 
 - **row**：表格类型，"item_list"
-- ：虚拟字段，真实调用时为抽取的key，"one_to_one"，例如：
+- **key**：虚拟字段，真实调用时为抽取的key，"one_to_one"，例如：
   - **additionalProp1**：one_to_one
   - **additionalProp2**：one_to_one
   - **additionalProp3**：one_to_one
@@ -311,17 +311,6 @@ one_to_one：表示单值抽取的key；item_list：表示表格的抽取
     - 发票专用章
     - 业务专用章
   - **value**：印章的文本内容
-
-### documents：文档每一页的文档元素信息
-
-- **page_id**：所在页
-- **position**：坐标信息
-- **paragraph_id**：当前段落id
-- **type**：当前元素的类型
-  - **paragraph**：段落类型，包括正文、标题、公式等文字信息
-  - **image**：图片
-  - **table**：表格，当为表格时，text里存储的为表格的html信息
-- **text**：文字信息
 
 ### 其他result字段
 

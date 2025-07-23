@@ -240,7 +240,7 @@ if __name__ == "__main__":
   - 当parse_mode=auto时，默认动态，支持72，144，216；
   - 当parse_mode=scan时，默认144，支持72，144，216。
 - **apply_document_tree**：**markdown**中是否生成标题层级，默认为1，生成标题。
-  - 0 不生成
+  - 0 不生成标题：同时也不会返回**catalog**字段
   - 1 生成标题
 - **table_flavor**：**markdown**里的表格格式，默认为html，按html语法输出表格。
   - md 按md语法输出表格
@@ -259,28 +259,28 @@ if __name__ == "__main__":
   - annotation 以注释格式插入到markdown中。页眉页脚中的图片只保留文本，图片base64或url不保留
   - body 以正文格式插入到markdown中
 - **formula_level**：公式识别等级，默认为0，全识别。
-  - 0 全识别
+  - 0 行间公式和行内公式都识别
   - 1 仅识别行间公式，行内公式不识别
-  - 2 不识别
+  - 2 不识别公式
 - **apply_merge**：是否进行段落合并和表格合并。默认为1，合并段落和表格。
   - 0 不合并
   - 1 合并
-- **markdown_details**：是否生成**markdown details**（即返回结果中的**detail**字段）。默认为1，返回detail字段。
-  - 0 不生成
-  - 1 生成
-- **page_details**：当为1或true时，可以返回**pages**字段，保存每一页更加详细的解析结果。默认为1，返回pages字段。
+- **markdown_details**：是否返回结果中的**detail**字段。默认为1，返回detail字段，保存markdown各类型元素的详细信息。
+  - 0 不返回
+  - 1 返回
+- **page_details**：是否返回结果中的**pages**字段。默认为1，返回pages字段，保存每一页更加详细的解析结果。
   - 0 不返回
   - 1 返回
 - **raw_ocr**：是否返回全部文字识别结果(包含字符坐标信息)，结果字段为**raw_ocr**。默认为0，不返回。与**page_details**参数联动，当page_details为0或false时不返回。
   - 0 不返回
   - 1 返回
-- **char_details**：当为1或true时，可以返回**char_pos**字段（保存每个字符的位置信息）和**raw_ocr**中的**char\_**相关字段。默认关闭，不返回。
+- **char_details**：是否返回结果中的**char_pos**字段（保存每个字符的位置信息）和**raw_ocr**中的**char\_**相关字段。默认为0，不返回。
   - 0 不返回
   - 1 返回
-- **catalog_details**：当为1或true时，可以返回**catalog**字段，保存目录相关信息。与**apply_document_tree**参数联动，当apply_document_tree为0时不返回。
+- **catalog_details**：是否返回结果中的**catalog**字段，保存目录相关信息。与**apply_document_tree**参数联动，当apply_document_tree为0时不返回。
   - 0 不返回
   - 1 返回
-- **get_excel**：是否返回excel结果，结果字段为**excel_base64**，默认为0，不返回。
+- **get_excel**：是否返回excel的base64结果，结果字段为**excel_base64**，可以根据该字段进行后处理保存excel文件。默认为0，不返回。
   - 0 不返回
   - 1 返回
 - **crop_image**（**切边矫正**）：是否进行切边矫正预处理，默认为0，不进行切边矫正。
@@ -289,7 +289,7 @@ if __name__ == "__main__":
 - **remove_watermark**（**去水印**）：是否进行去水印预处理，默认为0，不去水印。
   - 0 不去水印
   - 1 去水印
-- **apply_chart**（**图表识别**）：是否开启图表识别预处理，开启图表识别会将识别到的图表以表格形式输出。默认为0，不进行图表识别。
+- **apply_chart**（**图表识别**）：是否开启图表识别，开启图表识别会将识别到的图表以表格形式输出。默认为0，不进行图表识别。
   - 0 不开启图表识别
   - 1 开启图表识别
 
