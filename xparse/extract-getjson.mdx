@@ -167,15 +167,7 @@ title: "返回JSON结构说明"
 
 文档抽取API会在返回结果的result对象中包含以下关键信息。
 
-- **page_count**：智能文档抽取处理的文档页数，超过最大页数限制时（100页），返回为最大页数。
-- **finish_reason**：推理结束的原因
-  - stop：正常推理结束
-  - length：token超出限制而结束
-- **rotated_image_width**：正方向时文档的宽，仅文档为图片时其值有效；取值范围**x \> 0**；例如"1000"。
-- **rotated_image_height**：正方向时文档高，仅文档为图片时其值有效；取值范围**x \> 0**；例如"2000"。
-- **image_angle**：文档角度，指原文档需要经过逆时针旋转多少度，才能得到正方向的文档，仅文档为图片时其值有效；取值范围**0,90,180,270**；例如"90"。
-
-### llm_json：大模型抽取处理后的原始抽取结果
+### llm_json：prompt模式抽取的原始结果
 
 仅当传入prompt参数时返回，返回简化的键值对结构，方便直接使用。
 
@@ -189,9 +181,9 @@ title: "返回JSON结构说明"
 }
 ```
 
-### raw_json：大模型抽取带坐标信息的抽取结果
+### raw_json：prompt模式抽取的带坐标信息抽取结果
 
-仅当传入prompt参数时返回，包含详细的位置信息和边界框数据，用于高级处理场景。
+仅当传入prompt参数时返回，包含详细的坐标位置信息和边界框数据，用于高级处理场景。
 
 由于使用大模型对用户输入的信息进行抽取，具体的字段名称无法预先确定，但每个字段值都遵循统一的结构格式，包含抽取值、页码信息和详细的坐标数据。
 
@@ -199,37 +191,38 @@ title: "返回JSON结构说明"
 - **pages**：字段所在的页码列表，例如[1]
 - **bounding_regions**：字段的边界框信息，包含详细的位置和字符坐标。
   - **position**：字段在文档中的坐标位置，例如[201,199,308,199,308,230,201,230]
-  - **char_pos**：每个字符的详细坐标信息，例如[[202,202,218,201,218,230,201,229],[220,202,235,202,236,228,220,229]]
   - **page_id**：所在页码ID，例如"1"
   - **value**：该边界框内的文本内容，"011892"
+  - **char_pos**：每个字符的详细坐标信息，例如[[202,202,218,201,218,230,201,229],[220,202,235,202,236,228,220,229]]
 
-### pages：大模型抽取的页面信息，按页组织
+### pages：prompt模式抽取的页面信息，按页组织
 
 仅当传入prompt参数时返回，当文档为多页结构时，返回每一页的详细信息，用于坐标回显。
 
 - **status**：表示当前页的引擎输出状态，或者error_message。
+- **durations**：当前页解析总耗时(毫秒)
 - **page_id**：当前页码 (若为流式文件, 页码置为0)
-- **durations**：当前页总耗时(毫秒)
-- **image_id**：当前页图片id 。受URL参数影响，\_\_<u>当URL参数image_output_type=default且get_image=page/both时返回，</u>\_\_详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。
-  - 下载方式：[**https://api.textin.com/ocr_image/download?image_id=xxx**](https://api.textin.com/ocr_image/download?image_id=xxx) ,需要在headers里添加appid和key。例如使用curl下载：
-    - curl '\*\*https://api.textin.com/ocr_image/download?image_id=xxx\*\*'\\
-      --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
-      --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
-- **origin_image_id**：切边或去水印前的原始页图片。受URL参数切边矫正或去水印影响，详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。仅当开启切边或去水印，_<u>image_output_type=default且get_image=page/both时返回。</u>_
-  - 下载方式同image_id
 - **width**：文档页宽度
 - **height**：文档页高度
-- **angle**：图像的角度（当输入为图像时，默认为0， 可选值0, 90, 180, 270)
+- **angle**：图像的角度（可选值0, 90, 180, 270)
+- **image_id**：当前页图片id 。
+  - 下载方式：例如使用curl下载：
+    - curl '[https://api.textin.com/ocr_image/download?image_id=xxx'](https://api.textin.com/ocr_image/download?image_id=xxx)
 
-### usage：大模型抽取的token消耗情况
+       --header 'x-ti-app-id: c81f\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*e9ff'\
+      --header 'x-ti-secret-code: 5508\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*1c17'
+- **origin_image_id**：切边或去水印前的原始页图片。受URL参数**切边矫正**或**去水印**影响，详情见[快速启动-URL参数说明](/xparse/extract-quickstart)。仅当开启切边或去水印时返回。
+  - 下载方式同image_id
+
+### usage：prompt模式抽取的大模型token消耗情况
 
 仅当传入prompt参数时返回。
 
-- **prompt_tokens**：大模型抽取消耗输入token数量。
-- **completion_tokens**：大模型抽取消耗输出token数量。
-- **total_tokens**：大模型抽取消耗token总量。
+- **prompt_tokens**：大模型抽取输入消耗token数量。
+- **completion_tokens**：大模型抽取输出消耗token数量。
+- **total_tokens**：大模型抽取总消耗token数量。
 
-### details：文档抽取结果
+### details：字段模式抽取的结果
 
 - **additionalProp1**
   - **value**：字段识别结果
@@ -239,26 +232,33 @@ title: "返回JSON结构说明"
     - (4, 5) 右下角坐标
     - (6, 7) 左下角坐标
   - **description**：字段中文描述
-  - _<u>lines</u>_
+  - **lines**：抽取结果的文本行信息
+    - **page**：所在页数
+    - **text**：文本内容
+    - **pos**：文本行坐标，例如[100, 200, 200, 200, 300, 200, 100, 300]
+    - **angle**：文本行旋转角度，例如"90"
+    - **char_pos**：文本行字符坐标
 - **additionalProp2**
   - 同**additionalProp1**
 - **additionalProp3**
   - 同**additionalProp1**
-- **row**：_<u>table_header的抽取结果</u>_
+- **row**：table_header的抽取结果
+  - 同**additionalProp1**
 
 ### category：`details`字段里的数据类型
 
 one_to_one：表示单值抽取的key；item_list：表示表格的抽取
 
-- **additionalProp1**：one_to_one
-- **additionalProp2**：one_to_one
-- **additionalProp3**：one_to_one
-- **row**：表格类型
+- **row**：表格类型，"item_list"
+- **{key}**：虚拟字段，真实调用时为抽取的key，"one_to_one"，例如：
+  - **additionalProp1**：one_to_one
+  - **additionalProp2**：one_to_one
+  - **additionalProp3**：one_to_one
 
 ### detail_structure：字段的识别信息
 
-- **doc_type**：文档的类型
-- **page_range**：抽取的信息所在页范围
+- **doc_type**：文档的类型，例如"doc"
+- **page_range**：抽取的信息所在页范围，例如[1, 2]
 - **tables**：表格信息
   - **position**：坐标
   - **page_number**：所在页
@@ -267,8 +267,14 @@ one_to_one：表示单值抽取的key；item_list：表示表格的抽取
   - **row_count**：行数
   - **column_count**：列数
   - **cells**：单元格信息
-  - **title**：_<u>title</u>_
-- **category**：结构化抽取出来的所有字段
+    - **value**：字段识别结果
+    - **bounding_regions**：边界框信息
+      - **page_number**：所在页码
+      - **value**：文本内容
+      - **position**：文本的坐标
+      - **char_pos**：每个字符的坐标
+  - **title**：title，例如"row"
+- **category**：结构化抽取出来的所有字段，例如["标题", "性别"]
 - **fields**：提取的字段结构化结果
   - **additionalProp1**
     - **value**：字段识别结果
@@ -316,6 +322,16 @@ one_to_one：表示单值抽取的key；item_list：表示表格的抽取
   - **image**：图片
   - **table**：表格，当为表格时，text里存储的为表格的html信息
 - **text**：文字信息
+
+### 其他result字段
+
+- **page_count**：智能文档抽取处理的文档页数，超过最大页数限制时（20页/100页），返回为最大页数。
+- **finish_reason**：推理结束的原因
+  - stop：正常推理结束
+  - length：token超出限制而结束
+- **rotated_image_width**：正方向时文档的宽，仅文档为图片时其值有效；取值范围**x \> 0**；例如"1000"。
+- **rotated_image_height**：正方向时文档高，仅文档为图片时其值有效；取值范围**x \> 0**；例如"2000"。
+- **image_angle**：文档角度，指原文档需要经过逆时针旋转多少度，才能得到正方向的文档，仅文档为图片时其值有效；取值范围**0,90,180,270**；例如"90"。
 
 <Tip>
   **另外您也可以在**[**API**](/api-reference/endpoint/extract)**中查看Response说明以及调试查看结果。**

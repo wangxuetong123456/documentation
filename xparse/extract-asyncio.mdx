@@ -2,19 +2,9 @@
 title: "异步请求"
 ---
 
-由于文档抽取是基于大模型输出的，受限于大模型的输出速度，在输出较长内容时可能会出现分钟级的响应情况。如果您不希望让用户同步等待过长时间，可以用异步方式调用文档抽取API。
+由于文档抽取是基于大模型输出的，受限于大模型的输出速度，在输出较长内容时可能会出现分钟级的响应情况。如果您不希望让用户同步等待过长时间，可以用异步请求的方式调用文档抽取API。
 
-如果您想通过异步请求的方式调用文档抽取API，以下为您提供一份完整的异步请求示例代码，您可根据具体需求进行调整。
-
-对比[**快速启动**](/xparse/extract-quickstart)中的请求方式，主要有以下修改：
-
-1. **导入异步库**：添加了 aiohttp 和 asyncio 库
-2. **类名修改**：将 ExtractClient 改为 AsyncExtractClient
-3. **异步方法**：extract 方法改为 async def extract
-4. **异步HTTP请求**：使用 aiohttp.ClientSession() 替代 requests
-5. **异步上下文管理**：使用 async with 语句管理会话和请求
-6. **主函数异步化**：main() 函数改为 async def main()
-7. **运行方式**：使用 asyncio.run(main()) 运行异步主函数
+以下为您提供一份完整的异步请求示例代码，您可根据具体需求进行调整。
 
 ```python
 import json
@@ -86,3 +76,13 @@ if __name__ == "__main__":
     # 运行异步主函数
     asyncio.run(main())
 ```
+
+对比[**快速启动**](/xparse/extract-quickstart)中的请求方式，主要有以下修改：
+
+1. **导入异步库**：添加了 aiohttp 和 asyncio 库
+2. **类名修改**：将 ExtractClient 改为 AsyncExtractClient
+3. **异步方法**：extract 方法改为 async def extract
+4. **异步HTTP请求**：使用 aiohttp.ClientSession() 替代 requests
+5. **异步上下文管理**：使用 async with 语句管理会话和请求
+6. **主函数异步化**：main() 函数改为 async def main()
+7. **运行方式**：使用 asyncio.run(main()) 运行异步主函数
