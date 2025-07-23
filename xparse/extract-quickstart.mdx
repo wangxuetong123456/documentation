@@ -84,17 +84,17 @@ if __name__ == "__main__":
 
 **入参字段说明如下：**
 
-- **file**：`file`类型，待处理的文档文件
-- **prompt**：`string`类型，抽取的prompt，传入此字段时`fields`和`table_fields`字段将会被忽略
-- **fields**：`array`类型，待抽取的文本字段，JSON字符串格式 例如：["姓名","年龄"]
-  - **name**：`string`类型，抽取字段名
-  - **description**：`string`类型，抽取字段描述，非必填
-- **table_fields**：`array`类型，表格抽取时要抽取的表格信息，JSON字符串格式 例如：[{"title":"学生成绩表","fields":["姓名","成绩"]}]
-  - **title**：`string`类型，要抽取出来的表格标题
-  - **description**：`string`类型，表格标题的描述
-  - **fields**：`array`类型，该表的表头字段信息
-    - **name**：`string`类型，表头字段名
-    - **description**：`string`类型，表头字段描述，非必填
+- **file**：类型为<file>，待处理的文档文件
+- **prompt**：类型为<string>，抽取的prompt，传入此字段时`fields`和`table_fields`字段将会被忽略
+- **fields**：类型为<array>，待抽取的文本字段，JSON字符串格式 例如：["姓名","年龄"]
+  - **name**：类型为<string>，抽取字段名
+  - **description**：类型为<string>，抽取字段描述，非必填
+- **table_fields**：类型为<array>，表格抽取时要抽取的表格信息，JSON字符串格式 例如：[{"title":"学生成绩表","fields":["姓名","成绩"]}]
+  - **title**：类型为<string>，要抽取出来的表格标题
+  - **description**：类型为<string>，表格标题的描述
+  - **fields**：类型为<string>，该表的表头字段信息
+    - **name**：类型为<string>，表头字段名
+    - **description**：类型为<string>，表头字段描述，非必填
 
 ### prompt模式抽取
 
