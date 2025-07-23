@@ -32,6 +32,7 @@ description: "参考示例，快速将文档抽取API接入到您的系统和应
 ```python
 import json
 import requests
+import base64
 
 class ExtractClient:
     def __init__(self, app_id: str, secret_code: str):
@@ -39,7 +40,10 @@ class ExtractClient:
         self.secret_code = secret_code
 
     def extract(self, file_content: bytes, options: dict, request_body: dict) -> str:
-        # 构建请求参数
+        # 将文件内容转换为base64
+        file_base64 = base64.b64encode(file_content).decode('utf-8')
+
+		# 构建请求参数
         params = {}
         for key, value in options.items():
             params[key] = str(value)
@@ -48,7 +52,13 @@ class ExtractClient:
         headers = {
             "x-ti-app-id": self.app_id,
             "x-ti-secret-code": self.secret_code,
-            "Content-Type": "multipart/form-data"
+            "Content-Type": "application/json"
+        }
+
+		# 构建完整的请求体，包含base64文件数据
+        full_request_body = {
+            **request_body,
+            "file": file_base64  # 添加base64编码的文件数据
         }
 
         # 发送请求
@@ -57,7 +67,7 @@ class ExtractClient:
             params=params,
             headers=headers,
             data=file_content,
-			json=request_body
+			json=full_request_body
         )
 
         # 检查响应状态
