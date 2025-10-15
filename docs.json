@@ -9,51 +9,168 @@
   },
   "favicon": "/favicon.png",
   "navigation": {
-    "tabs": [
+    "versions": [
       {
-        "tab": "Guides",
-        "groups": [
+        "version": "0.7.1",
+        "tabs": [
           {
-            "group": "产品概览",
-            "pages": [
-              "xparse/overview",
-              "xparse/api-key",
-              "xparse/product-manual"
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "产品概览",
+                "pages": [
+                  "xparse/overview",
+                  "xparse/api-key",
+                  "xparse/product-manual"
+                ]
+              },
+              {
+                "group": "文档解析",
+                "pages": [
+                  "xparse/parse-quickstart",
+                  "xparse/parse-getjson",
+                  "xparse/parse-gettable",
+                  "xparse/parse-getcatalog",
+                  "xparse/parse-getimage",
+                  "xparse/parse-getpos",
+                  "xparse/parse-max-workers"
+                ]
+              },
+              {
+                "group": "文档抽取",
+                "pages": [
+                  "xparse/extract-quickstart-v3",
+                  "xparse/extract-tutorial-v3",
+                  "xparse/extract-best-practices-v3"
+                ]
+              },
+              {
+                "group": "FAQ",
+                "pages": [
+                  "xparse/charge"
+                ]
+              }
             ]
           },
           {
-            "group": "文档解析",
-            "pages": [
-              "xparse/parse-quickstart",
-              "xparse/parse-getjson",
-              "xparse/parse-gettable",
-              "xparse/parse-getcatalog",
-              "xparse/parse-getimage",
-              "xparse/parse-getpos",
-              "xparse/parse-max-workers"
-            ]
-          },
-          {
-            "group": "文档抽取",
-            "pages": [
-              "xparse/extract-quickstart",
-              "xparse/extract-getjson",
-              "xparse/extract-gettable",
-              "xparse/extract-getpos",
-              "xparse/extract-asyncio",
-              "xparse/extract-max-concurrent"
+            "tab": "API",
+            "groups": [
+              {
+                "group": "智能文档解析",
+                "pages": [
+                  "api-reference/endpoint/parse",
+                  "api-reference/endpoint/extract-v3"
+                ]
+              }
             ]
           }
         ]
       },
       {
-        "tab": "API",
-        "groups": [
+        "version": "0.7.0",
+        "tabs": [
           {
-            "group": "智能文档解析",
-            "pages": [
-              "api-reference/endpoint/parse",
-              "api-reference/endpoint/extract"
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "产品概览",
+                "pages": [
+                  "xparse/overview",
+                  "xparse/api-key",
+                  "xparse/product-manual"
+                ]
+              },
+              {
+                "group": "文档解析",
+                "pages": [
+                  "xparse/parse-quickstart",
+                  "xparse/parse-getjson",
+                  "xparse/parse-gettable",
+                  "xparse/parse-getcatalog",
+                  "xparse/parse-getimage",
+                  "xparse/parse-getpos",
+                  "xparse/parse-max-workers"
+                ]
+              },
+              {
+                "group": "文档抽取",
+                "pages": [
+                  "xparse/extract-quickstart",
+                  "xparse/extract-getjson",
+                  "xparse/extract-gettable",
+                  "xparse/extract-getpos",
+                  "xparse/extract-asyncio",
+                  "xparse/extract-max-concurrent"
+                ]
+              },
+              {
+                "group": "FAQ",
+                "pages": [
+                  "xparse/charge"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API",
+            "groups": [
+              {
+                "group": "智能文档解析",
+                "pages": [
+                  "api-reference/endpoint/parse",
+                  "api-reference/endpoint/extract"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "version": "bill",
+        "tabs": [
+          {
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "产品概览",
+                "pages": [
+                  "bill/overview",
+                  "bill/api-key",
+                  "bill/product-manual"
+                ]
+              },
+              {
+                "group": "医疗票据识别",
+                "pages": [
+                  "bill/medical-bill-quickstart",
+                  "bill/medical-bill-getjson"
+                ]
+              },
+              {
+                "group": "国内通用票据识别",
+                "pages": [
+                  "bill/bill-quickstart",
+                  "bill/bill-getjson"
+                ]
+              },
+              {
+                "group": "FAQ",
+                "pages": [
+                  "bill/charge"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API",
+            "groups": [
+              {
+                "group": "票据识别",
+                "pages": [
+                  "api-reference/endpoint/medical-bill",
+                  "api-reference/endpoint/bill"
+                ]
+              }
             ]
           }
         ]
@@ -97,12 +214,13 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/intsig-textin/chatdoc_stack?tab=readme-ov-file"
+      "github": "https://github.com/intsig-textin"
     }
   },
   "api": {
     "playground": {
-      "proxy": false
+      "proxy": false,
+      "display": "simple"
     }
   }
 }

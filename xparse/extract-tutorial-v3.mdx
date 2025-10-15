@@ -1,0 +1,129 @@
+---
+title: "使用指南"
+description: ""
+---
+
+为了创建一个正确可用的schema，我们提供了一个[Web配置](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown&tab=llmExtract)界面，您可以按以下步骤操作：
+
+<Steps>
+  <Step title="上传文件" stepNumber={1}>
+    使用Web界面上传文件，或点击示例文件，系统会自动开始解析文件内容，为抽取做准备
+  </Step>
+  <Step title="创建Schema">
+    使用Web界面从0开始创建一个schema。
+  </Step>
+  <Step title="验证抽取效果">
+    使用配置好的schema进行抽取，验证结果是否符合您的预期。
+  </Step>
+  <Step title="导出Schema" stepNumber={4}>
+    当schema调试好后，您可以导出为json文件，以便在api调用时使用。
+  </Step>
+</Steps>
+
+## 创建Schema
+
+您可以通过我们的[Web配置](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown&tab=llmExtract)界面来创建抽取schema。
+
+1. 登录并进入到TextIn xParse智能文档解析 [工作台](https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown)；
+2. 上传一个文件，或打开一个已存在的文件；
+3. 切换到**智能抽取**tab，并切换到**字段模式**；
+
+   ![Extract V3 Schema Empty Jp](/images/extract-v3-schema-empty.jpg)
+4. 在**抽取配置**中，可以添加您想抽取的字段，如 ”商品名称“；
+5. 选择**字段类型**下拉框，可以设定您所期望返回的字段类型，详情请参考[支持的字段类型](/xparse/extract-quickstart-v3#json-schema-%E6%94%AF%E6%8C%81%E7%9A%84%E5%AD%97%E6%AE%B5%E7%B1%BB%E5%9E%8B)；
+6. 为字段增加一个**字段描述**（可选）；
+7. 点击**添加字段**按钮，可以新加一个字段；
+8. 鼠标 hover 时字段左侧出现小图标，可以**删除字段**和**拖拽排序**；
+9. 重复以上步骤，直到添加完您想抽取的全部字段；
+
+   <img
+     src="/images/extract-v3-schema-edit.png"
+     alt="Extract V3 Schema Edit Jp"
+     title="Extract V3 Schema Edit Jp"
+     className="mx-auto"
+     style={{ width:"100%" }}
+   />
+10. 点击右上角**抽取**按钮，配置面板会收起，并自动切换到抽取结果面板，您可以在结果面板查看所有的内容。
+
+## 验证抽取效果
+
+1. 抽取完成后，会展示抽取结果面板，您可以点击字段抽取结果，会在左侧原文件区域找到对应的坐标边界（高亮显示）；
+
+   ![Extract V3 Schema Result Panel Jp](/images/extract-v3-schema-result-panel.jpg)
+2. 抽取结果默认显示**预览**面板，您也可以切换到**JSON**面板查看对应的结构化数据；
+
+   <img
+     src="/images/extract-v3-json-preview.jpg"
+     alt="Extract V3 Json Preview Jp"
+     title="Extract V3 Json Preview Jp"
+     className="mx-auto"
+     style={{ width:"100%" }}
+   />
+3. 您可以展开下方抽取配置面板，进一步调整schema后再抽取，直到抽取结果符合预期。
+
+## 导出Schema
+
+1. 在**抽取配置**面板，点击**导出配置**，可将当前schema对应的JSON文件下载到本地；
+2. 在后续API调用时，通过该Schema，就能保证每次抽取的结果符合格式要求。
+
+使用schema文件，可以参考以下代码示例：
+
+```python
+import requests
+import json
+url = "https://api.textin.com/ai/service/v3/entity_extraction"
+schema_file = '/Downloads/商铺小票.json'  #您所保存的实际schema文件路径
+payload = {
+    "file": {
+        "file_url": "https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726"
+    },
+	"schema":json.loads(open(schema_file).read()),  #读入schema文件
+    "parse_options":{
+        "crop_dewarp":1,
+        "get_image":"both"
+    },
+    "extract_options":{
+        "generate_citations": True,
+        "stamp": True
+    }
+}
+headers = {
+    "x-ti-app-id": "<app-id>",  #需替换为你的x-ti-app-id
+    "x-ti-secret-code": "<secret-code>",  #需替换为你的x-ti-secret-code
+    "Content-Type": "application/json"
+}
+response = requests.post(url, json=payload, headers=headers)
+print(response.json())
+```
+
+## 常见抽取场景的配置方式
+
+### 抽取单值
+
+当待抽取的字段在文件中仅会有一个值时，推荐单值抽取，使用`string`, `number`, `integer`, `enum`类型。
+
+![Extract V3 Mono Key Jp](/images/extract-v3-mono-key.jpg)
+
+### 抽取多值
+
+当待抽取的字段存在多个并列的值时，推荐多值抽取，使用`array/string`，`array/number`等类型。
+
+![Extract V3 Multi Value Jp](/images/extract-v3-multi-value.jpg)
+
+![Extract V3 Multi Value Demo Jp](/images/extract-v3-multi-value-demo.jpg)
+
+### 抽取表格
+
+当待抽取的内容有多组重复属性的数据组成，一般在原文档中呈现为类表格形式时，推荐表格抽取，使用`array/object`加单值字段嵌套表示。
+
+![Extract V3 Schema Table Sample Jp](/images/extract-v3-schema-table-sample.jpg)
+
+如果文件中存在多个表格，可以添加多个`array/object`类型的字段。
+
+![Extract V3 Schema Multi Table Jp](/images/extract-v3-schema-multi-table.jpg)
+
+### 抽取嵌套对象
+
+当待抽取的内容由多个相关联的属性字段组成，推荐使用嵌套对象抽取，使用`object`类型。
+
+![Extract V3 Object Jp](/images/extract-v3-object.jpg)

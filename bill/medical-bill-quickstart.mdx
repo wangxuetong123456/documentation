@@ -1,0 +1,225 @@
+---
+title: "快速启动"
+description: "参考示例，快速将医疗票据识别API接入到您的系统和应用流程中。"
+---
+
+<Tip>
+  本教程基于python示例分步讲解如何使用医疗票据识别API。我们另外提供了完整的多语言示例代码和在线快捷调试功能，请参考[Textin文档中心](https://www.textin.com/document/legacy/medical-bill-recognize)。
+</Tip>
+
+## 为什么使用医疗票据识别API ？
+
+在医疗行业票据处理场景中，人工录入住院发票、费用明细、检验报告等票据信息时，常面临格式多样、字段复杂、效率低下、误差率高等痛点，而使用医疗票据识别 API，可通过自动化识别技术，快速提取 10 余种医疗票据的 6 大类关键信息，核心数据以符合行业规范的 Key/Value 形式融入 JSON 格式返回，不仅极大程度压缩单张票据处理时间，还具备比人工更高的识别精度，有效解决人工处理的效率与合规难题，降低医院财务对账、医保机构审核、第三方医疗服务平台数据录入的综合成本。
+
+## 如何使用医疗票据识别API ？
+
+您可以参考以下示例文件和步骤，快速验证并将医疗票据识别API接入到您的系统和应用流程中。
+
+![Quick start 1](/images/bill-medical-quickstart-1.webp)  ![Quick start 2](/images/bill-medical-quickstart-2.webp)
+
+### 先决条件：获取API Key
+
+使用医疗票据识别API处理文档时，您需要先获取API Key。请先登录后前往 [TextIn工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取您的 x-ti-app-id 和 x-ti-secret-code 。
+
+### 前置准备
+
+您可以参考以下示例代码完成医疗票据识别API请求的前置准备工作，替换您自己的 x-ti-app-id 和 x-ti-secret-code ，后续步骤可根据实际使用场景在main函数中插入代码。
+
+```python
+import requests
+import json
+
+def get_file_content(filePath):
+    with open(filePath, 'rb') as fp:
+        return fp.read()
+
+class CommonOcr(object):
+    def __init__(self, img_path=None, is_url=False):
+        # 医疗发票识别
+        self._url = 'https://api.textin.com/ai/service/v1/medical_recognize'
+        # 请登录后前往 “工作台-账号设置-开发者信息” 查看 x-ti-app-id
+        # 示例代码中 x-ti-app-id 非真实数据
+        self._app_id = 'c81f*************************e9ff'
+        # 请登录后前往 “工作台-账号设置-开发者信息” 查看 x-ti-secret-code
+        # 示例代码中 x-ti-secret-code 非真实数据
+        self._secret_code = '5508***********************1c17'
+        self._img_path = img_path
+        self._is_url = is_url
+
+    def recognize(self, options: dict = dict()):
+        head = {}
+        params = {}
+        
+        try:
+            for key, value in options.items():
+                params[key] = str(value)
+                
+            head['x-ti-app-id'] = self._app_id
+            head['x-ti-secret-code'] = self._secret_code
+            if self._is_url:
+                head['Content-Type'] = 'text/plain'
+                body = self._img_path
+            else:
+                image = get_file_content(self._img_path)
+                head['Content-Type'] = 'application/octet-stream'
+                body = image
+            result = requests.post(self._url, data=body, headers=head)
+            return result.text
+        except Exception as e:
+            return e
+
+if __name__ == "__main__":
+    # 示例 1：传输文件
+    response = CommonOcr(img_path=r'example.jpg')
+    print(response.recognize())
+    # 示例 2：传输 URL
+    response = CommonOcr(img_path='http://example.com/example.jpg', is_url=True)
+    print(response.recognize())
+```
+### 请求体说明
+
+支持以下两种请求格式
+
+1. Content-Type: application/octet-stream
+
+要上传的图片，目前支持jpg、png、bmp、pdf、tiff、ofd、单帧gif等大部分格式，ofd文件支持多页，多页pdf样本当前版本仅识别第一页内容。
+请注意，请求体的数据格式为本地文件的二进制流，非 FormData 或其他格式。文件大小不超过 20M，图像宽高须介于 20 和 10000（像素）之间。
+
+2. Content-Type: text/plain
+
+请求体的数据格式为文本，内容为在线文件的URL链接（支持http以及https协议）。在线文件大小不超过 20M，图像宽高须介于 20 和 10000（像素）之间。
+
+### URL参数说明
+
+以下是医疗票据识别API的URL参数，URL参数指以 参数名=参数值 形式拼接到 URL 上的键值对。它以`?`开头，不同参数之间使用`&`连接，形如`?p1=v1&p2=v2`。URL参数会影响文档的解析结果和JSON输出内容，您可按需进行设置。
+- crop_image：选择是否需要进行图片切分，默认为0，关闭切分。
+  - 0 关闭切分
+  - 1 开启切分
+- return_image_base64：选择是否需要输出图片base64，对应image_list中image_base64，默认为0，不输出。
+  - 0 不输出图片base64
+  - 1 输出图片base64
+- category：指定样本类型，不进行样本分类，直接抽取结果，默认为0，不使用该功能。
+  - 0 不使用该功能
+  - 1 医疗发票识别
+  - 2 医疗费用明细
+  - 3 医疗费用结算单
+  - 4 医疗处方单
+  - 5 医疗检测报告单
+  - 6 医疗诊断报告单
+
+### 返回结果示例
+
+票据信息结构化后的结果数据将按照以下JSON格式返回，下面为您提供了一段节选的返回示例。如果您想了解最全面的返回结果说明，可以在[返回JSON结构说明](/bill/medical-bill-getjson)中查看，也可以在API（API）中查看和调试。
+
+```json
+{
+    "code": 200,          // 响应状态码，200表示成功
+    "message": "success", // 响应消息
+    "duration": 1000,     // 引擎耗时（毫秒）
+    "result": {
+        "image_list": [   // 识别的图片信息
+            {
+                "image_angle": 0,            // 单张图片角度
+                "image_position": [          // 开启切图，图片在原图上的坐标
+                    282,
+                    823,
+                    921,
+                    847,
+                    917,
+                    1267,
+                    277,
+                    1279
+                ],
+                "page_id": 0,                // 多页样本时，图片所在页码
+                "rotated_image_height": 456, // 转正图片高度
+                "rotated_image_width": 692   // 转正图片宽度
+            }
+        ],
+        "object_list": [  // 票据识别结果
+            {
+                "details": {
+                    "expense_information": {              // 费用汇总信息
+                        "personal_account_balance": {     // key
+                            "description": "个人账户余额", // key中文描述
+                            "value": 0                    // key识别结果
+                        },
+                       // [更多key识别结果...]
+                    },
+                    "invoice_information": { // 票据信息
+                        "bill_verification_code": {
+                            "description": "票据校验码",
+                            "value": "6tfCtj"
+                        },
+                        // [更多key识别结果...]
+                    },
+                    "item_details": [ // 项目明细
+                        [
+                            {
+                                "amount": {
+                                    "description": "金额",
+                                    "value": "1287.4"
+                                },
+                                // [更多key识别结果...]
+                            },
+                            // [更多行信息...]
+                        ]
+                    ],
+                    "medical_visit_institution_information": { // 就诊与机构信息
+                        "admission_time": {
+                            "description": "入院时间",
+                            "value": "24-3-28"
+                        },
+                        // [更多key识别结果...]
+                    },
+                    "patient_information": { // 患者核心信息
+                        "gender": {
+                            "description": "性别",
+                            "value": "女"
+                        },
+                        // [更多key识别结果...]
+                    },
+                    "payment_method": {  // 支付方式信息
+                        "medical_insurance_overall_planning_payment": {
+                            "description": "医保统筹支付",
+                            "value": 9311.82
+                        },
+                        // [更多key识别结果...]
+                    }
+                },
+                "image_ids": [             // 票据在image_list中的所有图片
+                    0
+                ],
+                "page_ids": [             // pdf文件，该份票据样本在pdf中的页码
+                    0
+                ],
+                "type": "medical_invoice" // 票据类型
+            }
+        ],
+        "page_count": 1,                 // 样本总页数
+        "ppi": 144,                      // PDF样本解析PPI
+        "success_count": 1               // 成功识别的图片个数
+    },
+    "version": "v1.0.0" // 引擎版本号
+}
+```
+
+### 错误码说明
+
+| **错误码** | **描述**                                                               |
+| :------ | :------------------------------------------------------------------- |
+| 40101   | x-ti-app-id 或 x-ti-secret-code 为空                                    |
+| 40102   | x-ti-app-id 或 x-ti-secret-code 无效，验证失败                               |
+| 40103   | 客户端IP不在白名单                                                           |
+| 40003   | 余额不足，请充值后再使用                                                         |
+| 40004   | 参数错误，请查看技术文档，检查传参                                                    |
+| 40007   | 机器人不存在或未发布                                                           |
+| 40008   | 机器人未开通，请至市场开通后重试                                                     |
+| 40301   | 图片类型不支持                                                              |
+| 40302   | 上传文件大小不符，文件大小不超过 20M                                                |
+| 40303   | 文件类型不支持，接口会返回实际检测到的文件类型                              |
+| 40304   | 图片尺寸不符，长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内            |
+| 40305   | 识别文件未上传                                                              |
+| 40422   | 文件损坏（The file is corrupted.）                                         |
+| 40423   | PDF密码错误（Password required or incorrect password.）                    |
+| 30203   | 基础服务故障，请稍后重试                                                         |
+| 500     | 服务器内部错误                                                              |

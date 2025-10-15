@@ -3,6 +3,10 @@ title: "快速启动"
 description: "参考示例，快速将文档解析API接入到您的系统和应用流程中。"
 ---
 
+<Tip>
+  本教程基于python示例分步讲解如何使用文档解析API。我们另外提供了完整的多语言示例代码包，可在本地一键运行，助您10s跑通接口示例，请[点击下载](https://static.textin.com/docs/%E9%80%9A%E7%94%A8%E6%96%87%E6%A1%A3%E8%A7%A3%E6%9E%90-%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81.zip)。如需在线快捷调试API，请参考[Textin文档中心](https://www.textin.com/document/legacy/pdf_to_markdown)。
+</Tip>
+
 ## 为什么使用文档解析API ？
 
 大模型时代，文档(尤其是复杂文档)中蕴含着海量高价值的数据内容，借助文档解析API将其结构化为大模型更容易理解的格式(如markdown)，可以更大程度上增强大模型的能力、发挥更大价值，快速实现业务AI升级。
@@ -17,6 +21,8 @@ TextIn xParse 文档解析API 是专为大模型重新设计的文档理解引�
 
 <Tip>
   这里为您提供了一份Textin官方pdf示例文件，您可以点击下载或使用该链接：[文档解析pdf示例.pdf](https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf)
+
+  <iframe src="https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf" width="100%" height="600px" />
 </Tip>
 
 ### 先决条件：获取API Key
@@ -99,7 +105,7 @@ if __name__ == "__main__":
         markdown_details=1,
         page_count=10,
         parse_mode="auto",
-        table_flavor="html",
+        table_flavor="html"
     )
 
     try:
@@ -144,7 +150,7 @@ if __name__ == "__main__":
         markdown_details=1,
         page_count=10,
         parse_mode="auto",
-        table_flavor="html",
+        table_flavor="html"
     )
 
     #循环处理
@@ -203,7 +209,7 @@ if __name__ == "__main__":
         markdown_details=1,
         page_count=10,
         parse_mode="auto",
-        table_flavor="html",
+        table_flavor="html"
     )
 
     try:
@@ -231,7 +237,7 @@ if __name__ == "__main__":
 
 - **pdf_pwd**：当pdf为加密文档时，需要提供密码。
   - 备注：对前端封装该接口参数时，需要自行对密码进行安全防护。
-- **page_start**：当上传的是pdf时，表示从第几页开始解析，不传该参数时默认从首页开始。
+- **page_start**：当上传的是pdf时，表示从第几页开始解析，取值范围从1开始，不传该参数时默认从首页开始。
 - **page_count**：当上传的是pdf时，表示要进行解析的pdf页数。总页数不得超过1000页，默认为1000页。
 - **parse_mode**：pdf文档的解析模式，默认为scan模式。图片不用设置，均默认按scan模式处理。
   - auto 综合文字识别和解析模式：对pdf电子档解析，会直接提取pdf中的文字
@@ -254,6 +260,9 @@ if __name__ == "__main__":
 - **image_output_type**：指定返回的图片对象输出类型，默认返回子图片url和页图片id。
   - base64str 指定所有图片对象为base64字符串，适用于没有云存储的用户，但是引擎返回结果体积会很大。
   - default 指定子图片对象为图片url，页图片对象为图片id
+- **apply_image_analysis**：图像分析参数。利用大模型对文档中的子图片进行分析，分析结果以markdown格式输出，并替换掉子图片的文本识别内容。默认为0，不进行图像分析。
+  - 0 不进行图像分析
+  - 1 进行图像分析
 - **paratext_mode**：**markdown**中非正文文本内容展示模式。默认为annotation。非正文内容包括页眉页脚、子图中的文本。
   - none 不展示
   - annotation 以注释格式插入到markdown中。页眉页脚中的图片只保留文本，图片base64或url不保留
@@ -283,7 +292,7 @@ if __name__ == "__main__":
 - **get_excel**：是否返回excel的base64结果，结果字段为**excel_base64**，可以根据该字段进行后处理保存excel文件。默认为0，不返回。
   - 0 不返回
   - 1 返回
-- **crop_image**（**切边矫正**）：是否进行切边矫正预处理，默认为0，不进行切边矫正。
+- **crop_dewarp**（**切边矫正**）：是否进行切边矫正预处理，默认为0，不进行切边矫正。
   - 0 不进行切边矫正
   - 1 进行切边矫正
 - **remove_watermark**（**去水印**）：是否进行去水印预处理，默认为0，不去水印。
@@ -324,8 +333,8 @@ if __name__ == "__main__":
           }
           // [更多content条目...]
         ],
-        "status": "Success", // 页面处理状态，Success表示成功
-        "height": 1684, // 页面高度（像素）
+        "status": "success", // 页面处理状态，success表示成功
+        "height": 1684, // 页面高度
         "structured": [
           {
             "pos": [278, 244, 967, 242, 967, 293, 278, 295], // 结构化内容的位置坐标
@@ -340,7 +349,7 @@ if __name__ == "__main__":
         ],
         "durations": 459.98861694336, // 页面处理耗时（毫秒）
         "image_id": "", // 页面图像ID
-        "width": 1191 // 页面宽度（像素）
+        "width": 1191 // 页面宽度
       }
       // [更多pages条目...]
     ],
@@ -366,7 +375,7 @@ if __name__ == "__main__":
   "metrics": [
     {
       "angle": 0, // 页面旋转角度
-      "status": "Success", // 处理状态
+      "status": "success", // 处理状态
       "dpi": 144, // 图像DPI值
       "image_id": "", // 图像ID
       "page_id": 1, // 页面ID
@@ -377,8 +386,8 @@ if __name__ == "__main__":
     // [更多metrics条目...]
   ],
   "duration": 1459, // 引擎耗时（毫秒）
-  "message": "Success", // 响应消息
-  "version": "3.17.12" // doc_restore 引擎版本号
+  "message": "success", // 响应消息
+  "version": "3.17.12" // 引擎版本号
 }
 ```
 
@@ -408,3 +417,7 @@ if __name__ == "__main__":
 | 40400   | 无效的请求链接，请检查链接是否正确                                                    |
 | 30203   | 基础服务故障，请稍后重试                                                         |
 | 500     | 服务器内部错误                                                              |
+
+### 示例代码下载
+
+我们提供了完整的多语言示例代码包，助您10s跑通接口示例，[点击下载](https://static.textin.com/docs/%E9%80%9A%E7%94%A8%E6%96%87%E6%A1%A3%E8%A7%A3%E6%9E%90-%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81.zip)。

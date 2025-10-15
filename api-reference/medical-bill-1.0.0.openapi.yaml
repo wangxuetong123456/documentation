@@ -1,0 +1,2322 @@
+# 2024/7/30
+openapi: 3.0.3
+info:
+  version: 2.0.0
+  title: 医疗票据识别v1.0接口
+servers:
+  - url: https://api.textin.com
+    description: Production server
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+paths:
+  /ai/service/v1/medical_recognize:
+    post:
+      summary: 医疗票据v1接口识别
+
+      parameters:
+        - name: crop_image
+          in: query
+          description: 选择是否需要进行图片切分，0关闭切分，1开启切分，默认为0
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1            
+            default: 0
+
+        - name: return_image_base64
+          in: query
+          description: 选择是否需要输出图片base64，对应image_list中image_base64，0关闭，1开启，默认为0
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1            
+            default: 0
+
+        - name: category
+          in: query
+          description: |
+            指定样本类型，不进行样本分类，直接抽取结果，默认为0不使用该功能 
+            1: 医疗发票识别 
+            2: 医疗费用明细 
+            3: 医疗费用结算单 
+            4: 医疗处方单 
+            5: 医疗检验报告单 
+            6: 医疗诊断报告单
+          schema:
+            type: integer
+            enum:
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6    
+            default: 0
+
+      operationId: ai_service_v1_medical_crop_and_recog_multi
+
+      requestBody:
+        description: |
+          支持以下两种请求格式
+
+          1. Content-Type: application/octet-stream
+
+          要上传的图片，目前支持jpg、png、bmp、pdf、tiff、ofd、单帧gif等大部分格式，ofd文件支持多页，多页pdf样本当前版本仅识别第一页内容。
+          请注意，请求体的数据格式为本地文件的二进制流，非 FormData 或其他格式。文件大小不超过 20M，图像宽高须介于 20 和 10000（像素）之间。
+
+          2. Content-Type: text/plain
+
+          请求体的数据格式为文本，内容为在线文件的URL链接（支持http以及https协议）。在线文件大小不超过 20M，图像宽高须介于 20 和 10000（像素）之间。
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+              example: success
+
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CodeMessage'
+                  - $ref: '#/components/schemas/Response'
+            
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+  schemas:
+    CodeMessage:
+      type: object
+      required: 
+        - code
+        - message
+      properties:
+        code:
+          example: 200
+          type: integer
+          description: |
+            错误码
+            - 200: success
+            - 40101: x-ti-app-id 或 x-ti-secret-code 为空 
+            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败 
+            - 40103: 客户端IP不在白名单
+            - 40003: 余额不足，请充值后再使用
+            - 40004: 参数错误，请查看技术文档，检查传参 
+            - 40007: 机器人不存在或未发布
+            - 40008: 机器人未开通，请至市场开通后重试
+            - 40301: 图片类型不支持 
+            - 40302: 上传文件大小不符，文件大小不超过 20M
+            - 40303: 文件类型不支持，接口会返回实际检测到的文件类型 
+            - 40304: 图片尺寸不符，长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内
+            - 40305: 识别文件未上传
+            - 40422: 文件损坏（The file is corrupted.）
+            - 40423: PDF密码错误（Password required or incorrect password.）
+            - 30203: 基础服务故障，请稍后重试
+            - 500: 服务器内部错误
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40103
+            - 40003
+            - 40004
+            - 40007
+            - 40008
+            - 40301
+            - 40302
+            - 40303
+            - 40304
+            - 40305
+            - 40422
+            - 40423
+            - 30203
+            - 500
+
+        message:
+          type: string
+          description: 错误信息
+          example: success
+    Response:
+      type: object
+      # description: 响应体
+      properties:
+        duration:
+          type: integer
+          description: 接口总耗时，单位为毫秒
+          example: 100
+        version:
+          type: string
+          description: 接口版本
+          example: v1.0.0
+        result:
+          type: object
+          description: 样本识别结果
+          properties:
+            success_count:
+              type: integer
+              description: 成功识别的图片数量
+              example: 1
+            page_count:
+              type: integer
+              description: 样本总页数
+              example: 1
+            ppi:
+              type: integer
+              description: pdf解析分辨率，默认144
+              example: 144
+            image_list:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/ImageItem'
+            object_list:
+              type: array
+              items:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/ObjectItem'
+
+    ImageItem:
+      type: object
+      required:
+        - image_angle
+        - rotated_image_width
+        - rotated_image_height
+      properties:
+        image_angle:
+          type: integer
+          description: 切分后单张票据的角度
+          enum:
+            - 0
+            - 90
+            - 180
+            - 270
+          example: 0
+
+        rotated_image_width:
+          type: integer
+          description: 切分后单张票据转正后的宽度
+          minimum: 1
+          example: 1000
+
+        rotated_image_height:
+          type: integer
+          description: 切分后单张票据转正后的高度
+          minimum: 1
+          example: 3000
+
+        page_id:
+          type: integer
+          description: 如果是pdf样本，该图片在pdf上的所在页，默认0，第一页
+          minimum: 0
+          example: 0
+
+        image_base64:
+          type: string
+          description: 图片base64
+          example: ""
+        image_position:
+            type: array
+            minItems: 0
+            maxItems: 8
+            items:
+              type: integer
+              description: |
+                开启图片切分后单张票据在原图中的坐标位置
+                [0,1,2,3,4,5,6,7]
+                - (0, 1) 左上角坐标
+                - (2, 3) 右上角坐标
+                - (4, 5) 右下角坐标
+                - (6, 7) 左下角坐标
+              example: 100
+            example: [100,100,200,100,200,200,100,200]
+ 
+    ObjectItem:
+      type: object
+      required:
+        - type
+        - image_ids
+      properties:
+        type:
+          type: string
+          description: |
+            单份医疗票据类型
+            - medical_invoice                 医疗发票识别
+            - medical_cost_details            医疗费用明细
+            - medical_insurance_settlement    医疗费用结算单
+            - medical_prescription            医疗处方单
+            - medical_laboratory_report       医疗检验报告单
+            - medical_diagnostic_report       医疗诊断报告单
+            - other                           其他
+          enum:
+            - medical_invoice
+            - medical_cost_details
+            - medical_insurance_settlement
+            - medical_prescription
+            - medical_laboratory_report
+            - medical_diagnostic_report
+            - other                   
+          example: medical_invoice
+
+        page_ids:
+          type: array
+          description: 如果是pdf文件，该份票据样本在pdf中的页码
+          minItems: 0
+          items:
+            type: integer
+            description: pdf页码，默认为0
+            example: 0
+          example: [0]
+
+        image_ids:
+          type: array
+          description: 该份票据在image_list中的所有图片
+          minItems: 0
+          items:
+            type: integer
+            description: image_list中的图片索引id，默认为0
+            example: 0
+          example: [0]
+
+        details:
+          type: object
+          description: 识别结果
+          oneOf:
+            - $ref: '#/components/schemas/Type_medical_invoice'
+            - $ref: '#/components/schemas/Type_medical_cost_details'
+            - $ref: '#/components/schemas/Type_medical_insurance_settlement'
+            - $ref: '#/components/schemas/Type_medical_prescription'
+            - $ref: '#/components/schemas/Type_medical_laboratory_report'
+            - $ref: '#/components/schemas/Type_medical_diagnostic_report'
+            - $ref: '#/components/schemas/Type_other'
+
+    Type_medical_invoice:
+      type: object
+      description: 医疗票据识别结果
+      properties:
+        invoice_information:
+          type: object
+          description: 票据信息
+          properties:
+            document_title_name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 单据标题名称
+            invoice_code:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 票据代码
+            invoice_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 票据号码
+            business_serial_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 业务流水号
+            bill_verification_code:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 票据校验码
+            issuance_date:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 开具日期
+            total_pages_of_invoice:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 票据总页数
+            current_page_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 当前页码
+        patient_information:
+          type: object
+          description: 患者核心信息
+          properties:
+            gender:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 性别
+            inpatient_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 住院号
+            medical_record_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 病历号
+            outpatient_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 门诊号
+            patient_medical_insurance_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 患者医保编号
+            patient_medical_insurance_type:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 患者医保类型
+            patient_social_security_card_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 患者社保卡号
+        medical_visit_institution_information:
+          type: object
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医疗机构名称
+            type_of_medical_institution:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医疗机构类型
+            department:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 科别
+            admission_time:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 入院时间
+            discharge_time:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 出院时间
+            hospitalization_days:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 住院天数
+        expense_information:
+          type: object
+          description: 费用汇总信息
+          properties:
+            total_amount_in_words:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 大写合计金额
+            total_expense_amount:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 费用合计金额
+            personal_account_balance:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 个人账户余额
+            personal_self_payment_amount:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 个人自付金额
+            personal_self_funded_amount:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 个人自费金额
+            prepaid_amount:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 预缴金额
+            supplementary_payment_amount:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 补缴金额
+            refund_amount:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 退费金额
+        payment_method:
+          type: object
+          description: 支付方式信息
+          properties:
+            payee_unit:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 收款单位
+            payee:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 收款人
+            reviewer:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 复核人
+            payer:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 交款人
+            medical_insurance_overall_planning_payment:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医保统筹支付
+            personal_account_payment:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 个人账户支付
+            personal_cash_payment:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 个人现金支付
+            other_payments:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 其他支付
+        item_details:
+          type: array
+          description: 费用明细表，当前只存在一个表
+          items:
+            type: array
+            description: 单个明细表识别结果
+            items:
+              type: object
+              properties:
+                amount:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 金额 
+                remarks:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 备注
+                project_name:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 项目名称 
+                quantity:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 数量
+                unit_price:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 单价
+                project_code_symbol:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 项目编码 / 代号
+
+    Type_medical_cost_details:
+      type: object
+      description: 医疗费用明细识别结果
+      properties:
+        invoice_information:
+          type: object
+          description: 票据信息
+          properties:
+            document_title_name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 单据标题名称
+            invoice_code:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 票据代码
+            invoice_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 票据号码
+            total_pages_of_invoice:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 票据总页数
+            current_page_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 当前页码
+        patient_information:
+          type: object
+          description: 患者核心信息
+          properties:
+            name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 姓名
+            gender:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 性别
+            age:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 年龄
+            inpatient_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 住院号
+            medical_record_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 病历号
+            outpatient_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 门诊号
+            bed_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 床号
+        medical_visit_institution_information:
+          type: object
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医疗机构名称
+            type_of_medical_institution:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医疗机构类型
+            department:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 科别
+            admission_time:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 入院时间
+            discharge_time:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 出院时间
+            hospitalization_days:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 住院天数
+            medical_treatment_date:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 就诊日期
+        expense_information:
+          type: object
+          description: 费用汇总信息
+          properties:
+            total_expense_amount:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 费用合计金额
+        item_details:
+          type: array
+          description: 费用明细表，当前只存在一个表
+          items:
+            type: array
+            description: 单个明细表识别结果
+            items:
+              type: object
+              properties:
+                amount:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 金额 
+                remarks:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 备注
+                project_name:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 项目名称 
+                quantity:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 数量
+                specification:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 规格 
+                unit_price:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 单价 
+                project_code_symbol:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 项目编码 / 代号
+
+    Type_medical_insurance_settlement:
+      type: object
+      description: 医疗费用结算单识别结果
+      properties:
+        invoice_information:
+          type: object
+          description: 票据信息
+          properties:
+            document_title_name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 单据标题名称
+            total_pages_of_invoice:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 票据总页数
+            current_page_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 当前页码
+        patient_information:
+          type: object
+          description: 患者核心信息
+          properties:
+            name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 姓名
+            gender:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 性别
+            age:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 年龄
+            patient_medical_insurance_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 患者医保编号
+            patient_medical_insurance_type:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 患者医保类型
+            patient_id_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 患者身份证号
+        medical_visit_institution_information:
+          type: object
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医疗机构名称
+            type_of_medical_institution:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医疗机构类型
+            department:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 科别
+            admission_time:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 入院时间
+            discharge_time:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 出院时间
+            hospitalization_days:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 住院天数
+            medical_treatment_date:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 就诊日期
+        expense_information:
+          type: object
+          description: 费用汇总信息
+          properties:
+            total_amount_in_words:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 大写合计金额
+            total_expense_amount:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 费用合计金额
+            personal_self_payment_amount:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 个人自付金额
+            personal_self_funded_amount:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 个人自费金额
+        payment_method:
+          type: object
+          description: 支付方式信息
+          properties:
+            medical_insurance_overall_planning_payment:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医保统筹支付
+            personal_account_payment:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 个人账户支付
+            personal_cash_payment:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 个人现金支付
+            other_payments:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 其他支付
+
+    Type_medical_prescription:
+      type: object
+      description: 医疗处方单识别结果
+      properties:
+        invoice_information:
+          type: object
+          description: 票据信息
+          properties:
+            document_title_name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 单据标题名称
+            prescription_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 处方号
+            issuance_date:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 开具日期
+            total_pages_of_invoice:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 票据总页数
+            current_page_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 当前页码
+        patient_information:
+          type: object
+          description: 患者核心信息
+          properties:
+            name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 姓名
+            gender:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 性别
+            age:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 年龄
+            inpatient_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 住院号
+            medical_record_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 病历号
+            outpatient_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 门诊号
+        medical_visit_institution_information:
+          type: object
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医疗机构名称
+            department:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 科别
+            medical_treatment_date:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 就诊日期
+            diagnosis_result:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 诊断结果
+        expense_information:
+          type: object
+          description: 费用汇总信息
+          properties:
+            total_expense_amount:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 费用合计金额
+        item_details:
+          type: array
+          description: 费用明细表，当前只存在一个表
+          items:
+            type: array
+            description: 单个明细表识别结果
+            items:
+              type: object
+              properties:
+                amount:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 金额
+                project_name:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 项目名称 
+                quantity:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 数量
+                specification:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 规格 
+                unit_price:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 单价 
+                usage:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 用法
+
+    Type_medical_laboratory_report:
+      type: object
+      description: 医疗检验报告单识别结果
+      properties:
+        invoice_information:
+          type: object
+          description: 票据信息
+          properties:
+            document_title_name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 单据标题名称
+            total_pages_of_invoice:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 票据总页数
+            current_page_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 当前页码
+            inspection_item_name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 检查项目名称
+            report_date:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 报告日期
+        patient_information:
+          type: object
+          description: 患者核心信息
+          properties:
+            name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 姓名
+            gender:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 性别
+            age:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 年龄
+            inpatient_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 住院号
+            medical_record_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 病历号
+            outpatient_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 门诊号
+            bed_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 床号
+        medical_visit_institution_information:
+          type: object
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医疗机构名称
+            type_of_medical_institution:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医疗机构类型
+            department:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 科别
+            clinical_doctor:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 临床医生
+            sampling_doctor:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 采样医生
+            laboratory_doctor:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 检验医生
+            audit_doctor:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 审核医生
+            diagnosis_result:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 诊断结果
+            inspection_time:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 检查时间
+            inspection_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 检查编号
+            clinical_diagnosis_symptoms:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 临床诊断/症状
+            specimen_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 标本号
+            specimen_type:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 标本类型
+        item_details:
+          type: array
+          description: 费用明细表，当前只存在一个表
+          items:
+            type: array
+            description: 单个明细表识别结果
+            items:
+              type: object
+              properties:
+                remarks:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 备注 
+                project_code_symbol:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 项目编码 / 代号
+                project_name:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 项目名称 
+                measured_value:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 测量值
+                reference_value:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+                      description: 字段识别结果
+                      example: ""
+                    description:
+                      type: string
+                      description: 字段中文描述
+                      example: 参考值 
+
+    Type_medical_diagnostic_report:
+      type: object
+      description: 医疗诊断报告单识别结果
+      properties:
+        invoice_information:
+          type: object
+          description: 票据信息
+          properties:
+            document_title_name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 单据标题名称
+            total_pages_of_invoice:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 票据总页数
+            current_page_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 当前页码
+            inspection_item_name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 检查项目名称
+            report_date:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 报告日期
+        patient_information:
+          type: object
+          description: 患者核心信息
+          properties:
+            name:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 姓名
+            gender:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 性别
+            age:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 年龄
+            inpatient_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 住院号
+            medical_record_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 病历号
+            outpatient_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 门诊号
+            bed_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 床号
+        medical_visit_institution_information:
+          type: object
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医疗机构名称
+            type_of_medical_institution:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 医疗机构类型
+            department:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 科别
+            clinical_doctor:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 临床医生
+            laboratory_doctor:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 检验医生
+            audit_doctor:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 审核医生
+            diagnosis_content:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 诊断内容
+            diagnosis_result:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 诊断结果/意见
+            inspection_time:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 检查时间
+            inspection_number:
+              type: object
+              properties:
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: ""
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: 检查编号
+  
+    Type_other:
+      type: object
+      description: 其他类，识别为空

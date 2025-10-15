@@ -38,43 +38,43 @@ title: "获取目录树"
 - 请注意：为了更加灵活的支持下游业务场景，文档解析API的目录返回结果中通过**hierarchy**字段表示目录的标题层级，但并没有目录之间直接的父子层级关系，您可以参考以下示例代码获取标题目录间的父子层级关系，以构建目录树状结构。
 
 ```python
-    toc_list = catalog['toc']
-    result = []
-    parent_stack = []  # 用于跟踪当前路径上的父节点
-    
-    for item in toc_list:
-        # 复制当前项目，避免修改原始数据
-        current_item = item.copy()
-        current_item['children'] = []
-        
-        current_level = item.get('hierarchy', 1)
-        
-        # 根据层级调整父节点栈
-        # 移除层级大于等于当前层级的节点
-        while parent_stack and parent_stack[-1]['hierarchy'] >= current_level:
-            parent_stack.pop()
-        
-        # 如果有父节点，将当前项目添加到父节点的children中
-        if parent_stack:
-            parent_stack[-1]['children'].append(current_item)
-        else:
-            # 如果没有父节点，说明是根节点
-            result.append(current_item)
-        
-        # 将当前项目添加到父节点栈中
-        parent_stack.append(current_item)
+        toc_list = catalog['toc']
+        result = []
+        parent_stack = []  # 用于跟踪当前路径上的父节点
 
-    print(result)
+        for item in toc_list:
+            # 复制当前项目，避免修改原始数据
+            current_item = item.copy()
+            current_item['children'] = []
 
-	# 保存处理后的目录结构为json文件
-	with open("processed_catalog.json", "w", encoding="utf-8") as f:
-    json.dump(result, f, ensure_ascii=False, indent=2)
-	print("处理后的目录结构已保存为 processed_catalog.json")
+            current_level = item.get('hierarchy', 1)
 
-    return result
+            # 根据层级调整父节点栈
+            # 移除层级大于等于当前层级的节点
+            while parent_stack and parent_stack[-1]['hierarchy'] >= current_level:
+                parent_stack.pop()
+
+            # 如果有父节点，将当前项目添加到父节点的children中
+            if parent_stack:
+                parent_stack[-1]['children'].append(current_item)
+            else:
+                # 如果没有父节点，说明是根节点
+                result.append(current_item)
+
+            # 将当前项目添加到父节点栈中
+            parent_stack.append(current_item)
+
+        print(result)
+
+        # 保存处理后的目录结构为json文件
+        with open("processed_catalog.json", "w", encoding="utf-8") as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+        print("处理后的目录结构已保存为 processed_catalog.json")
+
+        return result
 ```
 
-- 处理后的目录结构如下
+- 处理后的目录结构如下，标题目录间有了父子层级关系，您可以据此构建标题目录的树状结构。
 
 ```json expandable
 [

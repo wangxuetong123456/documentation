@@ -6,7 +6,7 @@ title: "获取表格"
 
 ## 如何获取表格
 
-参考[**快速启动**](/xparse/extract-quickstart)中的示例文件和示例代码，您可以参考以下代码将抽取结果保存为Excel文件。
+参考[**快速启动**](/xparse/extract-quickstart)中的示例文件和示例代码（使用字段模式抽取），您可以参考以下代码将抽取结果保存为Excel文件。
 
 ```python
 import pandas as pd
@@ -62,22 +62,12 @@ def save_tables_to_excel(json_response: str, original_file_path: str):
 
 def main():
 
-# main函数中其余部分代码不变，修改添加以下代码
-
-    try:
-        response = client.extract(file_content, options, request_body)
-
-        # 保存完整的JSON响应到result.json文件
-        with open("key_extract_result.json", "w", encoding="utf-8") as f:
-            f.write(response)
-
-        print(response)
+# main函数中其余部分代码不变，在print(response)后添加以下代码
 
         # 保存表格数据到Excel文件
         save_tables_to_excel(response, file_path)
 
-    except Exception as e:
-        print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     main()

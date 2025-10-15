@@ -1,0 +1,463 @@
+---
+title: "返回JSON结构说明"
+---
+
+### 返回结果示例
+
+当您使用国内通用票据识别API结构化票据样本时，结构化后的数据将按照以下结构的JSON格式返回。
+
+```json
+{
+    "code": 200,
+    "message": "success",
+    "pageNum": 1,
+    "pages": [
+        {
+            "result": {
+                "object_list": [
+                    {
+                        "image_angle": 0,
+                        "type": "parking_invoice",
+                        "kind_description": "其他",
+                        "stamp_list": [
+                            [
+                                {
+                                    "description": "印章内容",
+                                    "position": [187,29,414,22,422,256,195,264],
+                                    "key": "stamp_info",
+                                    "value": "财    "
+                                },
+                                {
+                                    "key": "stamp_type",
+                                    "value": "其他",
+                                    "description": "印章类型",
+                                    "position": [187,29,414,22,422,256,195,264]
+                                },
+                                {
+                                    "key": "stamp_invoice_seller_id",
+                                    "value": "",
+                                    "description": "印章销售方纳税人识别号",
+                                    "position": [187,29,414,22,422,256,195,264]
+                                }
+                            ]
+                        ],
+                        "position": [5,36,502,44,512,316,4,329],
+                        "qr_code_list": [
+
+                        ],
+                        "rotated_image_width": 546,
+                        "rotated_image_height": 313,
+                        "type_description": "停车费发票",
+                        "item_list": [
+                            {
+                                "key": "invoice_number",
+                                "value": "",
+                                "position": [0,0,0,0,0,0,0,0],
+                                "description": "发票号码"
+                            },
+                            {
+                                "description": "金额",
+                                "key": "money",
+                                "value": "10",
+                                "position": [180,149,397,149,397,205,180,205]
+                            },
+                            {
+                                "key": "exist_invoice_seal",
+                                "value": "False",
+                                "position": [0,0,0,0,0,0,0,0],
+                                "description": "发票专用章存在性判断"
+                            }
+                        ],
+                        "kind": "other"
+                    }
+                ],
+                "width": 550,
+                "height": 367
+            },
+            "duration": 159,
+            "page_number": 0
+        }
+    ]
+}
+```
+
+## **常规字段说明**
+
+- x_request_id：该请求的唯一标识。
+- code：错误码，200表示成功。详情见[**快速启动-错误码说明**](/bill/bill-quickstart#错误码说明)。
+- message：错误信息，成功时为”success”。
+- version：版本号，例如”v1.0.0”。
+- duration：推理时间(毫秒)，例如”999”。
+
+## **全局信息说明：pages**
+
+国内通用票据识别API的返回结果会对每套票据与其在样本文件中的所在页数相关联，您可以在对应的pages中，查看任意上传文件页数内的票据的结构化结果。
+
+- pageNum：样本总页数，例如“10”。
+- pages：样本每页的识别结果。
+
+## **主要结果说明：result对象**
+
+国内通用票据识别API返回结果的result，其中同时包含了票据的文本结构化信息与票据的图像信息。
+
+### object_list：票据的文本结构化信息与票据的图像信息
+
+object_list 包含票据的各类图像信息，具体包括：切分后单张票据的角度、转正后的宽度和高度（单位 px）、若为 PDF 样本则包含其所在页码、图片的 base64 编码，以及开启图片切分后单张票据在原图中的坐标位置。
+
+- type：单份国内通用票据的类型，例如vat_invoice。
+- type_description：单份国内通用票据类型的中文描述，例如增值税发票。
+- image_angle：切分后单张票据的角度，角度分别为0⬆️、90➡️、180⬇️、270⬅️，例如“0”。
+- rotated_image_width：切分后单张票据转正后的宽度，单位px，例如“1500”。
+- rotated_image_height：切分后单张票据转正后的高度单位px，例如“3000”。
+- kind：切分后单张票据的使用类型，例如“traffic”。
+- kind_description：切分后单张票据使用类型的中文描述，例如“交通”。
+- position：图片切分后单张票据在原图中的坐标位置，依次为左上，右上，右下，左下。例如[10, 10, 100, 10, 100, 50, 10, 50]。
+- item_list:票据文本结构化信息的识别字段。
+  - key：识别字段名称，例如“title”。
+  - value：识别字段值，例如“北京市医疗门诊收费票据(电子)”。
+  - position：识别字段在切分后票据转正后的坐标位置，例如“[ 100, 100, 200, 100, 200, 200, 100, 200 ]”。
+  - description：识别字段中文描述，例如“标题”。
+- stamp_list：票据中的印章识别结果
+  - key：印章识别结果字段名，例如“stamp_info”，
+    - stamp_info 印章内容
+    - stamp_type 印章类型
+      印章类型支持以下印章判断，
+      - 全国统一发票监制章
+      - 发票专用章
+      - 其他
+    - stamp_invoice_seller_id 印章销售方纳税人识别号
+  - value：印章字段识别结果，例如“全国统一发票监制章”。
+  - description：印章字段识别结果的中文描述，例如“印章类型”。
+  - position：印章在图中的坐标位置，例如“[ 100, 100, 200, 100, 200, 200, 100, 200 ]”。
+- qr_code_list：票据中的二维码识别结果
+  - key：二维码内容，例如“qr_code_info”
+  - value：二维码识别结果，例如“01,61,,24118999111000010898”
+  - description：识别字段中文描述，例如“二维码内容”
+  - position：二维码在图中的坐标位置，例如“[ 100, 100, 200, 100, 200, 200, 100, 200 ]”。
+
+### 其他result字段
+
+- page_number：页码，从0开始计算，例如“10”。
+- ppi：pdf解析分辨率，默认144。
+
+### 票种字段对照表-item_list
+
+#### 增值税发票 vat_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- vat_invoice 增值税发票              |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- invoice_type 发票类型<br/>- vat_invoice_machine_no 机器编号<br/>- vat_invoice_code 发票代码<br/>- vat_invoice_daima 发票代码<br/>- vat_invoice_no 发票号码<br/>- vat_invoice_issue_date 开票日期<br/>- vat_invoice_payer_name 购买方名称<br/>- vat_invoice_payer_tax_id 购买方纳税人识别号<br/>- vat_invoice_payer_bank 购买方开户行及账号<br/>- vat_invoice_payer_add_tel 购买方地址、电话<br/>- vat_invoice_seller_name 销售方名称<br/>- vat_invoice_seller_tax_id 销售方纳税人识别号<br/>- vat_invoice_seller_bank 销售方开户行及账号<br/>- vat_invoice_seller_add_tel 销售方地址、电话<br/>- vat_invoice_tax_total 税额合计<br/>- vat_invoice_total 金额合计<br/>- vat_invoice_total_cover_tax 价税合计大写<br/>- vat_invoice_total_cover_tax_digits 价税合计小写<br/>- vat_invoice_check_code 校验码<br/>- vat_invoice_cipher_field 密码区<br/>- digital_elec_invoice_number 数电票号码<br/>- agent_mark 是否代开<br/>- vat_invoice_agent 代理人<br/>- vat_invoice_review 复核<br/>- vat_invoice_drawer 开票人<br/>- vat_invoice_customs_code 发票联次<br/>- vat_invoice_daima_right_side 右侧打印发票代码<br/>- vat_invoice_haoma_right_side 右侧打印发票号码<br/>- vat_invoice_service_type_description 服务类型描述<br/>（返回值：成品油、机动车、通行费）<br/>- ext_manufacture_supervising_seal 监制章存在性判断 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+| product_list  | array  | 票据中的明细信息（行输出）                                   |
+| + key         | string | 识别字段key<br/>- vat_invoice_product_name 项目名称<br/>- vat_invoice_specification 规格型号<br/>- vat_invoice_unit 单位<br/>- vat_invoice_tax_rate 税率/征收率<br/>- vat_invoice_price 单价<br/>- vat_invoice_quantity 数量<br/>- vat_invoice_amount 金额<br/>- vat_invoice_tax_amount 税额<br/>- vat_invoice_license_plate_number 车牌号 (通行费特有字段)<br/>- vat_invoice_pass_date 通行日期 (通行费特有字段)<br/>- vat_invoice_pass_end_date 通行日期止 (通行费特有字段)<br/>- vat_invoice_pass_start_date 通行日期起 (通行费特有字段) |
+| + value       | string | 字段识别结果                                                 |
+| + description  | string | 识别字段中文描述                                             |
+
+#### 数电票（增值税普通/专用发票）vat_digital_invoice
+
+| 字段名         | 类型   | 描述                                                         |
+| -------------- | ------ | ------------------------------------------------------------ |
+| type           | string | 切分后单张票据类型<br/>- vat_digital_invoice 数电票（增值税专用发票/普通发票） |
+| item_list      | array  |                                                              |
+| + key          | string | 识别字段key<br/>- title 标题<br/>- vat_invoice_service_type 全电票标签<br/>- invoice_type 发票类型<br/>- vat_invoice_number 发票号码<br/>- vat_invoice_code 发票代码<br/>- vat_invoice_payer_name 购买方名称<br/>- vat_invoice_payer_id 购买方纳税人识别号<br/>- vat_invoice_seller_name 销售方名称<br/>- vat_invoice_seller_id 销售方纳税人识别号<br/>- vat_invoice_subtotal 金额小计<br/>- vat_invoice_tax_subtotal 税额小计<br/>- vat_invoice_total 金额合计<br/>- vat_invoice_tax_total 税额合计<br/>- vat_invoice_total_cover_tax 价税合计大写<br/>- vat_invoice_total_cover_tax_digits 价税合计小写<br/>- vat_invoice_drawer 开票人<br/>- ext_manufacture_supervising_seal 监制章存在性判断<br/>- page_count 总页数<br/>- page_no 当前页数 |
+| + value        | string | 字段识别结果<br/>invoice_type 发票类型<br/>- 电子发票（普通发票）<br/>- 电子发票（增值税专用发票）<br/>vat_invoice_service_type 全电票标签<br/>- 建筑服务<br/>- 货物运输服务<br/>- 不动产经营租赁服务<br/>- 旅客运输服务<br/>- 餐饮<br/>- 娱乐<br/>- 不动产销售<br/>- 农产品收购<br/>- 货物<br/>- 代收车船税<br/>- 自产农产品<br/>- 差额征税-差额开票<br/>- 差额征税-全额开票<br/>- 成品油 |
+| + description  | string | 识别字段中文描述                                             |
+| product_list   | array  | 票据中的明细信息（行输出）                                   |
+| + key          | string | 通用版式包括以下Key:<br/>- vat_invoice_product_name 项目名称<br/>- vat_invoice_specification 规格型号<br/>- vat_invoice_tax 税额<br/>- vat_invoice_tax_rate 税率/征收率<br/>- vat_invoice_price 金额<br/>- vat_invoice_unit_price 单价<br/>- vat_invoice_quantity 数量<br/>- vat_invoice_unit 单位<br/>建筑服务版式包括以下Key:<br/>- vat_invoice_product_name 项目名称<br/>- vat_invoice_specification 规格型号<br/>- vat_invoice_tax 税额<br/>- vat_invoice_tax_rate 税率/征收率<br/>- vat_invoice_price 金额<br/>- vat_invoice_unit_price 单价<br/>- vat_invoice_quantity 数量<br/>- vat_invoice_unit 单位<br/>- vat_invoice_place_of_building_service 建筑服务发生地<br/>- vat_invoice_building_name 建筑项目名称<br/>不动产销售、不动产经营租赁版式包括以下Key:<br/>- vat_invoice_product_name 项目名称<br/>- vat_invoice_specification 规格型号<br/>- vat_invoice_tax 税额<br/>- vat_invoice_tax_rate 税率/征收率<br/>- vat_invoice_price 金额<br/>- vat_invoice_unit_price 单价<br/>- vat_invoice_quantity 数量<br/>- vat_invoice_unit 单位<br/>- vat_invoice_certificate_number 产权证书/不动产权证号<br/>- vat_invoice_area_unit 面积单位 |
+| + value        | string | 字段识别结果                                                 |
+| + description  | string | 识别字段中文描述                                             |
+| transport_list | array  | 票据中的明细信息（行输出）                                   |
+| + key          | string | 货物运输服务版式包括以下Key:<br/>- vat_invoice_transport_type 运输工具类型<br/>- vat_invoice_transport_number 运输工具牌号<br/>- vat_invoice_from 起运地<br/>- vat_invoice_to 到达地<br/>- vat_invoice_goods_name 运输货物名称<br/>旅客运输服务版式包括以下Key:<br/>- vat_invoice_transport_type 交通工具类型<br/>- vat_invoice_from 起运地<br/>- vat_invoice_to 到达地<br/>- vat_invoice_passenger 出行人<br/>- vat_invoice_id_number 身份证件号<br/>- vat_invoice_date 出行日期<br/>- vat_invoice_seat 等级 |
+| + value        | string | 字段识别结果                                                 |
+| + description  | string | 识别字段中文描述                                             |
+
+
+#### 数电票（铁路电子客票）railway_digital_ticket
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- railway_digital_ticket 数电票（铁路电子客票） |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- departure_station 出发地<br/>- destination_station 目的地<br/>- arrival_station 目的地<br/>- seat_number 座位号<br/>- class 座位类别<br/>- passenger_id 乘客身份证<br/>- passenger_name 乘客名称<br/>- ticket_number 票号<br/>- number 发票号码<br/>- date_of_issue 开票日期<br/>- phonics_of_departure_station 出发地拼音<br/>- phonics_of_arrival_station 目的地拼音<br/>- pretax_amount 税前金额<br/>- tax_rate 税率<br/>- tax 税额<br/>- buyer 购买方名称<br/>- buyer_tax_id 社会统一信用代码<br/>- departure_date 乘车日期、date 发票日期<br/>- departure_of_departure_date 发车当日时间<br/>- departure_of_departure_date 发车当日时间<br/>- refund 退票费<br/>- amount_refunded 已退金额<br/>- rebook 改签费<br/>- refund_reason 退票项目（返回值：票价/退票费/改签费）<br/>- type_of_business 商务类型（返回值：始发改签/退票/差额退票/补票/正常）<br/>- issuing_status 开票状态（返回值：红冲/换开/正常） |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 数电票（航空运输电子客票行程单）flight_digital_ticket
+
+| 字段名           | 类型   | 描述                                                         |
+| ---------------- | ------ | ------------------------------------------------------------ |
+| type             | string | 切分后单张票据类型<br/>- flight_digital_ticket 数电票（航空运输电子客票行程单） |
+| item_list        | array  |                                                              |
+| + key            | string | 识别字段key<br/>- agentcode 销售网点代号<br/>- passenger_name 旅客姓名<br/>- Id_no 身份证件号码<br/>- total 合计金额<br/>- tax 税额<br/>- civil_ aviation_ fund 民航发展基金<br/>- fuel_surcharge 燃油附加费<br/>- other_taxes 其他税费<br/>- issue_date 填开日期<br/>- issued_by 填开单位<br/>- e_ticket_no 电子客票号码<br/>- fare 票价<br/>- insurance 保险费<br/>- international_flag 国内国际标签<br/>- number_of_original_invoice 原发票号码<br/>- tax_control_code 税控码<br/>- Tax_code 增值税码<br/>- remark 项目名称/提示信息<br/>- buyer 购买方名称<br/>- buyer_tax_id 统一社会信用代码/购买方纳税人识别号<br/>- invoice_number 发票号码<br/>- invoice_code 发票代码<br/>- op_GinGp 开票状态 |
+| + value          | string | 字段识别结果                                                 |
+| + description    | string | 识别字段中文描述                                             |
+| flight_data_list | array  |                                                              |
+| + key            | string | 识别字段key<br/>- from 出发站<br/>- to 到达站<br/>- Carrier 承运人<br/>- flight_number 航班号<br/>- class 客舱/座位等级<br/>- date 航班日期<br/>- time 航班时间<br/>- fare_basis 客票级别/客票类别<br/>- fare 票价<br/>- not_valid_before 客票生效日期<br/>- not_valid_after 有效截至日期 |
+| + value          | string | 字段识别结果                                                 |
+| + description    | string | 识别字段中文描述                                             |
+
+
+#### 电子医疗发票 electronic_medical_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- electronic_medical_invoice 电子医疗发票 |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- invoice_code 票据代码<br/>- invoice_number 票据号码<br/>- payer_uniform_social_credit_code 交款人统一社会信用代码<br/>- payee 收款人<br/>- correct_code 校验码<br/>- date 开票日期<br/>- amount_total 合计大写<br/>- amount_total_digits 合计小写<br/>- cashier 收款员<br/>- cashier_company 收款单位<br/>- reviewer 复核人<br/>- operator 操作员<br/>- workflow_number 业务流水号<br/>- patient_number 门诊号<br/>- visit_date 就诊/门诊日期<br/>- medical_institution 医疗机构类型<br/>- medical_insurance_type 医保类型<br/>- medical_insurance_number 医保编号<br/>- medical_card_number 医保卡<br/>- medical_pooling_payment 医保统筹基金支付<br/>- other_payment 其他支付<br/>- personal_account_payment 个人账户支付<br/>- personal_insurance_payment 个人自付<br/>- personal_payment 个人自负<br/>- self_payment 个人自费<br/>- medical_record_number 病历号<br/>- hospitalized_number 住院号<br/>- hospitalization_department 住院科别<br/>- hospitalization_ward 住院病区<br/>- advance_payment 预缴金额<br/>- supplementary_payment 补缴金额<br/>- refund_amount 退费金额 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+| product_list  | array  |                                                              |
+| + key         | string | 识别字段key<br/>- project_code_table 表格项目编码<br/>- project_name_table 表格项目名称<br/>- specification_table 规格型号<br/>- number_table 表格数量<br/>- amount_table 表格金额 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 门诊发票 outpatient_medical_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- outpatient_medical_invoice 门诊发票 |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- invoice_number 票据号码<br/>- date 开票日期<br/>- amount_total 合计大写<br/>- amount_digital 合计小写<br/>- cashier_company 收款单位<br/>- cashier 收款人<br/>- workflow_number 业务流水号<br/>- patient_number 门诊号<br/>- medical_institution_type 医疗机构类型<br/>- medical_insurance_number 医保编号<br/>- sex 性别<br/>- medical_pooling_payment 医保统筹基金支付<br/>- personal_account_payment 个人账户支付<br/>- cash_payment 个人现金支付<br/>- personal_payment 个人自负<br/>- self_payment 个人自费 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+| product_list  | array  |                                                              |
+| + key         | string | 识别字段key<br/>- project_code_table 表格项目编码<br/>- project_name_table 表格项目名称<br/>- specification_table 规格型号<br/>- number_table 表格数量<br/>- amount_table 表格金额<br/>- unit_price_table 表格单价 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 住院发票 inpatient_medical_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- inpatient_medical_invoice 住院发票  |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- invoice_number 票据号码<br/>- date 开票日期<br/>- amount_char 合计大写<br/>- amount_digital 合计小写<br/>- cashier_company 收款单位<br/>- cashier 收款人<br/>- workflow_number 业务流水号<br/>- medical_institution_type 医疗机构类型<br/>- medical_insurance_type 医保类型<br/>- medical_insurance_number 医保编号<br/>- sex 性别<br/>- medical_pooling_payment 医保统筹基金支付<br/>- personal_account_payment 个人账户支付<br/>- cash_payment 个人现金支付<br/>- medical_record_number 病历号<br/>- hospitalized_number 住院号<br/>- hospitalization_department 住院科别<br/>- admission_date 住院日期<br/>- discharge_date 住院日期<br/>- advance_payment 预缴金额<br/>- supplementary_payment 补缴金额<br/>- refund_amount 退费金额 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+| product_list  | array  |                                                              |
+| + key         | string | 识别字段key<br/>- project_name_table 表格项目名称<br/>- amount_table 表格金额 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 火车票 train_ticket
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- train_ticket 火车票                 |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- ticket_number 火车票红色编码<br/>- boarding_gate 检票口<br/>- departure_station 出发地<br/>- train_number 车次号<br/>- arrival_station 目的地<br/>- departure_time 出发时间<br/>- datetime_of_departure_date 发车日期<br/>- timely_of_departure_date 发车当日时间<br/>- seat_number 座位号<br/>- class 座位类别<br/>- passenger_id 乘客身份证<br/>- passenger_name 乘客名称<br/>- ticket_price 票价<br/>- refund 退票费<br/>- rebook 改签费 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 出租车发票 taxi_ticket
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- taxi_ticket 出租车发票              |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- invoice_code 发票代码<br/>- invoice_no 发票号码<br/>- date 日期<br/>- car_number 车号<br/>- boarding_time 上车时间<br/>- landing_time 下车时间<br/>- mileage 里程<br/>- price 票面金额<br/>- fuel_surcharge 燃油附加费<br/>- surcharge 附加费<br/>- location 起始/目的地<br/>- fare 金额<br/>- call_service_surcharge 电召费<br/>- service_surcharge 服务费<br/>- exist_manufacture_supervising_seal 监制章存在性判断<br/>- exist_manufacture_supervising_seal 监制章存在性判断 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 通用定额发票 quota_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- quota_invoice 通用定额发票          |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- quota_invoice_code 发票代码<br/>- quota_invoice_number 发票号码<br/>- amount_char 金额(大写)<br/>- amount_digits 金额(小写)<br/>- location 发票代码<br/>- exist_manufacture_supervising_seal 发票专用章存在性判断<br/>- exist_manufacture_supervising_seal 监制章存在性判断 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+#### 网约车行程单 ride_receipt
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- ride_receipt 网约车行程单           |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- application_date 申请日期<br/>- trip_date 行程日期<br/>- startdate_of_trip_date 行程开始日期<br/>- enddate_of_trip_date 行程结束日期<br/>- trip_number 合计行程数量<br/>- amount_total 合计<br/>- passenger_mobile 客人手机号/预定人手机号<br/>- other_expenses_total 其他费用合计 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+| product_list  | array  |                                                              |
+| + key         | string | 识别字段key<br/>- order_no_table 表格序号<br/>- order_no_table 表格订单号<br/>- service_type_table 表格订单/服务类型<br/>- supplier_table 表格服务商<br/>- car_type_table 表格车型<br/>- departure_point_table 表格起点<br/>- destination_table 表格终点<br/>- departure_time_table 表格出发时间<br/>- driving_time_table 表格行驶时长<br/>- order_time_table 表格下单时间<br/>- pick_up_time_table 表格用车时间<br/>- pick_up_address_table 表格用车地址<br/>- mileage_table 表格行驶里程<br/>- journey_amount_table 表格行程金额<br/>- amount_table 表格金额<br/>- other_expenses_table 表格其他费用 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 二手车销售统一发票 used_car_purchase_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- used_car_purchase_invoice 二手车销售统一发票 |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- invoice_type 发票类型<br/>- vehicle_invoice_pages_number 发票联次<br/>- vehicle_invoice_daima 发票代码<br/>- vehicle_invoice_haoma 发票号码<br/>- vehicle_invoice_drawer 开票人<br/>- vehicle_invoice_buyer_id 买方单位代码/身份证号码<br/>- vehicle_invoice_buyer_addr 买方单位/个人住址<br/>- vehicle_invoice_buyer_phone 买方电话<br/>- vehicle_invoice_seller_name 卖方名称<br/>- vehicle_invoice_seller_id 卖方单位代码/身份证号码<br/>- vehicle_invoice_seller_addr 卖方单位/个人住址<br/>- vehicle_invoice_seller_phone 卖方电话<br/>- vehicle_invoice_register_num 登记证号<br/>- vehicle_invoice_plate_num 车牌照号<br/>- vehicle_invoice_vehicle_type 车辆类型<br/>- vehicle_invoice_vin 车辆识别代码<br/>- vehicle_invoice_car_model 厂牌型号<br/>- vehicle_invoice_dmv 转入地车辆管理所名称<br/>- vehicle_invoice_total_price_char 车价合计(大写)<br/>- vehicle_invoice_total_price_digits 车价合计(小写)<br/>- vehicle_invoice_auction_house 经营、拍卖单位<br/>- vehicle_invoice_auction_house_addr 拍卖单位地址<br/>- vehicle_invoice_auction_house_tax_id 拍卖单位纳税人识别号<br/>- vehicle_invoice_auction_house_bank_account 拍卖单位开户银行、账号<br/>- vehicle_invoice_market 二手车市场<br/>- vehicle_invoice_market_addr 二手车市场地址<br/>- vehicle_invoice_market_tax_id 二手车市场纳税人识别号<br/>- vehicle_invoice_market_bank_account 二手车市场开户银行、账号<br/>- vehicle_invoice_market_phone 二手车市场电话<br/>- vehicle_invoice_machine_id 机器编号<br/>- vehicle_invoice_check_code 校验码<br/>- vehicle_invoice_note 备注<br/>- vehicle_invoice_authorized_person 授权人<br/>- vehicle_invoice_issued_by 开票人<br/>- vehicle_invoice_jieda_daima 机打代码<br/>- vehicle_invoice_jieda_haoma 机打号码<br/>- vehicle_invoice_check_code 校验码<br/>- exist_invoice_seal 发票专用章存在性判断<br/>- exist_manufacture_supervising_seal 监制章存在性判断 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 机动车销售统一发票 car_purchase_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- car_purchase_invoice 机动车销售统一发票 |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- invoice_type 发票类型<br/>- vehicle_invoice_pages_number 发票联次<br/>- vehicle_invoice_daima 发票代码<br/>- vehicle_invoice_haoma 发票号码<br/>- vehicle_invoice_date 开票日期<br/>- vehicle_invoice_machine_id 机器编号<br/>- vehicle_invoice_jida_daima 机打代码<br/>- vehicle_invoice_jida_haoma 机打号码<br/>- vehicle_invoice_check_code 校验码<br/>- vehicle_invoice_buyer 购货单位/人/购买方名称<br/>- vehicle_invoice_buyer_id 购方身份证号码/组织机构代码<br/>- vehicle_invoice_buyer_addr 购方单位/个人地址<br/>- vehicle_invoice_buyer_phone 购方电话<br/>- vehicle_invoice_car_type 车辆类型<br/>- vehicle_invoice_car_model 厂牌型号<br/>- vehicle_invoice_car_made 产地<br/>- vehicle_invoice_vin 车辆识别代号/车架号码<br/>- vehicle_invoice_cert_id 合格证号<br/>- vehicle_invoice_entrust_no 进口证明号<br/>- vehicle_invoice_commodity_inspection_id 商检单号<br/>- vehicle_invoice_engine_id 发动机号码<br/>- vehicle_invoice_import_cert 进口证明号<br/>- vehicle_invoice_total_price_char 价税合计(大写)<br/>- vehicle_invoice_total_price_digits 价税合计(小写)<br/>- vehicle_invoice_seller_address 销售单位地址<br/>- vehicle_invoice_seller_bank_account 销售单位账号<br/>- vehicle_invoice_seller_bank_name 销售单位开户银行<br/>- vehicle_invoice_seller_tax_id 销售方纳税人识别号<br/>- vehicle_invoice_seller_telephone 销售单位电话<br/>- vehicle_invoice_tax_rate 增值税税率或征收率<br/>- vehicle_invoice_tax_amount 增值税税额<br/>- vehicle_invoice_invoice_place 主管税务机关<br/>- vehicle_invoice_tax_authority_id 主管税务机关代码<br/>- vehicle_invoice_price_without_tax 不含税价<br/>- vehicle_invoice_purchase_unit_person_num 完税凭证号<br/>- vehicle_invoice_born_date 车辆生产日期<br/>- vehicle_invoice_limit 吨位<br/>- vehicle_invoice_tonnage 限乘人数<br/>- vehicle_invoice_issued_by 开票人<br/>- vehicle_invoice_reviewer 复核人<br/>- vehicle_invoice_checker 收款人<br/>- exist_invoice_seal 发票专用章存在性判断<br/>- exist_manufacture_supervising_seal 监制章存在性判断 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 过路过桥费发票 vehicle_toll​
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- vehicle_toll 过路过桥费发票         |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- vehicle_code 车辆通行代码<br/>- toll_number 车辆通行费号码<br/>- money 收费金额<br/>- date 收费日期<br/>- time 收费时间<br/>- location 发票所在地<br/>- entrance 入口<br/>- exit 出口<br/>- exist_invoice_seal 发票专用章存在性判断<br/>- exist_manufacture_supervising_seal 监制章存在性判断 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 增值税销货清单 vat_invoice_sales_list
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- vat_invoice_sales_list 增值税销货清单 |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- purchaser_name 购买方名称<br/>- seller_name 销售方名称<br/>- invoice_code 发票代码<br/>- invoice_number 发票号码<br/>- total_page 合计页码<br/>- current_page 当前页码<br/>- total 金额合计<br/>- tax_total 税额合计<br/>- issued_date 填开日期<br/>- amount_subtotal 金额小计<br/>- tax_subtotal 税额小计<br/>- remarks 备注<br/>- title 标题<br/>- exist_invoice_seal 发票专用章存在性判断 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+| product_list  | array  |                                                              |
+| + key         | string | 识别字段key<br/>- goods_services 货物/劳务/名称<br/>- specification 规格型号<br/>- unit 单位<br/>- quantity 数量<br/>- unit_price 单价<br/>- amount 金额<br/>- tax_rate 税率<br/>- tax 税额<br/>- serial_number 表格序号 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 公路客运发票 highway_passenger_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- highway_passenger_invoice 公路客运发票 |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- invoice_code 发票代码<br/>- invoice_number 发票号码<br/>- money 金额<br/>- date 日期<br/>- time 时间<br/>- departure 出发站<br/>- destination 到达站<br/>- passenger_name 乘客姓名<br/>- passenger_id 乘客身份证号码<br/>- exist_invoice_seal 发票专用章存在性判断<br/>- title 标题<br/>- bus_number 车次 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 旅客运输发票 passenger_transport_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- passenger_transport_invoice 旅客运输发票 |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- invoice_code 发票代码<br/>- invoice_number 发票号码<br/>- money 金额<br/>- date 日期<br/>- time 时间<br/>- departure 出发站<br/>- arrival 到达站<br/>- passenger_name 乘客姓名<br/>- passenger_id 乘客身份证号码<br/>- exist_invoice_seal 发票专用章存在性判断<br/>- title 标题<br/>- bus_number 车次 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 停车费发票 parking_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- parking_invoice 停车费发票          |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- invoice_number 发票号码<br/>- money 金额<br/>- exist_invoice_seal 发票专用章存在性判断 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 船运客票 shipping_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- shipping_invoice 船运客票           |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- invoice_code 发票代码<br/>- invoice_number 发票号码<br/>- title 标题<br/>- date 日期<br/>- time 时间<br/>- departure 出发点<br/>- arrival 到达点<br/>- exist_invoice_seal 发票专用章存在性判断<br/>- passenger_name 乘客姓名<br/>- passenger_id 乘客身份证号码 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 航空运输电子客票行程单 flight_itinerary
+
+| 字段名           | 类型   | 描述                                                         |
+| ---------------- | ------ | ------------------------------------------------------------ |
+| type             | string | 切分后单张票据类型<br/>- flight_itinerary 航空运输电子客票行程单 |
+| item_list        | array  |                                                              |
+| + key            | string | 识别字段key<br/>- agentcode 销售单位代号<br/>- passenger_name 旅客姓名<br/>- Id_no 身份证件号码<br/>- serial_number 印刷序号<br/>- total 合计金额<br/>- fare 票价<br/>- civil_aviation_fund 民航发展基金<br/>- fuel_surcharge 燃油附加费<br/>- other_taxes 其他税费<br/>- issued_date 填开日期<br/>- issued_by 填开单位<br/>- e_ticket_no 电子客票号码<br/>- insurance 保险费<br/>- restriction 签注<br/>- international_flag 国内国际标签<br/>- airport_tax 机场税 |
+| + value          | string | 字段识别结果                                                 |
+| + description    | string | 识别字段中文描述                                             |
+| flight_data_list | array  | 飞机行程单中本行信息（行输出）                               |
+| + key            | string | 识别字段key<br/>- from 出发站<br/>- to 到达站<br/>- carrier 承运人<br/>- flight_number 航班号<br/>- seat_class 座位等级<br/>- date 航班日期<br/>- time 航班时间<br/>- fare_basis 客票级别<br/>- fare 票价<br/>- not_valid_before 客票生效日期<br/>- not_valid_after 有效截至日期 |
+| + value          | string | 字段识别结果                                                 |
+| + description    | string | 识别字段中文描述                                             |
+
+
+#### 增值税普通发票（卷票）vat_volume_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- vat_volume_invoice 增值税普通发票（卷票） |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- invoice_type 发票类型<br/>- invoice_number 发票号码<br/>- machine_code 机器代码<br/>- invoice_code 发票代码<br/>- date 开票日期<br/>- total_digits 合计金额(小写)<br/>- total_char 合计金额(大写)<br/>- check_number 校验码<br/>- buy_name 购买方名称<br/>- buy_tax_number 购买方纳税人识别号<br/>- sell_name 销售方名称<br/>- sell_tax_number 销售方纳税人识别号<br/>- cashier_name 收款员<br/>- reviewer_name 复核员<br/>- exist_invoice_seal 发票专用章存在性判断<br/>- exist_manufacture_supervising_seal 监制章存在性判断 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+| product_list  | array  | 票据中的明细信息（行输出）                                   |
+| + key         | string | 识别字段key<br/>- goods_name_list 项目名称明细<br/>- goods_spec_list 项目规格明细<br/>- goods_number_list 项目数量明细<br/>- goods_money_list 项目金额明细 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 非税收入统一票据 non_tax_income_unified_bill
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- non_tax_income_unified_bill 非税收入统一票据 |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- payer 缴款人<br/>- invoice_number 票据号码<br/>- check_code 校验码<br/>- date 开票日期<br/>- total_char 金额合计(大写)<br/>- total_digits 金额合计(小写)<br/>- checker 复核人<br/>- payer_tax_id 交款人统一社会信用代码<br/>- payee 收款人<br/>- payee_name 收款单位<br/>- remark 其他信息/备注<br/>- currency_code 币种<br/>- payment_method 付款方式<br/>- payee_code 收款单位编码<br/>- payee_name 收款单位名称<br/>- payer_total_amount 缴款人总金额<br/>- payer_account_name 付款人户名<br/>- payer_account 付款人账号<br/>- payer_account_opening_bank 付款人开户银行<br/>- receiver_account_name 收款人全称<br/>- receiver_account 收款人账号<br/>- receiver_account_opening_bank 收款人开户银行<br/>- handle 经办人<br/>- block_chain 区块链标识<br/>- exist_manufacture_supervising_seal 监制章存在性判断 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+| product_list  | array  | 票据中的明细信息（行输出）                                   |
+| + key         | string | 识别字段key<br/>- item_code 项目编码<br/>- item_name 项目名称<br/>- item_unit 单位<br/>- item_quantity 数量<br/>- item_std 规格<br/>- item_price 单价<br/>- item_amount 金额<br/>- item_ext 备注 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 通用机打发票 general_machine_invoice
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- general_machine_invoice 通用机打发票 |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- invoice_code 发票代码<br/>- invoice_number 发票号码<br/>- date 开票日期<br/>- time 时间<br/>- seller_tax_id 收款方证件号<br/>- seller_name 收款方名称<br/>- buyer 付款方名称<br/>- buyer_tax_id 付款方证件号<br/>- total 金额<br/>- exist_invoice_seal 发票专用章存在性判断<br/>- exist_manufacture_supervising_seal 监制章存在性判断 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+
+#### 医疗收费明细 medical_invoice_list
+
+| 字段名        | 类型   | 描述                                                         |
+| ------------- | ------ | ------------------------------------------------------------ |
+| type          | string | 切分后单张票据类型<br/>- general_machine_invoices 通用机打发票（医疗收费明细场景） |
+| item_list     | array  |                                                              |
+| + key         | string | 识别字段key<br/>- title 标题<br/>- belong_code 所属电子票据代码<br/>- invoice_number 所属电子票据号码<br/>- date 开票日期<br/>- time 时间<br/>- amount_digital 合计金额<br/>- subtotal 小计金额<br/>- total 合计金额<br/>- page_no 当前页数<br/>- total_page 总页数 |
+| + value       | string | 字段识别结果                                                 |
+| + description | string | 识别字段中文描述                                             |
+
+#### 其他 other
+
+| 字段名 | 类型   | 描述                                                         |
+| ------ | ------ | ------------------------------------------------------------ |
+| type   | string | 切分后单张票据类型<br/>- other 其他<br/>- unauthorized_type 未授权的类型 |
+| kind   | string | 切分后单张票据的使用类型<br/>- other 其他                    |
+
+
+
+

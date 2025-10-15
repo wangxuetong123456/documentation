@@ -1,0 +1,3022 @@
+# 2024/7/30
+openapi: 3.0.3
+info:
+  version: 2.0.0
+  title: 多票据v2.0接口识别全接口
+servers:
+  - url: https://api.textin.com
+    description: Production server
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+paths:
+  /ai/service/v1/bill_recognize_v2:
+    post:
+      summary: 国内通用票据v2接口识别
+
+      parameters:
+        - name: coord_restore
+          in: query
+          description: 调整各字段的返回坐标逻辑，1代表坐标以原图为基准，0代表坐标以票据切图为基准，默认为0
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+            default: 0
+        - name: specific_pages
+          in: query
+          description: 指定多页样本中需要识别的样本，可以使用"1,3,2"形式来逐页选择，或"2-4"形式来连续选择，返回结果会重新排序以遵照源文件顺序，默认为空，识别所有页面
+          schema:
+            type: string
+            example: "3-5,1"
+        - name: crop_complete_image
+          in: query
+          description: 选择是否需要输出各票据图片，1为输出各票据切片base64编码，0为不输出各票据图片，默认为0
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+            default: 0
+        - name: crop_value_image
+          in: query
+          description: 选择是否返回关键字段切图图片，1为输出字段图片，0为不输出字段图片，默认为0
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+            default: 0
+        - name: merge_digital_elec_invoice
+          in: query
+          description: |
+            支持将多页全电票的结果合并为一页，1为合并，0为不合并，默认为0
+            当且仅当一份多页样本的每一页都是全电票，且每张发票的发票号码都一致时才可合并。
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+            default: 0
+        - name: return_ppi
+          in: query
+          description: |
+            返回pdf解码ppi
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+            default: 0
+
+      operationId: cci_ai_service_v1_receipt_crop_and_recog_multi
+
+      requestBody:
+        description: |
+          支持以下两种请求格式
+
+          1. Content-Type: application/octet-stream
+          要上传的图片，目前支持jpg、png、bmp、pdf、tiff、ofd、单帧gif等大部分格式，pdf和ofd文件支持多页​请注意，请求体的数据格式为本地文件的二进制流，非 FormData 或其他格式。文件大小不超过 50M，图像宽高须介于 20 和 10000（像素）之间。
+
+          2. Content-Type: text/plain
+          请求体的数据格式为文本，内容为在线文件的URL链接（支持http以及https协议）。在线文件大小不超过 50M，图像宽高须介于 20 和 10000（像素）之间。
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+              example: success
+
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/CodeMessage"
+                  - $ref: "#/components/schemas/Response"
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+  schemas:
+    CodeMessage:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          example: 200
+          type: integer
+          description: |
+            错误码
+            - 200: success
+            - 40101: x-ti-app-id 或 x-ti-secret-code 为空 
+            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败
+            - 40003: 余额不足，请充值后再使用
+            - 40004: 参数错误，请查看技术文档，检查传参
+            - 40007: 机器人不存在或未发布 
+            - 40008: 机器人未开通，请至市场开通后重试 
+            - 40301: 文件类型不支持，接口会返回实际检测到的文件类型，如“当前文件类型为.gif”
+            - 40302: 上传文件大小不符，文件大小不超过 50M
+            - 40303: 文件类型不支持
+            - 40304: 图片尺寸不符，图像宽高须介于 20 和 10000（像素）之间
+            - 40305: 识别文件未上传
+            - 40306: QPS超过限制，收到此状态码时请勿重试，持续请求可能触发IP流控，如需扩容请联系商务
+            - 40400: 无效的请求链接，请检查链接是否正确
+            - 30203: 基础服务故障，请稍后重试  
+            - 500: 服务器内部错误
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40003
+            - 40004
+            - 40007
+            - 40008
+            - 40301
+            - 40302
+            - 40303
+            - 40304
+            - 40305
+            - 40306
+            - 40400
+            - 30203
+            - 500
+
+        message:
+          type: string
+          description: 成功或错误信息
+          example: success
+    Response:
+      type: object
+      # description: 响应体
+      properties:
+        pageNum:
+          type: integer
+          description: 总页数
+          example: 1
+        pages:
+          type: array
+          description: 样本每页的识别结果
+          items:
+            type: object
+            required:
+              - result
+              - page_number
+            properties:
+              result:
+                type: object
+                properties:
+                  object_list:
+                    allOf:
+                      - $ref: "#/components/schemas/ObjectList"
+
+              duration:
+                type: integer
+                description: 识别耗时
+                example: 7700
+
+              page_number:
+                type: integer
+                description: 页码, 从0开始计算
+                example: 0
+
+              ppi:
+                type: number
+                format: float
+                description: pdf解码ppi
+                example: 0.0
+
+    ObjectList:
+      type: array
+      items:
+        allOf:
+          - $ref: "#/components/schemas/ObjectListCommon"
+          - oneOf:
+              - $ref: "#/components/schemas/TypeOther"
+              - $ref: "#/components/schemas/Type_vat_invoice"
+              - $ref: "#/components/schemas/Type_vat_digital_invoice"
+              - $ref: "#/components/schemas/Type_railway_digital_ticket"
+              - $ref: "#/components/schemas/Type_flight_digital_ticket"
+              - $ref: "#/components/schemas/Type_electronic_medical_invoice"
+              - $ref: "#/components/schemas/Type_outpatient_medical_invoice"
+              - $ref: "#/components/schemas/Type_inpatient_medical_invoice"
+              - $ref: "#/components/schemas/Type_train_ticket"
+              - $ref: "#/components/schemas/Type_taxi_ticket"
+              - $ref: "#/components/schemas/Type_quota_invoice"
+              - $ref: "#/components/schemas/Type_ride_receipt"
+              - $ref: "#/components/schemas/Type_used_car_purchase_invoice"
+              - $ref: "#/components/schemas/Type_car_purchase_invoice"
+              - $ref: "#/components/schemas/Type_vehicle_toll"
+              - $ref: "#/components/schemas/Type_vat_invoice_sales_list"
+              - $ref: "#/components/schemas/Type_highway_passenger_invoice"
+              - $ref: "#/components/schemas/Type_passenger_transport_invoice"
+              - $ref: "#/components/schemas/Type_parking_invoice"
+              - $ref: "#/components/schemas/Type_shipping_invoice"
+              - $ref: "#/components/schemas/Type_flight_itinerary"
+              - $ref: "#/components/schemas/Type_vat_volume_invoice"
+              - $ref: "#/components/schemas/Type_non_tax_income_unified_bill"
+              - $ref: "#/components/schemas/Type_general_machine_invoice"
+
+    ObjectListCommon:
+      type: object
+      required:
+        - type
+        - type_description
+        - image_angle
+        - rotated_image_width
+        - rotated_image_height
+        - kind
+        - kind_description
+        - position
+        - stamp_list
+        - qr_code_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - vat_invoice                 增值税发票
+            - vat_digital_invoice         数电票(增值税专用发票/普通发票)
+            - railway_digital_ticket      数电票(铁路电子客票)
+            - flight_digital_ticket       数电票(航空运输电子客票行程单)
+            - electronic_medical_invoice  电子医疗发票
+            - outpatient_medical_invoice  纸质门诊发票
+            - inpatient_medical_invoice   纸质住院发票
+            - train_ticket                火车票
+            - taxi_ticket                 出租车票
+            - quota_invoice               通用定额发票
+            - ride_receipt                网约车行程单
+            - used_car_purchase_invoice   二手车销售统一发票
+            - car_purchase_invoice        机动车销售统一发票
+            - other                       其他
+            - unauthorized_type           未授权的类型
+            - vehicle_toll                过路过桥费发票
+            - vat_invoice_sales_list      增值税销货清单
+            - highway_passenger_invoice   公路客运发票
+            - passenger_transport_invoice 旅客运输发票
+            - parking_invoice             停车费发票
+            - shipping_invoice            船运客票
+            - flight_itinerary            航空运输电子客票行程单
+            - vat_volume_invoice          增值税普通发票(卷票)
+            - non_tax_income_unified_bill 非税收入统一票据
+            - general_machine_invoice     通用机打发票
+          enum:
+            - vat_invoice
+            - vat_digital_invoice
+            - railway_digital_ticket
+            - flight_digital_ticket
+            - electronic_medical_invoice
+            - outpatient_medical_invoice
+            - inpatient_medical_invoice
+            - train_ticket
+            - taxi_ticket
+            - quota_invoice
+            - ride_receipt
+            - used_car_purchase_invoice
+            - car_purchase_invoice
+            - other
+            - unauthorized_type
+            - vehicle_toll
+            - vat_invoice_sales_list
+            - highway_passenger_invoice
+            - passenger_transport_invoice
+            - parking_invoice
+            - shipping_invoice
+            - flight_itinerary
+            - vat_volume_invoice
+            - non_tax_income_unified_bill
+            - general_machine_invoice
+          example: vat_invoice
+
+        type_description:
+          type: string
+          description: 切分后单张票据类型中文描述
+          example: 增值税普通发票
+
+        image_angle:
+          type: integer
+          description: 切分后单张票据的角度
+          enum:
+            - 0
+            - 90
+            - 180
+            - 270
+          example: 0
+
+        rotated_image_width:
+          type: integer
+          description: 切分后单张票据转正后的宽度
+          minimum: 1
+          example: 1000
+
+        rotated_image_height:
+          type: integer
+          description: 切分后单张票据转正后的高度
+          minimum: 1
+          example: 3000
+
+        kind:
+          type: string
+          description: |
+            切分后单张票据的使用类型
+            - communication     通讯
+            - daily             日用
+            - digital_appliance 数码电器
+            - education         教育
+            - foodstuff         食品
+            - lodging           住宿
+            - medical_treatment 医疗
+            - office            办公
+            - other             其他
+            - post              邮寄
+            - raiment           服饰
+            - rent_decoration   房租装饰
+            - repast            餐饮
+            - service           服务
+            - traffic           交通
+            - vehicle           用车
+          enum:
+            - communication
+            - daily
+            - digital_appliance
+            - education
+            - foodstuff
+            - lodging
+            - medical_treatment
+            - office
+            - other
+            - post
+            - raiment
+            - rent_decoration
+            - repast
+            - service
+            - traffic
+            - vehicle
+          example: traffic
+
+        kind_description:
+          type: string
+          description: 切分后单张票据使用类型中文描述
+          example: 交通
+
+        position:
+          type: array
+          minItems: 0
+          maxItems: 8
+          items:
+            type: integer
+            description: |
+              切分后单张票据在原图中的坐标位置
+              [0,1,2,3,4,5,6,7]
+              - (0, 1) 左上角坐标
+              - (2, 3) 右上角坐标
+              - (4, 5) 右下角坐标
+              - (6, 7) 左下角坐标
+            example: 100
+          example: [100, 100, 200, 100, 200, 200, 100, 200]
+
+        item_list:
+          type: array
+          description: 识别字段
+          items:
+            type: object
+            required:
+              - key
+              - value
+              - position
+              - description
+            properties:
+              key:
+                type: string
+                description: 识别字段名称
+                example: title
+
+              value:
+                type: string
+                description: 识别字段值
+                example: "True"
+
+              position:
+                type: array
+                minItems: 0
+                maxItems: 8
+                items:
+                  type: integer
+                  description: |
+                    识别字段在切分后票据转正后的坐标位置
+                    [0,1,2,3,4,5,6,7]
+                    - (0, 1) 左上角坐标
+                    - (2, 3) 右上角坐标
+                    - (4, 5) 右下角坐标
+                    - (6, 7) 左下角坐标
+                  example: 100
+                example: [100, 100, 200, 100, 200, 200, 100, 200]
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: "标题"
+
+        stamp_list:
+          type: array
+          minItems: 0
+          description: 票据中的印章结果
+          items:
+            type: array
+            description: 单个印章明细
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - position
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    - stamp_info              印章内容
+                    - stamp_type              印章类型
+                    - stamp_invoice_seller_id 印章销售方纳税人识别号
+
+                    其中印章类型, 当前支持以下类型的判断：
+                    - 全国统一发票监制章
+                    - 发票专用章
+                    - 其他
+                  enum:
+                    - stamp_info
+                    - stamp_type
+                    - stamp_invoice_seller_id
+                  example: stamp_type
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "全国统一发票监制章"
+
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: "印章类型"
+
+                position:
+                  type: array
+                  minItems: 0
+                  maxItems: 8
+                  items:
+                    type: integer
+                    description: |
+                      印章在图中的坐标位置
+                      [0,1,2,3,4,5,6,7]
+                      - (0, 1) 左上角坐标
+                      - (2, 3) 右上角坐标
+                      - (4, 5) 右下角坐标
+                      - (6, 7) 左下角坐标
+                    example: 100
+                  example: [100, 100, 200, 100, 200, 200, 100, 200]
+
+        qr_code_list:
+          type: array
+          minItems: 0
+          description: 票据中的二维码结果
+          items:
+            type: array
+            description: 单个二维码结果
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - position
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    - qr_code_info              二维码内容
+                  enum:
+                    - qr_code_info
+                  example: qr_code_info
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "01,61,,24118999111000010898,770.00,20240412,,0134"
+
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: "二维码内容"
+
+                position:
+                  type: array
+                  minItems: 0
+                  maxItems: 8
+                  items:
+                    type: integer
+                    description: |
+                      二维码在图中的坐标位置
+                      [0,1,2,3,4,5,6,7]
+                      - (0, 1) 左上角坐标
+                      - (2, 3) 右上角坐标
+                      - (4, 5) 右下角坐标
+                      - (6, 7) 左下角坐标
+                    example: 100
+                  example: [100, 100, 200, 100, 200, 200, 100, 200]
+
+    # 具体的票据类型
+    Type_vat_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - vat_invoice       增值税发票
+          enum:
+            - vat_invoice
+          example: vat_invoice
+
+        item_list:
+          type: array
+          minItems: 25
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - title 标题
+                  - invoice_type                        发票类型
+                  - vat_invoice_machine_no              机器编号
+                  - vat_invoice_correct_code            校验码
+                  - vat_invoice_daima                   发票代码
+                  - vat_invoice_haoma                   发票号码
+                  - vat_invoice_issue_date              开票日期
+                  - vat_invoice_payer_name              购买方名称
+                  - vat_invoice_payer_bank_account      购买方开户行及账号
+                  - vat_invoice_rate_payer_id           购买方纳税人识别号
+                  - vat_invoice_payer_addr_tell         购买方地址、电话
+                  - vat_invoice_seller_name             销售方名称
+                  - vat_invoice_seller_bank_account     销售方开户行及帐号
+                  - vat_invoice_seller_id               销售方纳税人识别号
+                  - vat_invoice_seller_addr_tell        销售方地址、电话
+                  - vat_invoice_tax_total               税额合计
+                  - vat_invoice_total                   金额合计
+                  - vat_invoice_total_cover_tax         价税合计大写
+                  - vat_invoice_total_cover_tax_digits  价税合计小写
+                  - vat_invoice_total_note              备注 
+                  - vat_invoice_cipher_field            密码区
+                  - digital_elec_invoice_number         数电票号码
+                  - vat_invoice_payee                   收款人
+                  - vat_invoice_review                  复核
+                  - vat_invoice_drawer                  开票人
+                  - vat_invoice_page_number             发票联次
+                  - agent_mark                          是否代开
+                  - exist_invoice_seal                  发票专用章存在性判断
+                  - exist_manufacture_supervising_seal  监制章存在性判断
+                  - vat_invoice_daima_right_side        右侧打印发票代码
+                  - vat_invoice_haoma_right_side        右侧打印发票号码
+                  - vat_invoice_service_type            服务类型标签
+                enum:
+                  - title
+                  - invoice_type
+                  - vat_invoice_machine_no
+                  - vat_invoice_correct_code
+                  - vat_invoice_daima
+                  - vat_invoice_haoma
+                  - vat_invoice_issue_date
+                  - vat_invoice_payer_name
+                  - vat_invoice_payer_bank_account
+                  - vat_invoice_rate_payer_id
+                  - vat_invoice_payer_addr_tell
+                  - vat_invoice_seller_name
+                  - vat_invoice_seller_bank_account
+                  - vat_invoice_seller_id
+                  - vat_invoice_seller_addr_tell
+                  - vat_invoice_tax_total
+                  - vat_invoice_total
+                  - vat_invoice_total_cover_tax
+                  - vat_invoice_total_cover_tax_digits
+                  - vat_invoice_total_note
+                  - vat_invoice_cipher_field
+                  - digital_elec_invoice_number
+                  - vat_invoice_payee
+                  - vat_invoice_review
+                  - vat_invoice_drawer
+                  - vat_invoice_page_number
+                  - agent_mark
+                  - exist_invoice_seal
+                  - exist_manufacture_supervising_seal
+                  - vat_invoice_daima_right_side
+                  - vat_invoice_haoma_right_side
+                  - vat_invoice_service_type
+                example: title
+
+              value:
+                type: string
+                description: 字段识别结果
+                example: "北京增值税普通发票"
+
+              description:
+                type: string
+                description: 字段中文描述
+                example: 标题
+
+        product_list:
+          type: array
+          minItems: 0
+          description: 增票中商品信息（行输出）
+          items:
+            type: array
+            minItems: 8
+            uniqueItems: true
+            description: 一行商品信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    识别字段key
+                    - vat_invoice_product_name          项目名称
+                    - vat_invoice_tax         	        税额
+                    - vat_invoice_tax_rate              税率/征收率
+                    - vat_invoice_price         	      金额
+                    - vat_invoice_unit_price            单价
+                    - vat_invoice_quantity              数量
+                    - vat_invoice_unit          	      单位
+                    - vat_invoice_specification         规格型号
+                    - vat_invoice_license_plate_number	车牌号    (通行费特有字段)
+                    - vat_invoice_goods_type	          类型      (通行费特有字段)
+                    - vat_invoice_pass_end_date	        通行日期止 (通行费特有字段)
+                    - vat_invoice_pass_start_date	      通行日期起 (通行费特有字段)
+                  enum:
+                    - vat_invoice_product_name
+                    - vat_invoice_tax
+                    - vat_invoice_tax_rate
+                    - vat_invoice_price
+                    - vat_invoice_unit_price
+                    - vat_invoice_quantity
+                    - vat_invoice_unit
+                    - vat_invoice_specification
+                    - vat_invoice_license_plate_number
+                    - vat_invoice_goods_type
+                    - vat_invoice_pass_end_date
+                    - vat_invoice_pass_start_date
+                  example: vat_invoice_product_name
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "*餐饮服务*餐费"
+
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: "项目名称"
+
+    TypeOther:
+      type: object
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - other 其他票据
+            - unauthorized_type 未授权的类型
+          enum:
+            - other
+            - unauthorized_type
+          example: other
+
+        kind:
+          type: string
+          description: |
+            切分后单张票据的使用类型
+            - other 其他
+          enum:
+            - other
+          example: other
+
+    Type_vat_digital_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - vat_digital_invoice       数电票(增值税专用发票/普通发票)
+          enum:
+            - vat_digital_invoice
+          example: vat_digital_invoice
+
+        item_list:
+          type: array
+          minItems: 16
+          uniqueItems: true
+          items:
+            allOf:
+              - required:
+                  - key
+                  - value
+                  - description
+                  - position
+              - oneOf:
+                  - type: object
+                    description: 标题结构
+                    properties:
+                      key:
+                        type: string
+                        description: 识别字段key
+                          - title 标题
+                        enum:
+                          - title
+                        example: title
+
+                      value:
+                        type: string
+                        description: 字段识别结果
+                          - 电子发票(普通发票)
+                          - 电子发票(增值税专用发票)
+                        enum:
+                          - 电子发票(普通发票)
+                          - 电子发票(增值税专用发票)
+                        example: "电子发票(普通发票)"
+
+                      description:
+                        type: string
+                        description: 字段中文描述
+                        example: "标题"
+
+                  - type: object
+                    description: 全电票标签结构
+                    properties:
+                      key:
+                        type: string
+                        description: 识别字段key
+                          - vat_invoice_service_type 全电票标签
+                        enum:
+                          - vat_invoice_service_type
+                        example: vat_invoice_service_type
+
+                      value:
+                        type: string
+                        description: |
+                          - 建筑服务
+                          - 货物运输服务
+                          - 不动产经营租赁服务
+                          - 旅客运输服务
+                          - 稀土
+                          - 卷烟
+                          - 不动产销售
+                          - 农产品收购
+                          - 光伏收购
+                          - 代收车船税
+                          - 自产农产品
+                          - 差额征税-差额开票
+                          - 差额征税-全额开票
+                          - 成品油
+                          - ""
+                        enum:
+                          - 建筑服务
+                          - 货物运输服务
+                          - 不动产经营租赁服务
+                          - 旅客运输服务
+                          - 稀土
+                          - 卷烟
+                          - 不动产销售
+                          - 农产品收购
+                          - 光伏收购
+                          - 代收车船税
+                          - 自产农产品
+                          - 差额征税-差额开票
+                          - 差额征税-全额开票
+                          - 成品油
+                          - ""
+                        example: "建筑服务"
+
+                      description:
+                        type: string
+                        description: 字段中文描述
+                        example: "全电票标签"
+
+                  - type: object
+                    description: 通用结构
+                    properties:
+                      key:
+                        type: string
+                        description: |
+                          识别字段key
+                          - invoice_type                        发票类型
+                          - vat_invoice_number                  发票号码
+                          - vat_invoice_issue_date              开票日期
+                          - vat_invoice_payer_name              购买方名称
+                          - vat_invoice_rate_payer_id           购买方纳税人识别号
+                          - vat_invoice_seller_name             销售方名称
+                          - vat_invoice_seller_id               销售方纳税人识别号
+                          - vat_invoice_subtotal                金额小计
+                          - vat_invoice_tax_subtotal            税额小计
+                          - vat_invoice_total                   金额合计
+                          - vat_invoice_tax_total               税额合计
+                          - vat_invoice_total_cover_tax         价税合计大写
+                          - vat_invoice_total_cover_tax_digits  价税合计小写
+                          - vat_invoice_total_note              备注
+                          - vat_invoice_drawer                  开票人
+                          - exist_manufacture_supervising_seal  监制章存在性判断
+                        enum:
+                          - invoice_type
+                          - vat_invoice_number
+                          - vat_invoice_issue_date
+                          - vat_invoice_payer_name
+                          - vat_invoice_rate_payer_id
+                          - vat_invoice_seller_name
+                          - vat_invoice_seller_id
+                          - vat_invoice_subtotal
+                          - vat_invoice_tax_subtotal
+                          - vat_invoice_total
+                          - vat_invoice_tax_total
+                          - vat_invoice_total_cover_tax
+                          - vat_invoice_total_cover_tax_digits
+                          - vat_invoice_total_note
+                          - vat_invoice_drawer
+                          - exist_manufacture_supervising_seal
+                        example: vat_invoice_number
+
+                      value:
+                        type: string
+                        description: |
+                          字段识别结果
+                        example: "01234567"
+
+                      description:
+                        type: string
+                        description: 字段中文描述
+                        example: "发票号码"
+
+        product_list:
+          type: array
+          minItems: 0
+          description: 票据中的明细信息（行输出）
+          items:
+            type: array
+            description: 一行明细信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    通用版式包括以下key:
+                    - vat_invoice_product_name              项目名称
+                    - vat_invoice_specification             规格型号
+                    - vat_invoice_tax                       税额
+                    - vat_invoice_tax_rate                  税率/征收率
+                    - vat_invoice_price                     金额
+                    - vat_invoice_unit_price                单价
+                    - vat_invoice_quantity                  数量
+                    - vat_invoice_unit                      单位
+
+                    建筑服务版式包括以下key:
+                    - vat_invoice_product_name              项目名称
+                    - vat_invoice_specification             规格型号
+                    - vat_invoice_tax                       税额
+                    - vat_invoice_tax_rate                  税率/征收率
+                    - vat_invoice_price                     金额
+                    - vat_invoice_unit_price                单价
+                    - vat_invoice_quantity                  数量
+                    - vat_invoice_unit                      单位
+                    - vat_invoice_place_of_building_service 建筑服务发生地
+                    - vat_invoice_building_name             建筑项目名称
+
+                    不动产销售、不动产经营租赁版式包括以下key:  
+                    - vat_invoice_product_name              项目名称
+                    - vat_invoice_specification             规格型号
+                    - vat_invoice_tax                       税额
+                    - vat_invoice_tax_rate                  税率/征收率
+                    - vat_invoice_price                     金额
+                    - vat_invoice_unit_price                单价
+                    - vat_invoice_quantity                  数量
+                    - vat_invoice_unit                      单位
+                    - vat_invoice_certificate_number  产权证书/不动产权证号
+                    - vat_invoice_area_unit                 面积单位
+                  enum:
+                    - vat_invoice_product_name
+                    - vat_invoice_specification
+                    - vat_invoice_tax
+                    - vat_invoice_tax_rate
+                    - vat_invoice_price
+                    - vat_invoice_unit_price
+                    - vat_invoice_quantity
+                    - vat_invoice_unit
+                    - vat_invoice_place_of_building_service
+                    - vat_invoice_building_name
+                    - vat_invoice_certificate_number
+                    - vat_invoice_area_unit
+                  example: vat_invoice_product_name
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "*运输服务*千岛湖客运中心-杭州西站"
+
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: "项目名称"
+
+        transport_list:
+          type: array
+          minItems: 0
+          description: 票据中的运输服务信息（行输出）
+          items:
+            type: array
+            description: 一行运输服务信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    货物运输服务版式包括以下key: 
+                    - vat_invoice_transport_type    运输工具类型
+                    - vat_invoice_transport_number  运输工具牌号
+                    - vat_invoice_from              起运地
+                    - vat_invoice_to                到达地
+                    - vat_invoice_goods_name        运输货物名称
+
+                    旅客运输服务版式包括以下key: 
+                    - vat_invoice_transport_type    交通工具类型
+                    - vat_invoice_from              起始地
+                    - vat_invoice_to                到达地
+                    - vat_invoice_passenger         出行人
+                    - vat_invoice_user_id           有效身份证号
+                    - vat_invoice_date              出行日期
+                    - vat_invoice_seat              等级
+                  enum:
+                    - vat_invoice_transport_type
+                    - vat_invoice_transport_number
+                    - vat_invoice_from
+                    - vat_invoice_to
+                    - vat_invoice_goods_name
+                    - vat_invoice_passenger
+                    - vat_invoice_user_id
+                    - vat_invoice_date
+                    - vat_invoice_seat
+                  example: vat_invoice_transport_type
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "公路运输"
+
+                description:
+                  type: string
+                  description: |
+                    字段中文描述
+                  example: "运输工具类型"
+
+    Type_railway_digital_ticket:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - railway_digital_ticket 数电票(铁路电子客票)
+          enum:
+            - railway_digital_ticket
+          example: railway_digital_ticket
+
+        item_list:
+          type: array
+          minItems: 20
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - departure_station                 出发地
+                  - train_number                      车次号
+                  - arrival_station                   目的地
+                  - seat_number                       座位号
+                  - price                             票价
+                  - class                             座位类别
+                  - passenger_id                      乘客身份证
+                  - passenger_name                    乘客名称
+                  - ticket_id                         电子客票号
+                  - number                            发票号码
+                  - date_of_issue                     开票日期
+                  - phonics_of_departure_station      出发地拼音
+                  - phonics_of_arrival_station        目的地拼音
+                  - pretax_amount                     税前金额
+                  - tax_rate                          税率
+                  - tax                               税额
+                  - buyer                             购买方名称
+                  - buyer_tax_id                      社会统一信用代码
+                  - number_of_original_invoice        原发票号码
+                  - departure_date                    乘车时间
+                  - dateonly_of_departure_date        发车日期
+                  - timeonly_of_departure_date        发车当日时间
+                enum:
+                  - departure_station
+                  - train_number
+                  - arrival_station
+                  - seat_number
+                  - price
+                  - class
+                  - passenger_id
+                  - passenger_name
+                  - ticket_id
+                  - number
+                  - date_of_issue
+                  - phonics_of_departure_station
+                  - phonics_of_arrival_station
+                  - pretax_amount
+                  - tax_rate
+                  - tax
+                  - buyer
+                  - buyer_tax_id
+                  - number_of_original_invoice
+                  - departure_date
+                  - dateonly_of_departure_date
+                  - timeonly_of_departure_date
+                example: date_of_issue
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "2024-04-25"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 开票日期
+
+    Type_flight_digital_ticket:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - flight_digital_ticket 数电票(航空运输电子客票行程单)
+          enum:
+            - flight_digital_ticket
+          example: flight_digital_ticket
+
+        item_list:
+          type: array
+          minItems: 23
+          uniqueItems: true
+          items:
+            allOf:
+              - required:
+                  - key
+                  - value
+                  - description
+                  - position
+              - oneOf:
+                  - type: object
+                    properties:
+                      key:
+                        type: string
+                        description: |
+                          识别字段key
+                          - agentcode                   销售网点代号
+                          - passenger_name              旅客姓名
+                          - id_no                       身份证件号码
+                          - total                       合计金额
+                          - fare                        票价
+                          - civil_aviation_fund         民航发展基金
+                          - fuel_surcharge              燃油附加费
+                          - other_taxes                 其他税费
+                          - issued_date                 填开日期
+                          - issued_by                   填开单位
+                          - e_ticket_no                 电子客票号码
+                          - restriction                 签注
+                          - insurance                   保险费
+                          - international_flag          国内国际标签
+                          - number_of_original_invoice  原发票号码
+                          - tax_rate                    增值税税率
+                          - tax                         增值税税额
+                          - check_code                  验证码
+                          - prompt_information          提示信息
+                          - buyer                       购买方名称
+                          - buyer_tax_id                统一社会信用代码/购买方纳税人识别号
+                          - invoice_number              发票号码
+                          - issuing_status              开票状态
+                          - gp_no                       GP单号
+                        enum:
+                          - agentcode
+                          - passenger_name
+                          - id_no
+                          - total
+                          - fare
+                          - civil_aviation_fund
+                          - fuel_surcharge
+                          - other_taxes
+                          - issued_date
+                          - issued_by
+                          - e_ticket_no
+                          - restriction
+                          - insurance
+                          - international_flag
+                          - number_of_original_invoice
+                          - tax_rate
+                          - tax
+                          - check_code
+                          - prompt_information
+                          - buyer
+                          - buyer_tax_id
+                          - invoice_number
+                          - issuing_status
+                          - gp_no
+                        example: total
+
+                      value:
+                        type: string
+                        description: 识别字段结果
+                        example: "156.00"
+
+                      description:
+                        type: string
+                        description: 识别字段中文描述
+                        example: 合计金额
+
+        flight_data_list:
+          type: array
+          minItems: 0
+          description: 飞机行程单中行本信息（行输出）
+          items:
+            type: array
+            minItems: 11
+            uniqueItems: true
+            description: 一行航班信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+                - position
+              properties:
+                key:
+                  type: string
+                  description: |
+                    识别字段key
+                    - from              出发站
+                    - to                到达站
+                    - carrier           承运人
+                    - flight_number     航班号
+                    - seat_class        座位等级
+                    - date              航班日期
+                    - time              航班时间
+                    - fare_basis        客票级别/客票类别
+                    - allow             免费行李
+                    - not_valid_before  客票生效日期
+                    - not_valid_after   有效截至日期
+                  enum:
+                    - from
+                    - to
+                    - carrier
+                    - flight_number
+                    - seat_class
+                    - date
+                    - time
+                    - fare_basis
+                    - allow
+                    - not_valid_before
+                    - not_valid_after
+                  example: from
+
+                value:
+                  type: string
+                  description: |
+                    字段识别结果
+                  example: 上海虹桥
+
+                description:
+                  type: string
+                  description: |
+                    识别字段中文描述
+                  example: 出发站
+
+    Type_electronic_medical_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - electronic_medical_invoice       电子医疗发票
+          enum:
+            - electronic_medical_invoice
+          example: electronic_medical_invoice
+
+        item_list:
+          type: array
+          minItems: 33
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - title	                            标题
+                  - invoice_code	                    票据代码
+                  - invoice_number	                  票据号码
+                  - payer_uniform_social_credit_code	交款人统一社会信用代码
+                  - payer	                            交款人
+                  - correct_code	                    校验码
+                  - date	                            开票日期
+                  - amount_char	                      合计大写
+                  - amount_digital	                  合计小写
+                  - cashier_company	                  收款单位
+                  - reviewer	                        复核人
+                  - cashier	                          收款人
+                  - workflow_number         	        业务流水号
+                  - patient_number          	        门诊号
+                  - visit_date          	            就诊时间/就诊日期
+                  - medical_institution_type          医疗机构类型
+                  - medical_insurance_type          	医保类型
+                  - medical_insurance_number          医保编号
+                  - sex         	                    性别
+                  - medical_pooling_payment         	医保统筹基金支付
+                  - other_payment         	          其他支付
+                  - personal_account_payment          个人账户支付
+                  - cash_payment          	          个人现金支付
+                  - individual_payment          	    个人自付
+                  - personal_payment         	        个人自负
+                  - self_payment          	          个人自费
+                  - medical_record_number         	  病历号
+                  - hospitalized_number         	    住院号
+                  - hospitalization_department        住院科别
+                  - hospitalization_date          	  住院时间
+                  - advance_payment                   预缴金额
+                  - supplementary_payment         	  补缴金额
+                  - refund_amount         	          退费金额
+                enum:
+                  - title
+                  - invoice_code
+                  - invoice_number
+                  - payer_uniform_social_credit_code
+                  - payer
+                  - correct_code
+                  - date
+                  - amount_char
+                  - amount_digital
+                  - cashier_company
+                  - reviewer
+                  - cashier
+                  - workflow_number
+                  - patient_number
+                  - visit_date
+                  - medical_institution_type
+                  - medical_insurance_type
+                  - medical_insurance_number
+                  - sex
+                  - medical_pooling_payment
+                  - other_payment
+                  - personal_account_payment
+                  - cash_payment
+                  - individual_payment
+                  - personal_payment
+                  - self_payment
+                  - medical_record_number
+                  - hospitalized_number
+                  - hospitalization_department
+                  - hospitalization_date
+                  - advance_payment
+                  - supplementary_payment
+                  - refund_amount
+                example: title
+
+              value:
+                type: string
+                description: 字段识别结果
+                example: "电子医疗发票"
+
+              description:
+                type: string
+                description: 字段中文描述
+                example: 标题
+
+        product_list:
+          type: array
+          minItems: 0
+          description: 表格信息（行输出）
+          items:
+            type: array
+            minItems: 5
+            uniqueItems: true
+            description: 一行商品信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    识别字段key
+                    - project_code_table	表格项目编码
+                    - project_name_table	表格项目名称
+                    - unit_table	        表格单位
+                    - number_table	      表格数量
+                    - amount_table	      表格金额
+                  enum:
+                    - project_code_table
+                    - project_name_table
+                    - unit_table
+                    - number_table
+                    - amount_table
+                  example: project_code_table
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "0123456"
+
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: "表格项目编码"
+
+    Type_outpatient_medical_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - outpatient_medical_invoice       纸质门诊发票
+          enum:
+            - outpatient_medical_invoice
+          example: outpatient_medical_invoice
+
+        item_list:
+          type: array
+          minItems: 18
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - title	                    标题
+                  - invoice_number	          票据号码
+                  - date	                    开票日期
+                  - amount_char	              合计大写
+                  - amount_digital	          合计小写
+                  - cashier_company	          收款单位
+                  - cashier	                  收款人
+                  - workflow_number	          业务流水号
+                  - patient_number	          门诊号
+                  - medical_institution_type	医疗机构类型
+                  - medical_insurance_type	  医保类型
+                  - medical_insurance_number	医保编号
+                  - sex	                      性别
+                  - medical_pooling_payment	  医保统筹基金支付
+                  - personal_account_payment	个人账户支付
+                  - cash_payment	            个人现金支付
+                  - personal_payment	        个人自负
+                  - self_payment	            个人自费
+                enum:
+                  - title
+                  - invoice_number
+                  - date
+                  - amount_char
+                  - amount_digital
+                  - cashier_company
+                  - cashier
+                  - workflow_number
+                  - patient_number
+                  - medical_institution_type
+                  - medical_insurance_type
+                  - medical_insurance_number
+                  - sex
+                  - medical_pooling_payment
+                  - personal_account_payment
+                  - cash_payment
+                  - personal_payment
+                  - self_payment
+                example: title
+
+              value:
+                type: string
+                description: 字段识别结果
+                example: "医疗门(急)诊收费票据"
+
+              description:
+                type: string
+                description: 字段中文描述
+                example: 标题
+
+        product_list:
+          type: array
+          minItems: 0
+          description: 表格信息（行输出）
+          items:
+            type: array
+            minItems: 7
+            uniqueItems: true
+            description: 一行商品信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    识别字段key
+                    - project_code_table	表格项目编码
+                    - project_name_table	表格项目名称
+                    - specs_table	        表格规格
+                    - unit_table	        表格单位
+                    - unit_price_table	  表格单价
+                    - number_table	      表格数量
+                    - amount_table	      表格金额
+                  enum:
+                    - project_code_table
+                    - project_name_table
+                    - specs_table
+                    - unit_table
+                    - unit_price_table
+                    - number_table
+                    - amount_table
+                  example: project_code_table
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "0123456"
+
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: "表格项目编码"
+
+    Type_inpatient_medical_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - inpatient_medical_invoice       纸质住院发票
+          enum:
+            - inpatient_medical_invoice
+          example: inpatient_medical_invoice
+
+        item_list:
+          type: array
+          minItems: 23
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - title	                      标题
+                  - invoice_number	            票据号码
+                  - date	                      开票日期
+                  - amount_char	                合计大写
+                  - amount_digital	            合计小写
+                  - cashier_company	            收款单位
+                  - cashier	                    收款人
+                  - workflow_number	            业务流水号
+                  - medical_institution_type	  医疗机构类型
+                  - medical_insurance_type	    医保类型
+                  - medical_insurance_number	  医保编号
+                  - sex	                        性别
+                  - medical_pooling_payment	    医保统筹基金支付
+                  - personal_account_payment	  个人账户支付
+                  - cash_payment	              个人现金支付
+                  - medical_record_number	      病历号
+                  - hospitalized_number	        住院号
+                  - hospitalization_department	住院科别
+                  - admission_date	            住院日期
+                  - discharge_date	            住院日期
+                  - advance_payment	            预缴金额
+                  - supplementary_payment	      补缴金额
+                  - refund_amount	              退费金额
+                enum:
+                  - title
+                  - invoice_number
+                  - date
+                  - amount_char
+                  - amount_digital
+                  - cashier_company
+                  - cashier
+                  - workflow_number
+                  - medical_institution_type
+                  - medical_insurance_type
+                  - medical_insurance_number
+                  - sex
+                  - medical_pooling_payment
+                  - personal_account_payment
+                  - cash_payment
+                  - medical_record_number
+                  - hospitalized_number
+                  - hospitalization_department
+                  - admission_date
+                  - discharge_date
+                  - advance_payment
+                  - supplementary_payment
+                  - refund_amount
+                example: title
+
+              value:
+                type: string
+                description: 字段识别结果
+                example: "广东省医疗收费票据"
+
+              description:
+                type: string
+                description: 字段中文描述
+                example: 标题
+
+        product_list:
+          type: array
+          minItems: 0
+          description: 表格信息（行输出）
+          items:
+            type: array
+            minItems: 2
+            uniqueItems: true
+            description: 一行商品信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    识别字段key
+                    - project_name_table	表格项目名称
+                    - amount_table	      表格金额
+                  enum:
+                    - project_name_table
+                    - amount_table
+                  example: project_name_table
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "西药费"
+
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: "表格项目名称"
+
+    Type_train_ticket:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - train_ticket 火车票
+          enum:
+            - train_ticket
+          example: train_ticket
+
+        item_list:
+          type: array
+          minItems: 13
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - ticket_number                     火车票红色编码
+                  - boarding_gate                     检票口
+                  - departure_station                 出发地
+                  - train_number                      车次号
+                  - arrival_station                   目的地
+                  - departure_date                    乘车时间
+                  - seat_number                       座位号
+                  - price                             价格
+                  - class                             座位类别
+                  - passenger_id                      乘客身份证
+                  - passenger_name                    乘客名称
+                  - ticket_id                         火车票ID
+                  - refund                            退票费
+                  - rebook                            改签费
+                  - dateonly_of_departure_date        发车日期
+                  - timeonly_of_departure_date        发车当日时间
+                enum:
+                  - ticket_number
+                  - boarding_gate
+                  - departure_station
+                  - train_number
+                  - arrival_station
+                  - departure_date
+                  - seat_number
+                  - price
+                  - class
+                  - passenger_id
+                  - passenger_name
+                  - ticket_id
+                  - refund
+                  - rebook
+                  - dateonly_of_departure_date
+                  - timeonly_of_departure_date
+                example: ticket_number
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "Z3R014159"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 火车票红色编码
+
+    Type_taxi_ticket:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - taxi_ticket 出租车票
+          enum:
+            - taxi_ticket
+          example: taxi_ticket
+
+        item_list:
+          type: array
+          minItems: 10
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - invoice_code                      发票代码
+                  - invoice_no                        发票号码
+                  - date                              日期
+                  - taxi_no                           车号
+                  - boarding_time                     上车时间
+                  - landing_time                      下车时间
+                  - mileage                           里程
+                  - price                             票面金额
+                  - surcharge                         附加费
+                  - location                          发票所在地
+                  - sum                               总计金额
+                  - call_service_surcharge            电召费
+                  - service_surcharge                  服务费
+                  - exist_invoice_seal                发票专用章存在性判断
+                  - exist_manufacture_supervising_seal 监制章存在性判断
+                enum:
+                  - invoice_code
+                  - invoice_no
+                  - date
+                  - taxi_no
+                  - boarding_time
+                  - landing_time
+                  - mileage
+                  - price
+                  - surcharge
+                  - location
+                  - sum
+                  - call_service_surcharge
+                  - service_surcharge
+                  - exist_invoice_seal
+                  - exist_manufacture_supervising_seal
+                example: invoice_code
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "122001471881"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 发票代码
+
+    Type_quota_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - quota_invoice 通用定额发票
+          enum:
+            - quota_invoice
+          example: quota_invoice
+
+        item_list:
+          type: array
+          minItems: 4
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - title                             标题
+                  - quota_invoice_code                发票代码
+                  - quota_invoice_number              发票号码
+                  - amount_char                       金额(大写)
+                  - amount_digits                     金额(小写)
+                  - location                          发票所在地
+                  - exist_invoice_seal                发票专用章存在性判断
+                  - exist_manufacture_supervising_seal 监制章存在性判断
+                enum:
+                  - title
+                  - quota_invoice_code
+                  - quota_invoice_number
+                  - amount_char
+                  - amount_digits
+                  - location
+                  - exist_invoice_seal
+                  - exist_manufacture_supervising_seal
+                example: title
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "北京市国家税务局通用定额发票"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 标题
+
+    Type_ride_receipt:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - ride_receipt       网约车行程单
+          enum:
+            - ride_receipt
+          example: ride_receipt
+
+        item_list:
+          type: array
+          minItems: 7
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - title	                    标题
+                  - application_date	        申请日期
+                  - trip_date	                行程日期
+                  - trip_number	              合计行程数量
+                  - amount_total	            合计金额
+                  - phone_number	            行程人手机号/预定人手机号
+                  - other_expenses_total	    其他费用合计
+                  - startdate_of_trip_date    行程开始日期
+                  - enddate_of_trip_date      行程结束日期
+                enum:
+                  - title
+                  - application_date
+                  - trip_date
+                  - trip_number
+                  - amount_total
+                  - phone_number
+                  - other_expenses_total
+                  - startdate_of_trip_date
+                  - enddate_of_trip_date
+                example: title
+
+              value:
+                type: string
+                description: 字段识别结果
+                example: "滴滴出行-行程单"
+
+              description:
+                type: string
+                description: 字段中文描述
+                example: 标题
+
+        product_list:
+          type: array
+          minItems: 0
+          description: 表格信息（行输出）
+          items:
+            type: array
+            minItems: 16
+            uniqueItems: true
+            description: 一行信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    识别字段key
+                    - serial_no_table    	    表格序号
+                    - order_no_table    	    表格订单号
+                    - service_type_table	    表格订单/服务类型
+                    - supplier_table	        表格服务商
+                    - car_type_table  	      表格车型
+                    - departure_point_table	  表格起点
+                    - destination_table	      表格终点
+                    - city_table              表格城市
+                    - driving_time_table      表格行驶时长
+                    - order_time_table        表格下单时间
+                    - pick_up_time_table      表格上车时间
+                    - using_time_table        表格用车时间
+                    - mileage_table           表格行程里程
+                    - journey_amount_table    表格行程金额
+                    - notes_table             表格备注
+                    - other_expenses_table    表格其他费用
+                  enum:
+                    - serial_no_table
+                    - order_no_table
+                    - service_type_table
+                    - supplier_table
+                    - car_type_table
+                    - departure_point_table
+                    - destination_table
+                    - city_table
+                    - driving_time_table
+                    - order_time_table
+                    - pick_up_time_table
+                    - using_time_table
+                    - mileage_table
+                    - journey_amount_table
+                    - notes_table
+                    - other_expenses_table
+                  example: serial_no_table
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "1"
+
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: "表格序号"
+
+    Type_used_car_purchase_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - used_car_purchase_invoice 二手车销售统一发票
+          enum:
+            - used_car_purchase_invoice
+          example: used_car_purchase_invoice
+
+        item_list:
+          type: array
+          minItems: 36
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - title                                       标题
+                  - invoice_type                                发票类型
+                  - vehicle_invoice_page_number                 发票联次
+                  - vehicle_invoice_daima                       发票代码
+                  - vehicle_invoice_haoma                       发票号码
+                  - vehicle_invoice_buyer                       买方单位/个人
+                  - vehicle_invoice_buyer_id                    买方单位代码/身份证号码
+                  - vehicle_invoice_buyer_addr                  买方单位/个人住址
+                  - vehicle_invoice_buyer_phone                 买方电话
+                  - vehicle_invoice_seller                      卖方单位/个人
+                  - vehicle_invoice_seller_id                   卖方单位代码/身份证号码
+                  - vehicle_invoice_seller_addr                 卖方单位/个人住址
+                  - vehicle_invoice_seller_phone                卖方电话
+                  - vehicle_invoice_plate_num                   车牌照号
+                  - vehicle_invoice_register_num                登记证号
+                  - vehicle_invoice_vehicle_type                车辆类型
+                  - vehicle_invoice_vin                         车架号/车辆识别代码
+                  - vehicle_invoice_car_model                   厂牌型号
+                  - vehicle_invoice_dmv                         转入地车辆管理所名称
+                  - vehicle_invoice_total_price_char            车价合计(大写)
+                  - vehicle_invoice_total_price_digits          车价合计(小写)
+                  - vehicle_invoice_auction_house               经营、拍卖单位
+                  - vehicle_invoice_auction_house_addr          经营、拍卖单位地址
+                  - vehicle_invoice_auction_house_tax_id        经营、拍卖单位纳税人识别号
+                  - vehicle_invoice_auction_house_bank_account  经营、拍卖单位开户银行、账号
+                  - vehicle_invoice_auction_house_phone         经营、拍卖单位电话
+                  - vehicle_invoice_market                      二手车市场
+                  - vehicle_invoice_market_addr                 二手车市场地址
+                  - vehicle_invoice_market_tax_id               二手车市场纳税人识别号
+                  - vehicle_invoice_market_bank_account         二手车市场开户银行、账号
+                  - vehicle_invoice_market_phone                二手车市场电话
+                  - vehicle_invoice_issue_date                  开票日期
+                  - vehicle_invoice_machine_id                  机器编号
+                  - vehicle_invoice_note                        备注
+                  - vehicle_invoice_tax_code                    税控码
+                  - vehicle_invoice_issued_by                   开票人
+                  - vehicle_invoice_jida_daima                  机打代码
+                  - vehicle_invoice_jida_haoma                  机打号码
+                  - digital_elec_invoice_number                 数电票号码
+                  - exist_invoice_seal                          发票专用章存在性判断
+                  - exist_manufacture_supervising_seal          监制章存在性判断
+                enum:
+                  - title
+                  - invoice_type
+                  - vehicle_invoice_page_number
+                  - vehicle_invoice_daima
+                  - vehicle_invoice_haoma
+                  - vehicle_invoice_buyer
+                  - vehicle_invoice_buyer_id
+                  - vehicle_invoice_buyer_addr
+                  - vehicle_invoice_buyer_phone
+                  - vehicle_invoice_seller
+                  - vehicle_invoice_seller_id
+                  - vehicle_invoice_seller_addr
+                  - vehicle_invoice_seller_phone
+                  - vehicle_invoice_plate_num
+                  - vehicle_invoice_register_num
+                  - vehicle_invoice_vehicle_type
+                  - vehicle_invoice_vin
+                  - vehicle_invoice_car_model
+                  - vehicle_invoice_dmv
+                  - vehicle_invoice_total_price_char
+                  - vehicle_invoice_total_price_digits
+                  - vehicle_invoice_auction_house
+                  - vehicle_invoice_auction_house_addr
+                  - vehicle_invoice_auction_house_tax_id
+                  - vehicle_invoice_auction_house_bank_account
+                  - vehicle_invoice_auction_house_phone
+                  - vehicle_invoice_market
+                  - vehicle_invoice_market_addr
+                  - vehicle_invoice_market_tax_id
+                  - vehicle_invoice_market_bank_account
+                  - vehicle_invoice_market_phone
+                  - vehicle_invoice_issue_date
+                  - vehicle_invoice_machine_id
+                  - vehicle_invoice_note
+                  - vehicle_invoice_tax_code
+                  - vehicle_invoice_issued_by
+                  - vehicle_invoice_jida_daima
+                  - vehicle_invoice_jida_haoma
+                  - digital_elec_invoice_number
+                  - exist_invoice_seal
+                  - exist_manufacture_supervising_seal
+                example: title
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "二手车销售统一发票"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 标题
+
+    Type_car_purchase_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - car_purchase_invoice 机动车销售统一发票
+          enum:
+            - car_purchase_invoice
+          example: car_purchase_invoice
+
+        item_list:
+          type: array
+          minItems: 36
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - title                                             标题
+                  - invoice_type                                      发票类型
+                  - vehicle_invoice_page_number                       发票联次
+                  - vehicle_invoice_daima                             发票代码
+                  - vehicle_invoice_haoma                             发票号码
+                  - vehicle_invoice_issue_date                        开票日期
+                  - vehicle_invoice_machine_id                        机器编号
+                  - vehicle_invoice_jida_daima                        机打代码
+                  - vehicle_invoice_jida_haoma                        机打号码
+                  - vehicle_invoice_tax_code                          税控码
+                  - vehicle_invoice_buyer                             购货单位(人)/购买方名称
+                  - vehicle_invoice_buyer_id                          购方身份证号码/组织机构代码
+                  - vehicle_invoice_buyer_tax_id                      购方纳税人识别号
+                  - vehicle_invoice_vehicle_type                      车辆类型
+                  - vehicle_invoice_car_made_place                    产地
+                  - vehicle_invoice_car_model                         厂牌型号
+                  - vehicle_invoice_car_vin                           车辆识别代号/车架号码
+                  - vehicle_invoice_cert_id                           合格证号
+                  - vehicle_invoice_commodity_inspection_id           商检单号
+                  - vehicle_invoice_engine_id                         发动机号码
+                  - vehicle_invoice_import_certificate_id             进口证明书号
+                  - vehicle_invoice_total_price_char                  价税合计(大写)
+                  - vehicle_invoice_total_price_digits                价税合计(小写)
+                  - vehicle_invoice_seller                            销货单位名称
+                  - vehicle_invoice_seller_address                    销货单位地址
+                  - vehicle_invoice_seller_bank_account               销货单位账号
+                  - vehicle_invoice_seller_bank_name                  销货单位开户银行
+                  - vehicle_invoice_seller_tax_id                     销货单位纳税人识别号
+                  - vehicle_invoice_seller_telephone                  销货单位电话
+                  - vehicle_invoice_tax_rate                          增值税税率或征收率
+                  - vehicle_invoice_tax_amount                        增值税税额
+                  - vehicle_invoice_tax_authority                     主管税务机关
+                  - vehicle_invoice_tax_authority_id                  主管税务机关代码
+                  - vehicle_invoice_price_without_tax                 不含税价
+                  - vehicle_invoice_tax_payment_certificate_number    完税凭证号
+                  - vehicle_invoice_tonnage                           吨位
+                  - vehicle_invoice_limit_number                      限乘人数
+                  - vehicle_invoice_issued_by                         开票人
+                  - digital_elec_invoice_number                       数电票号码
+                  - exist_invoice_seal                                发票专用章存在性判断
+                  - exist_manufacture_supervising_seal                监制章存在性判断
+                enum:
+                  - title
+                  - invoice_type
+                  - vehicle_invoice_page_number
+                  - vehicle_invoice_daima
+                  - vehicle_invoice_haoma
+                  - vehicle_invoice_issue_date
+                  - vehicle_invoice_machine_id
+                  - vehicle_invoice_jida_daima
+                  - vehicle_invoice_jida_haoma
+                  - vehicle_invoice_tax_code
+                  - vehicle_invoice_buyer
+                  - vehicle_invoice_buyer_id
+                  - vehicle_invoice_buyer_tax_id
+                  - vehicle_invoice_vehicle_type
+                  - vehicle_invoice_car_made_place
+                  - vehicle_invoice_car_model
+                  - vehicle_invoice_car_vin
+                  - vehicle_invoice_cert_id
+                  - vehicle_invoice_commodity_inspection_id
+                  - vehicle_invoice_engine_id
+                  - vehicle_invoice_import_certificate_id
+                  - vehicle_invoice_total_price_char
+                  - vehicle_invoice_total_price_digits
+                  - vehicle_invoice_seller
+                  - vehicle_invoice_seller_address
+                  - vehicle_invoice_seller_bank_account
+                  - vehicle_invoice_seller_bank_name
+                  - vehicle_invoice_seller_tax_id
+                  - vehicle_invoice_seller_telephone
+                  - vehicle_invoice_tax_rate
+                  - vehicle_invoice_tax_amount
+                  - vehicle_invoice_tax_authority
+                  - vehicle_invoice_tax_authority_id
+                  - vehicle_invoice_price_without_tax
+                  - vehicle_invoice_tax_payment_certificate_number
+                  - vehicle_invoice_tonnage
+                  - vehicle_invoice_limit_number
+                  - vehicle_invoice_issued_by
+                  - digital_elec_invoice_number
+                  - exist_invoice_seal
+                  - exist_manufacture_supervising_seal
+                example: title
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "机动车销售统一发票"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 标题
+
+    Type_vehicle_toll:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - vehicle_toll 过路过桥费发票
+          enum:
+            - vehicle_toll
+          example: vehicle_toll
+
+        item_list:
+          type: array
+          minItems: 6
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - toll_code   车辆通行费代码
+                  - toll_number 车辆通行费号码
+                  - money       收费金额
+                  - date        收费日期
+                  - time        收费时间
+                  - location    发票所在地
+                  - entrance    入口
+                  - exit        出口
+                  - exist_invoice_seal 发票专用章存在性判断
+                  - exist_manufacture_supervising_seal 监制章存在性判断
+                  - title       标题
+                enum:
+                  - toll_code
+                  - toll_number
+                  - money
+                  - date
+                  - time
+                  - location
+                  - entrance
+                  - exit
+                  - exist_invoice_seal
+                  - exist_manufacture_supervising_seal
+                  - title
+                example: toll_code
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "144012345678"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 车辆通行费代码
+
+    Type_vat_invoice_sales_list:
+      type: object
+      required:
+        - item_list
+        - product_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - vat_invoice_sales_list      增值税销货清单
+          enum:
+            - vat_invoice_sales_list
+          example: vat_invoice_sales_list
+
+        item_list:
+          type: array
+          minItems: 11
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - purchaser_name  	购买方名称
+                  - seller_name 	    销售方名称
+                  - invoice_code  	  发票代码
+                  - invoice_number  	发票号码
+                  - total_page  	    合计页码
+                  - page  	          当前页码
+                  - total 	          金额合计
+                  - tax_total 	      税额合计
+                  - issued_date 	    填开日期
+                  - subtotal	        金额小计
+                  - tax_subtotal	    税额小计
+                  - remarks           备注
+                  - exist_invoice_seal 发票专用章存在性判断
+                  - title             标题
+                enum:
+                  - purchaser_name
+                  - seller_name
+                  - invoice_code
+                  - invoice_number
+                  - total_page
+                  - page
+                  - total
+                  - tax_total
+                  - issued_date
+                  - subtotal
+                  - tax_subtotal
+                  - remarks
+                  - exist_invoice_seal
+                  - title
+                example: total_page
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "1"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 合计页码
+
+        product_list:
+          type: array
+          minItems: 0
+          description: 商品信息（行输出）
+          items:
+            type: array
+            minItems: 9
+            uniqueItems: true
+            description: 一行商品信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    识别字段key
+                    - serial_number	    表格序号
+                    - goods_services	  货物(劳务)名称
+                    - specification	    规格型号
+                    - unit	            单位
+                    - quantity	        数量
+                    - unit_price	      单价
+                    - amount	          金额
+                    - tax_rate          税率
+                    - tax               税额
+                  enum:
+                    - serial_number
+                    - goods_services
+                    - specification
+                    - unit
+                    - quantity
+                    - unit_price
+                    - amount
+                    - tax_rate
+                    - tax
+                  example: serial_number
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "1234567"
+
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: "表格序号"
+
+    Type_highway_passenger_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - highway_passenger_invoice   公路客运发票
+          enum:
+            - highway_passenger_invoice
+          example: highway_passenger_invoice
+
+        item_list:
+          type: array
+          minItems: 7
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - invoice_code	  发票代码
+                  - invoice_number	发票号码
+                  - money	          金额
+                  - date	          日期
+                  - time	          时间
+                  - passenger_name	乘客姓名
+                  - passenger_id	  乘客身份证号码
+                  - exist_invoice_seal 发票专用章存在性判断
+                  - departure       出发站
+                  - arrival         到达站
+                  - title           标题
+                  - bus_number      车次
+                enum:
+                  - invoice_code
+                  - invoice_number
+                  - money
+                  - date
+                  - time
+                  - passenger_name
+                  - passenger_id
+                  - exist_invoice_seal
+                  - departure
+                  - arrival
+                  - title
+                  - bus_number
+                example: invoice_code
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "12345678"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 发票代码
+
+    Type_passenger_transport_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - passenger_transport_invoice 旅客运输发票
+          enum:
+            - passenger_transport_invoice
+          example: passenger_transport_invoice
+
+        item_list:
+          type: array
+          minItems: 7
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - invoice_code	  发票代码
+                  - invoice_number	发票号码
+                  - money	          金额
+                  - date	          日期
+                  - time	          时间
+                  - passenger_name	乘客姓名
+                  - passenger_id	  乘客身份证号码
+                  - exist_invoice_seal  发票专用章存在性判断
+                  - departure       出发站
+                  - arrival         到达站
+                  - title           标题
+                  - bus_number      车次
+                enum:
+                  - invoice_code
+                  - invoice_number
+                  - money
+                  - date
+                  - time
+                  - passenger_name
+                  - passenger_id
+                  - exist_invoice_seal
+                  - departure
+                  - arrival
+                  - title
+                  - bus_number
+                example: invoice_code
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "123456789"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 发票代码
+
+    Type_parking_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - parking_invoice             停车费发票
+          enum:
+            - parking_invoice
+          example: parking_invoice
+
+        item_list:
+          type: array
+          minItems: 2
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - invoice_number	发票号码
+                  - money	金额
+                  - exist_invoice_seal 发票专用章存在性判断
+                enum:
+                  - invoice_number
+                  - money
+                  - exist_invoice_seal
+                example: invoice_number
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "123456"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 发票号码
+
+    Type_shipping_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - shipping_invoice            船运客票
+          enum:
+            - shipping_invoice
+          example: shipping_invoice
+
+        item_list:
+          type: array
+          minItems: 5
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - invoice_code	  发票代码
+                  - invoice_number	发票号码
+                  - money	          金额
+                  - date	          日期
+                  - time	          时间
+                  - exist_invoice_seal 发票专用章存在性判断
+                  - departure       出发点
+                  - arrival         到达点
+                enum:
+                  - invoice_code
+                  - invoice_number
+                  - money
+                  - date
+                  - time
+                  - exist_invoice_seal
+                  - departure
+                  - arrival
+                example: invoice_code
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "11456789"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 发票代码
+
+    Type_flight_itinerary:
+      type: object
+      required:
+        - item_list
+        - flight_data_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - flight_itinerary            航空运输电子客票行程单
+          enum:
+            - flight_itinerary
+          example: flight_itinerary
+
+        item_list:
+          type: array
+          minItems: 14
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - agentcode	          销售单位代号
+                  - passenger_name	    旅客姓名
+                  - id_no	              身份证件号码
+                  - serial_number	      印刷序号
+                  - total	              合计金额
+                  - fare	              票价
+                  - civil_aviation_fund	民航发展基金
+                  - fuel_surcharge	    燃油附加费
+                  - other_taxes	        其他税费
+                  - issued_date	        填开日期
+                  - issued_by	          填开单位
+                  - e_ticket_no	        电子客票号码
+                  - insurance	          保险费
+                  - restriction	        签注
+                enum:
+                  - agentcode
+                  - passenger_name
+                  - id_no
+                  - serial_number
+                  - total
+                  - fare
+                  - civil_aviation_fund
+                  - fuel_surcharge
+                  - other_taxes
+                  - issued_date
+                  - issued_by
+                  - e_ticket_no
+                  - insurance
+                  - restriction
+                example: civil_aviation_fund
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "50.00"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 民航发展基金
+
+        flight_data_list:
+          type: array
+          minItems: 0
+          description: 飞机行程单中行本信息（行输出）
+          items:
+            type: array
+            minItems: 9
+            uniqueItems: true
+            description: 一行航班信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+                - position
+              properties:
+                key:
+                  type: string
+                  description: |
+                    识别字段key
+                    - from              出发站
+                    - to                到达站
+                    - carrier           承运人
+                    - flight_number     航班号
+                    - seat_class        座位等级
+                    - date              航班日期
+                    - time              航班时间
+                    - fare_basis        客票级别
+                    - allow             免费行李
+                  enum:
+                    - from
+                    - to
+                    - carrier
+                    - flight_number
+                    - seat_class
+                    - date
+                    - time
+                    - fare_basis
+                    - allow
+                  example: from
+
+                value:
+                  type: string
+                  description: |
+                    字段识别结果
+                  example: 上海虹桥
+
+                description:
+                  type: string
+                  description: |
+                    识别字段中文描述
+                  example: 出发站
+
+    Type_vat_volume_invoice:
+      type: object
+      required:
+        - item_list
+        - product_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - vat_volume_invoice          增值税普通发票(卷票)
+          enum:
+            - vat_volume_invoice
+          example: vat_volume_invoice
+
+        item_list:
+          type: array
+          minItems: 14
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - title	          标题
+                  - invoice_type    发票类型
+                  - invoice_number	发票号码
+                  - invoice_code	  发票代码
+                  - machine_number	机打号码
+                  - machine_code	  机器编码
+                  - total_digits	  合计金额(小写)
+                  - total_char	    合计金额(大写)
+                  - date_of_invoice	开票日期
+                  - check_number	  校验码
+                  - buy_name	      购方名称
+                  - buy_tax_number	购方纳税人识别号
+                  - sold_name	      销售方名称
+                  - sold_tax_number	销售方纳税人识别号
+                  - cashier_name	  收款员
+                  - exist_invoice_seal 发票专用章存在性判断
+                  - exist_manufacture_supervising_seal 监制章存在性判断
+                enum:
+                  - title
+                  - invoice_type
+                  - invoice_number
+                  - invoice_code
+                  - machine_number
+                  - machine_code
+                  - total_digits
+                  - total_char
+                  - date_of_invoice
+                  - check_number
+                  - buy_name
+                  - buy_tax_number
+                  - sold_name
+                  - sold_tax_number
+                  - cashier_name
+                  - exist_invoice_seal
+                  - exist_manufacture_supervising_seal
+                example: title
+
+              value:
+                type: string
+                description: 字段识别结果
+                example: "北京增值税普通发票"
+
+              description:
+                type: string
+                description: 字段中文描述
+                example: 标题
+
+        product_list:
+          type: array
+          minItems: 0
+          description: 增票中商品信息（行输出）
+          items:
+            type: array
+            minItems: 4
+            uniqueItems: true
+            description: 一行商品信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    识别字段key
+                    - goods_name_list	      项目名称明细
+                    - goods_unit_price_list	项目单价明细
+                    - goods_number_list	    项目数量明细
+                    - goods_money_list	    项目金额明细
+                  enum:
+                    - goods_name_list
+                    - goods_unit_price_list
+                    - goods_number_list
+                    - goods_money_list
+                  example: goods_name_list
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "*餐饮服务*餐费"
+
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: "项目名称明细"
+
+    Type_non_tax_income_unified_bill:
+      type: object
+      required:
+        - item_list
+        - product_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - non_tax_income_unified_bill   非税收入统一票据
+          enum:
+            - non_tax_income_unified_bill
+          example: non_tax_income_unified_bill
+
+        item_list:
+          type: array
+          minItems: 13
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - title	                标题
+                  - payer	                交款人
+                  - invoice_number	      票据号码
+                  - check_code	          校验码
+                  - issued_date	          开票日期
+                  - total_char	          金额合计(大写)
+                  - total_digits	        金额合计(小写)
+                  - checker	              复核人
+                  - invoice_code	        票据代码
+                  - payer_tax_id	        交款人统一社会信用代码
+                  - payee	                收款人
+                  - invoicing_party_name	收款单位
+                  - remark	              其他信息/备注
+                  - exist_manufacture_supervising_seal 监制章存在性判断
+                  - invoice_type          发票类型
+                  - currency_code         币种
+                  - payment_code          缴款码
+                  - payee_code            执收单位编码
+                  - payee_name            执收单位名称
+                  - payer_account_name    付款人全称
+                  - payer_account_number  付款人账号
+                  - payer_account_opening_bank 付款人开户银行 
+                  - receiver_account_name 收款人全称
+                  - receiver_account_number 收款人账号
+                  - receiver_account_opening_bank 收款人开户银行
+                  - handle                经办人
+                  - block_chain           区块标识
+                enum:
+                  - title
+                  - payer
+                  - invoice_number
+                  - check_code
+                  - issued_date
+                  - total_char
+                  - total_digits
+                  - checker
+                  - invoice_code
+                  - payer_tax_id
+                  - payee
+                  - invoicing_party_name
+                  - remark
+                  - exist_manufacture_supervising_seal
+                  - invoice_type
+                  - currency_code
+                  - payment_code
+                  - payee_code
+                  - payee_name
+                  - payer_account_name
+                  - payer_account_number
+                  - payer_account_opening_bank
+                  - receiver_account_name
+                  - receiver_account_number
+                  - receiver_account_opening_bank
+                  - handle
+                  - block_chain
+                example: title
+
+              value:
+                type: string
+                description: 字段识别结果
+                example: "非税收入统一票据"
+
+              description:
+                type: string
+                description: 字段中文描述
+                example: 标题
+
+        product_list:
+          type: array
+          minItems: 0
+          description: 增票中商品信息（行输出）
+          items:
+            type: array
+            minItems: 7
+            uniqueItems: true
+            description: 一行商品信息
+            items:
+              type: object
+              required:
+                - key
+                - value
+                - description
+              properties:
+                key:
+                  type: string
+                  description: |
+                    识别字段key
+                    - item_code	    项目编码
+                    - item_name	    项目名称
+                    - item_unit	    单位
+                    - item_quantity	数量
+                    - item_std	    标准
+                    - item_amount	  金额
+                    - item_ext	    备注
+                  enum:
+                    - item_code
+                    - item_name
+                    - item_unit
+                    - item_quantity
+                    - item_std
+                    - item_amount
+                    - item_ext
+                  example: item_code
+
+                value:
+                  type: string
+                  description: 字段识别结果
+                  example: "1234567"
+
+                description:
+                  type: string
+                  description: 字段中文描述
+                  example: "项目编码"
+
+    Type_general_machine_invoice:
+      type: object
+      required:
+        - item_list
+      properties:
+        type:
+          type: string
+          description: |
+            切分后单张票据类型
+            - general_machine_invoice     通用机打发票
+          enum:
+            - general_machine_invoice
+          example: general_machine_invoice
+
+        item_list:
+          type: array
+          minItems: 9
+          uniqueItems: true
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: |
+                  识别字段key
+                  - title	          标题
+                  - invoice_code	  发票代码
+                  - invoice_number	发票号码
+                  - seller	        收款方名称
+                  - seller_tax_id	  收款方证件号
+                  - buyer	          付款方名称
+                  - buyer_tax_id	  付款方证件号
+                  - total	          金额
+                  - date	          开票日期
+                  - time            时间
+                  - exist_invoice_seal 发票专用章存在性判断
+                  - exist_manufacture_supervising_seal 监制章存在性判断
+                enum:
+                  - title
+                  - invoice_code
+                  - invoice_number
+                  - seller
+                  - seller_tax_id
+                  - buyer
+                  - buyer_tax_id
+                  - total
+                  - date
+                  - time
+                  - exist_invoice_seal
+                  - exist_manufacture_supervising_seal
+                example: title
+
+              value:
+                type: string
+                description: 识别字段结果
+                example: "通用机打发票"
+
+              description:
+                type: string
+                description: 识别字段中文描述
+                example: 标题

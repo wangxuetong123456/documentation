@@ -8,9 +8,9 @@ TextIn xParse文档抽取API可以输出每个抽取结果的精确坐标信息�
 
 ### 数据结构分析
 
-参考[**快速启动**](/xparse/extract-quickstart)中的返回结果示例(prompt模式返回示例节选)，文档抽取API的返回结果中包含了以下坐标关键信息：
+参考[**快速启动**](/xparse/extract-quickstart)中的返回结果示例(prompt模式返回节选部分)，文档抽取API的返回结果中包含了以下坐标关键信息：
 
-- position表示相关坐标信息
+- position表示相关坐标信息，pages中有页面相关信息。
 
 ```json
 {
@@ -122,7 +122,6 @@ def extract_coordinates_from_extract_result(extract_result: Dict[str, Any]) -> L
 ### 坐标可视化绘制器
 
 ```python
-import cv2
 from PIL import Image, ImageDraw, ImageFont
 import os
 from typing import List, Dict, Any
@@ -264,7 +263,7 @@ class ExtractCoordinateDrawer:
         return output_path
 ```
 
-### 主函数完整使用示例
+### 主函数使用示例
 
 - 确保抽取结果json文件和原始图片在指定路径。
 - 生成的图片为 annotated_extract_result.png 和 legend.png。
@@ -273,7 +272,7 @@ class ExtractCoordinateDrawer:
 def main():
     """主函数示例"""
     
-    # 配置参数，原始图片地址和抽取结果json文件地址
+    # 配置参数，替换原始图片地址和抽取结果json文件地址
     IMAGE_PATH = "65a27abc197e4ffe8cdc171c49.png"
     EXTRACT_RESULT_FILE = "prompt_extract_result.json"
     

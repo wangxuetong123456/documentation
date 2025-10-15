@@ -1,0 +1,34 @@
+---
+title: "计费说明"
+---
+
+您可以在此处（[国内通用票据识别](https://www.textin.com/market/chager/bill_recognize_v2)、[医疗票据识别](https://www.textin.com/market/chager/medical-bill-recognize)）查看定价选项及购买套餐。
+
+## 具体使用计费规则说明
+
+国内通用票据识别/医疗票据识别采用「按量计费」制，计费单位为“T币/张”。在实际使用时，您可以选择购买套餐（[国内通用票据识别](https://www.textin.com/market/chager/bill_recognize_v2)、[医疗票据识别](https://www.textin.com/market/chager/medical-bill-recognize)）包，也可以直接[充值T币](https://www.textin.com/console/dashboard/userCenter/charge)使用。套餐和T币的计费规则为：
+- 扣费顺序：优先消耗即将到期的套餐包，未购买套餐包则按实际使用量扣减T币余额。
+- 购买套餐后，会自动开启按量计费模式；当套餐额度使用完毕后，如果未购买新套餐包，则会按实际使用量扣减T币余额，扣减T币余额时按套餐中的最高单价进行扣减。
+- 可以在【[工作台-我的套餐](https://www.textin.com/console/dashboard/userCenter/package_management)】中查看套餐使用情况，可以在【[工作台-充值与消费明细](https://www.textin.com/console/dashboard/userCenter/finance)】中查看T币订单和消费情况。
+国内通用票据识别/医疗票据识别的使用方式包括：在线Web平台使用、API使用。需要注意的是：[国内通用票据识别](https://docs.textin.com/api-reference/endpoint/bill)和[医疗票据识别](https://docs.textin.com/api-reference/endpoint/medical-bill)是2个独立的API，其使用计费和消耗额度也是独立区分开的。下面会为您详细介绍不同使用方式的计费说明。
+
+### 在线Web平台使用
+
+在Web平台使用时，可以直接在页面右上角看到当前拥有的总额度和已消耗额度。
+
+![Charge Web Pn](/images/bill-charge-web.webp)
+
+<Tip>
+  在平台上使用示例文件进行国内通用票据识别和医疗票据识别是完全免费的！您可以先通过示例文件快速感受效果。
+</Tip>
+
+同时我们为每位新注册的用户朋友免费赠送100张使用额度，添加TextIn福利官还可获得免费加赠1000页使用额度和其他超多福利！您可以自行上传相关票据样本，验证国内通用票据识别/医疗票据识别在您实际业务场景中的表现。当您的免费额度使用完毕后，需要购买页数套餐包（[国内通用票据识别](https://www.textin.com/market/chager/bill_recognize_v2)、[医疗票据识别](https://www.textin.com/market/chager/medical-bill-recognize)）包或[充值T币](https://www.textin.com/console/dashboard/userCenter/charge)）使用。
+
+- 国内通用票据识别/医疗票据识别会根据您实际解析成功的文件页数进行计费扣减，票据结构化失败的张数不计费。
+- 票据结构化成功后，在返回的JSON结果中有success_count字段，即为结构化成功的张数。
+
+### 通过API使用
+
+通过API使用时，仍然是根据实际票据结构化的张数进行计费扣减。API请求失败不会计费。
+您可以通过以下字段进行核验
+- 国内通用票据识别/医疗票据识别：[返回JSON结构说明](/bill/bill-getjson)；success_count字段，票据结构化成功的张数。

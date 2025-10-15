@@ -18,7 +18,7 @@ import time
 # 要测试的命令
 CMD = [
     "python3",
-    "用于跑测试的示例脚本.py"  # 替换为你的测试脚本，也可以使用下文提供的示例脚本进行测试
+    "用于跑示例的请求脚本.py"  # 替换为你用于测试的请求脚本，也可以使用下文提供的脚本进行测试
 ]
 
 # 并发数
@@ -48,6 +48,10 @@ if __name__ == "__main__":
 </Tip>
 
 - 测试脚本如下：参考[快速启动](/xparse/parse-quickstart)，解析位于URL的文件并保存结果；需替换您自己的 x-ti-app-id 和 x-ti-secret-code
+
+<Warning>
+  注意：进行多并发测试等同对当前账号发起线上资源操作，请留意费用情况，请小心操作。
+</Warning>
 
 ```python
 import json
@@ -100,13 +104,13 @@ def main():
         markdown_details=1,
         page_count=10,
         parse_mode="auto",
-        table_flavor="html",
+        table_flavor="html"
     )
 
-	import time
+    import time
 
-	# 在发送请求前记录开始时间
-	start_time = time.time()
+    # 在发送请求前记录开始时间
+    start_time = time.time()
 
     try:
         response = client.recognize(file_content, options)
@@ -122,7 +126,7 @@ def main():
             with open("result.md", "w", encoding="utf-8") as f:
                 f.write(markdown_content)
 
-    	# 记录请求结束时间
+        # 记录请求结束时间
         end_time = time.time()
 
         print(f"请求耗时：{end_time - start_time:.2f} 秒")
@@ -135,6 +139,10 @@ if __name__ == "__main__":
 
 - 多并发测试结果如下图：可以看到文档解析API支持多并发请求，并且可以极大程度上节省时间。我们始终贯彻“您只需关心业务，剩下的文档解析处理工作交给TextIn”的理念，希望尽一切可能为您的业务发展提供帮助。
 
+![Concurrent1 Pn](/images/concurrent1.png)
+
+![Concurrent5 Pn](/images/concurrent5.png)
+
 ### 多并发请求
 
 当您想要进行文档解析API的多并发请求时，以下是一份完整的示例代码供您参考，您也可以根据实际使用需要进行修改调整。
@@ -143,7 +151,6 @@ if __name__ == "__main__":
 import os
 import json
 import requests
-from typing import Dict，Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class OCRClient:
@@ -193,18 +200,18 @@ def main():
     output_dir = "./output"  # 输出结果的文件夹
     os.makedirs(output_dir, exist_ok=True)
 
-    exts = (".pdf",".png",".jpg",".jpeg",".bmp",".tiff",".webp",".doc",".docx",".html",".mhtml",".xls",".xlsx",".csv",".ppt",".pptx",".txt")
+    exts = (".pdf",".png",".jpg",".jpeg",".bmp",".tiff",".webp",".doc",".docx",".html",".mhtml",".xls",".xlsx",".csv",".ppt",".pptx",".txt",".ofd",".rtf")
     files = [f for f in os.listdir(input_dir) if f.lower().endswith(exts)]
     file_paths = [os.path.join(input_dir, f) for f in files]
 
-# 设置URL参数，可按需设置，这里已为你默认设置了一些参数
+    # 设置URL参数，可按需设置，这里已为你默认设置了一些参数
     options = dict(
         dpi=144,
         get_image="objects",
         markdown_details=1,
         page_count=10,
         parse_mode="auto",
-        table_flavor="html",
+        table_flavor="html"
     )
 
     # 设置并发数

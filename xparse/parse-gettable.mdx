@@ -17,6 +17,8 @@ title: "获取表格"
 - 在main函数中添加以下示例代码，解析API输出markdown中的表格，并保存为 md 和 json 文件。
 
 ```python
+import re
+
 if "result" in json_response and "markdown" in json_response["result"]:
     markdown_content = json_response["result"]["markdown"]
     # 提取所有表格
