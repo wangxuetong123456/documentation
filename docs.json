@@ -67,7 +67,8 @@
                 "group": "智能文档解析",
                 "pages": [
                   "api-reference/endpoint/parse",
-                  "api-reference/endpoint/extract-v3"
+                  "api-reference/endpoint/extract-v3",
+                  "api-reference/endpoint/pipeline"
                 ]
               }
             ]

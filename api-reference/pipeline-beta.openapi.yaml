@@ -1,0 +1,446 @@
+openapi: 3.0.3
+info:
+  title: XParse Pipeline API
+  description: |
+    文档解析流水线接口，支持文档解析（Parse）、文本分块（Chunk）和向量化（Embed）的组合处理。
+    
+    ## 流水线规则
+    - **parse** 节点是必需的，且必须是第一个节点
+    - **chunk** 和 **embed** 节点是可选的
+    - 如果同时使用 chunk 和 embed，chunk 必须在 embed 之前
+    - 每种类型的节点最多只能出现一次
+    - stages 数组长度必须在 1-3 之间
+  version: 1.0.0
+  contact:
+    name: TextIn API Team
+
+servers:
+  - url: https://api.textin.com
+    description: 生产环境
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /api/xparse/pipeline:
+    post:
+      summary: 文档处理流水线
+      description: |
+        执行文档处理流水线，可以组合使用 parse、chunk、embed 三种处理阶段。
+      operationId: executePipeline
+      tags:
+        - XParse Pipeline
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - stages
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 需要处理的文档文件（支持 PDF、图片等格式）
+                stages:
+                  type: string
+                  description: |
+                    流水线配置的 JSON 字符串，必须是 PipelineStage 数组。
+                    
+                    注意：虽然这里是 string 类型（因为 form-data 限制），但内容必须是有效的 JSON 数组字符串。
+                    
+                    示例 JSON 配置：
+                    ```json
+                    [
+                      {
+                        "type": "parse",
+                        "config": {
+                          "provider": "textin"
+                        }
+                      },
+                      {
+                        "type": "chunk",
+                        "config": {
+                          "strategy": "basic",
+                          "max_characters": 1024
+                        }
+                      }
+                    ]
+                    ```
+                    
+                    实际使用时需要序列化成 JSON 字符串。
+                  example: '[{"type":"parse","config":{"provider":"textin"}},{"type":"chunk","config":{"strategy":"basic","max_characters":1024}}}]'
+            encoding:
+              stages:
+                contentType: application/json
+      responses:
+        '200':
+          description: 处理成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineResponse'
+              examples:
+                parseOnly:
+                  summary: 仅解析示例
+                  value:
+                    elements:
+                      - element_id: "elem_001"
+                        type: "text"
+                        metadata:
+                          filename: "example.pdf"
+                          filetype: "application/pdf"
+                          file_size: 102400
+                        text: "这是解析出的文本内容"
+                    stats:
+                      original_elements: 10
+                      chunked_elements: 0
+                      embedded_elements: 0
+                      stages:
+                        - type: "parse"
+                          config:
+                            provider: "textin"
+                
+                fullPipeline:
+                  summary: 完整流水线示例
+                  value:
+                    elements:
+                      - element_id: "elem_001"
+                        type: "text"
+                        metadata:
+                          filename: "example.pdf"
+                          filetype: "application/pdf"
+                          file_size: 102400
+                          embedded: [0.1, 0.2, 0.3]
+                          orig_elements: ["elem_source_001"]
+                        text: "这是处理后的文本块"
+                    stats:
+                      original_elements: 10
+                      chunked_elements: 15
+                      embedded_elements: 15
+                      stages:
+                        - type: "parse"
+                          config:
+                            provider: "textin"
+                        - type: "chunk"
+                          config:
+                            strategy: "basic"
+                            max_characters: 1000
+                        - type: "embed"
+                          config:
+                            provider: "qwen"
+                            model_name: "text-embedding-v4"
+        
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFile:
+                  summary: 缺少文件
+                  value:
+                    code: 400
+                    message: "file is required"
+                
+                invalidStages:
+                  summary: stages 格式错误
+                  value:
+                    code: 400
+                    message: "parse stages failed: invalid JSON"
+                
+                stagesValidationError:
+                  summary: stages 验证失败
+                  value:
+                    code: 400
+                    message: "first stage must be parse, got: chunk"
+        
+        '401':
+          description: 鉴权失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 401
+                message: "unauthorized: invalid app-id or secret-code"
+        
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 500
+                message: "internal server error: parse failed"
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+
+
+  schemas:
+    PipelineResponse:
+      type: object
+      required:
+        - elements
+        - stats
+      properties:
+        elements:
+          type: array
+          description: 处理后的元素列表
+          items:
+            $ref: '#/components/schemas/Element'
+        stats:
+          $ref: '#/components/schemas/PipelineStats'
+    
+    Element:
+      type: object
+      required:
+        - element_id
+        - type
+        - metadata
+        - text
+      properties:
+        element_id:
+          type: string
+          description: 元素唯一标识符
+          example: "elem_001"
+        type:
+          type: string
+          description: 元素类型（如 text, title, table 等）
+          example: "text"
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        text:
+          type: string
+          description: 元素的文本内容
+          example: "这是文档中的一段文本"
+    
+    Metadata:
+      type: object
+      required:
+        - filename
+      properties:
+        record_id:
+          type: string
+          description: 记录 ID
+          example: "record_001"
+        parent_id:
+          type: string
+          description: 父元素 ID
+          example: "parent_001"
+        filename:
+          type: string
+          description: 文件名
+          example: "example.pdf"
+        filetype:
+          type: string
+          description: 文件类型
+          example: "application/pdf"
+        file_size:
+          type: integer
+          format: int64
+          description: 文件大小（字节）
+          example: 102400
+        embedded:
+          type: array
+          description: 向量化后的嵌入向量（仅在执行 embed stage 后存在）
+          items:
+            type: number
+            format: float
+          example: [0.1, 0.2, 0.3, 0.4, 0.5]
+        orig_elements:
+          type: array
+          description: 原始元素 ID 列表（仅在 chunk 时设置 include_orig_elements 为 true 时存在）
+          items:
+            type: string
+          example: ["elem_001", "elem_002"]
+    
+    PipelineStats:
+      type: object
+      required:
+        - original_elements
+        - chunked_elements
+        - embedded_elements
+        - stages
+      properties:
+        original_elements:
+          type: integer
+          description: 原始解析的元素数量（parse stage 产生）
+          example: 10
+        chunked_elements:
+          type: integer
+          description: 分块后的元素数量（chunk stage 产生，如果没有执行则为 0）
+          example: 15
+        embedded_elements:
+          type: integer
+          description: 向量化后的元素数量（embed stage 产生，如果没有执行则为 0）
+          example: 15
+        stages:
+          type: array
+          description: 实际执行的 stages 配置
+          items:
+            $ref: '#/components/schemas/PipelineStage'
+    
+    PipelineStage:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [parse, chunk, embed]
+          description: |
+            处理阶段类型：
+            - parse: 文档解析
+            - chunk: 文本分块
+            - embed: 向量化
+          example: "parse"
+        config:
+          type: object
+          description: |
+            阶段配置，根据 type 不同有不同的结构：
+            - type=parse: ParseConfig
+            - type=chunk: ChunkConfig
+            - type=embed: EmbedConfig
+          oneOf:
+            - $ref: '#/components/schemas/ParseConfig'
+            - $ref: '#/components/schemas/ChunkConfig'
+            - $ref: '#/components/schemas/EmbedConfig'
+          example: {}
+    
+    ParseConfig:
+      type: object
+      required:
+        - provider
+      description: |
+        支持的 Parser 供应商：
+        - textin: TextIn 自研解析引擎
+        - mineru: MinerU 解析引擎
+        - paddle: PaddleOCR 解析引擎
+      properties:
+        provider:
+          type: string
+          enum: [textin, mineru, paddle]
+          description: |
+            Parser 供应商：
+            - textin: TextIn 自研解析引擎
+            - mineru: MinerU 解析引擎
+            - paddle: PaddleOCR 解析引擎
+          default: "textin"
+          example: "textin"
+    
+    ChunkConfig:
+      type: object
+      properties:
+        strategy:
+          type: string
+          enum: [basic, by_title, by_page]
+          description: |
+            分块策略：
+            - basic: 基础分块（按字符数切分）
+            - by_title: 按标题切分
+            - by_page: 按页面切分
+          default: "basic"
+          example: "basic"
+        include_orig_elements:
+          type: boolean
+          description: 是否在 metadata 中包含原始元素 ID
+          default: false
+          example: true
+        new_after_n_chars:
+          type: integer
+          description: 在多少字符后创建新块
+          example: 800
+        max_characters:
+          type: integer
+          description: 每个块的最大字符数
+          default: 1000
+          example: 1000
+        overlap:
+          type: integer
+          description: 相邻块之间的重叠字符数
+          example: 100
+    
+    EmbedConfig:
+      type: object
+      required:
+        - provider
+        - model_name
+      properties:
+        provider:
+          type: string
+          enum: [qwen, doubao]
+          description: |
+            Embedding 供应商：
+            - qwen: 阿里云通义千问
+            - doubao: 字节跳动豆包
+          default: "qwen"
+          example: "qwen"
+        model_name:
+          type: string
+          description: |
+            模型名称，必须与 provider 匹配：
+            
+            **Qwen 支持的模型：**
+            - text-embedding-v3
+            - text-embedding-v4
+            
+            **Doubao 支持的模型：**
+            - doubao-embedding-large-text-250515
+            - doubao-embedding-text-240715
+          default: "text-embedding-v4"
+          example: "text-embedding-v4"
+          enum:
+            - text-embedding-v3
+            - text-embedding-v4
+            - doubao-embedding-large-text-250515
+            - doubao-embedding-text-240715
+    
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: 错误码
+          example: 400
+        message:
+          type: string
+          description: 错误信息
+          example: "invalid request parameters"
+
+tags:
+  - name: XParse Pipeline
+    description: |
+      文档处理流水线接口
+      
+      ## 功能特性
+      - 🔄 灵活的流水线配置：可自由组合 parse、chunk、embed 三种处理阶段
+      - 📄 多格式支持：支持 PDF、图片等多种文档格式
+      - 🧩 智能分块：支持基础、按标题、按页面三种分块策略
+      - 🤖 多模型支持：支持通义千问和豆包的多种 embedding 模型
+      - 📊 处理统计：返回详细的处理统计信息
+      
+      ## 计费说明
+      - 按照 parse 阶段处理的页数计费
+      - chunk 和 embed 阶段不额外收费
+      - 计费信息通过 x-ti-app-id 和 x-ti-secret-code 进行关联
+
