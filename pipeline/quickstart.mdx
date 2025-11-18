@@ -1,0 +1,592 @@
+---
+title: "快速启动"
+description: "5 分钟快速上手 xParse Pipeline，从安装到运行第一个文档处理流程"
+---
+
+<Tip>
+  本教程基于 Python 示例分步讲解如何使用 xParse Pipeline。我们提供了完整的示例代码，可在本地一键运行，助您快速体验 Pipeline 的强大能力。
+</Tip>
+
+## 为什么使用 xParse Pipeline？
+
+在大模型和 RAG 应用开发中，文档处理是一个关键环节。传统方式需要分别调用解析、分块、向量化等多个接口，流程复杂且容易出错。xParse Pipeline 通过统一的 Pipeline API，一次性完成文档解析、智能分块和向量化全流程，让您专注于业务逻辑，而不是繁琐的数据处理。
+
+使用 xParse Pipeline，您可以：
+- ✅ **一键完成全流程**：通过单个 API 调用完成 parse → chunk → embed 全流程
+- ✅ **灵活配置处理策略**：根据文档类型选择合适的分块策略和向量模型
+- ✅ **无缝对接向量数据库**：处理结果直接存储到 Milvus/Zilliz，无需额外转换
+- ✅ **支持批量处理**：自动处理数据源中的所有文档，支持大规模文档处理
+
+如果您正在构建 RAG 应用、知识库系统或 Agent 应用，xParse Pipeline 会是您的得力助手。
+
+## 如何使用 xParse Pipeline？
+
+您可以参考以下示例和步骤，快速验证并将 xParse Pipeline 接入到您的系统中。
+
+### 先决条件：获取 API Key
+
+使用 xParse Pipeline 处理文档时，您需要先获取 API Key。请先登录后前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取您的 `x-ti-app-id` 和 `x-ti-secret-code`。
+
+### 步骤 1：安装依赖
+
+使用 pip 安装 xparse-pipeline 包：
+
+```bash
+pip install --upgrade xparse-pipeline
+```
+
+### 步骤 2：选择创建方式
+
+xParse Pipeline 支持两种创建方式：
+
+1. **通过配置创建**（推荐）：使用 JSON 配置，简单直观，易于管理（可以是独立文件）
+2. **手动创建组件**：手动创建配置对象传入Pipline，更灵活
+
+### 步骤 3：编写代码
+
+#### 方式 1：通过配置创建（推荐）
+
+这是最简单的方式，适合快速上手：
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+# 完整的配置示例
+config = {
+    # 数据源配置：本地文件系统
+    'source': {
+        'type': 'local',
+        'directory': './documents',  # 文档目录
+        'pattern': '*.pdf'           # 文件匹配模式：*.pdf, *.docx, **/*.txt
+    },
+    
+    # 目标存储配置：本地文件系统（用于测试）
+    'destination': {
+        'type': 'local',
+        'output_dir': './output'     # 输出目录
+    },
+    
+    # API 配置
+    'api_base_url': 'https://api.textin.com/api/xparse',
+    'api_headers': {
+        'x-ti-app-id': 'your-app-id',        # 替换为您的 app-id
+        'x-ti-secret-code': 'your-secret-code'  # 替换为您的 secret-code
+    },
+    
+    # Parse 配置（可选，使用默认值）
+    'parse_config': {
+        'provider': 'textin'  # 当前支持 textin 文档解析
+    },
+    
+    # Chunk 配置（可选）
+    'chunk_config': {
+        'strategy': 'basic',              # 分块策略: 'basic' | 'by_title' | 'by_page'
+        'include_orig_elements': False,   # 是否包含原始元素
+        'new_after_n_chars': 512,         # 多少字符后创建新块
+        'max_characters': 1024,           # 最大字符数
+        'overlap': 0                      # 重叠字符数
+    },
+    
+    # Embed 配置（可选）
+    'embed_config': {
+        'provider': 'qwen',                    # 向量化供应商: 'qwen' | 'doubao'
+        'model_name': 'text-embedding-v3'      # 模型名称
+    }
+}
+
+# 使用配置创建并运行 pipeline
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+#### 方式 2：手动创建组件
+
+如果您需要更精细的控制，可以手动创建各个组件：
+
+```python
+from xparse_pipeline import (
+    Pipeline, 
+    LocalSource, 
+    LocalDestination,
+    ParseConfig, 
+    ChunkConfig, 
+    EmbedConfig
+)
+
+# 创建数据源
+source = LocalSource(
+    directory='./documents',
+    pattern='*.pdf'
+)
+
+# 创建目标存储
+destination = LocalDestination(
+    output_dir='./output'
+)
+
+# 创建配置对象
+parse_config = ParseConfig(
+    provider='textin'
+)
+
+chunk_config = ChunkConfig(
+    strategy='by_title',           # 按标题分块
+    include_orig_elements=False,
+    new_after_n_chars=512,
+    max_characters=1024,
+    overlap=50                     # 块之间重叠 50 字符
+)
+
+embed_config = EmbedConfig(
+    provider='qwen',
+    model_name='text-embedding-v3'
+)
+
+# 创建 Pipeline
+pipeline = Pipeline(
+    source=source,
+    destination=destination,
+    api_base_url='https://api.textin.com/api/xparse',
+    api_headers={
+        'x-ti-app-id': 'your-app-id',
+        'x-ti-secret-code': 'your-secret-code'
+    },
+    parse_config=parse_config,
+    chunk_config=chunk_config,
+    embed_config=embed_config
+)
+
+# 运行 Pipeline
+pipeline.run()
+```
+
+### 步骤 4：运行代码
+
+将代码保存为 `run_pipeline.py`，然后运行：
+
+```bash
+python run_pipeline.py
+```
+
+您将看到类似以下的输出：
+
+```
+============================================================
+Pipeline 初始化完成
+  Parse Config: ParseConfig(provider='textin')
+  Chunk Config: ChunkConfig(strategy='basic', ...)
+  Embed Config: EmbedConfig(provider='qwen', model_name='text-embedding-v3')
+============================================================
+
+→ 列出文件...
+✓ 本地找到 3 个文件
+
+进度: [1/3]
+
+============================================================
+处理文件: document1.pdf
+  → 读取文件...
+  ✓ 文件读取完成: 245678 bytes
+  → 调用 Pipeline 接口: document1.pdf
+  ✓ Pipeline 完成:
+    - 原始元素: 25
+    - 分块后: 42
+    - 向量化: 42
+  → 写入目的地...
+  ✓ 写入本地: ./output/document1_result.json
+
+✓✓✓ 文件处理成功: document1.pdf
+...
+```
+
+## 配置说明
+
+### Source（数据源）配置
+
+#### S3/MinIO 数据源
+
+```python
+'source': {
+    'type': 's3',
+    'endpoint': 'https://your-minio-server.com',  # MinIO 服务器地址
+    'access_key': 'your-access-key',              # 访问密钥
+    'secret_key': 'your-secret-key',              # 秘密密钥
+    'bucket': 'your-bucket',                      # 存储桶名称
+    'prefix': '',                                 # 可选，文件夹前缀
+    'region': 'us-east-1'                        # 区域
+}
+```
+
+#### 本地文件系统数据源
+
+```python
+'source': {
+    'type': 'local',
+    'directory': './input',                      # 文档目录
+    'pattern': '*.pdf'                           # 文件匹配模式: *.pdf, *.docx, **/*.txt
+}
+```
+
+#### FTP 数据源
+
+```python
+'source': {
+    'type': 'ftp',
+    'host': '127.0.0.1',                        # FTP 服务器地址
+    'port': 21,                                  # FTP 端口
+    'username': 'your-username',                  # 用户名
+    'password': 'your-password'                   # 密码
+}
+```
+
+### Destination（目标存储）配置
+
+#### Milvus 向量数据库
+
+```python
+'destination': {
+    'type': 'milvus',
+    'db_path': './milvus_pipeline.db',          # 本地数据库文件路径
+    'collection_name': 'my_collection',         # 集合名称
+    'dimension': 1024                            # 向量维度，需与 embed API 返回一致
+}
+```
+
+#### Zilliz 向量数据库（云端）
+
+```python
+'destination': {
+    'type': 'zilliz',
+    'db_path': 'https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',  # Zilliz 连接地址
+    'collection_name': 'my_collection',          # 集合名称
+    'dimension': 1024,                           # 向量维度
+    'api_key': 'your-api-key'                    # Zilliz Cloud API Key
+}
+```
+
+#### 本地文件系统
+
+```python
+'destination': {
+    'type': 'local',
+    'output_dir': './output'                     # 输出目录
+}
+```
+
+### Chunk（分块）配置
+
+分块配置决定了文档如何被切分成适合向量化的文本块：
+
+| 参数 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| **strategy** | string | 分块策略 | `basic` |
+| | | - `basic`: 基础分块，按字符数分割 | |
+| | | - `by_title`: 按标题分块，保持章节完整性 | |
+| | | - `by_page`: 按页面分块，保持页面完整性 | |
+| **include_orig_elements** | bool | 是否包含原始元素信息 | `False` |
+| **new_after_n_chars** | int | 多少字符后创建新块（近似限制） | `512` |
+| **max_characters** | int | 数据块中允许的最大字符数上限 | `1024` |
+| **overlap** | int | 重叠字符数，确保分块之间的上下文连续性 | `0` |
+
+**分块策略选择建议**：
+- **basic**：适合一般文档，按固定字符数分割
+- **by_title**：适合结构化文档（如技术文档、产品手册），保持章节完整性
+- **by_page**：适合 PDF 文档，保持页面完整性
+
+### Embed（向量化）配置
+
+向量化配置决定了使用哪个模型将文本转换为向量：
+
+| 参数 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| **provider** | string | 向量化供应商 | `qwen` |
+| | | - `qwen`: 通义千问 | |
+| | | - `doubao`: 火山引擎 | |
+| **model_name** | string | 模型名称 | `text-embedding-v3` |
+
+**支持的模型**：
+- **qwen（通义千问）**：
+  - `text-embedding-v3`：通用向量模型
+  - `text-embedding-v4`：更高精度的向量模型
+- **doubao（火山引擎）**：
+  - `doubao-embedding-large-text-250515`：大模型版本
+  - `doubao-embedding-text-240715`：标准版本
+
+## 使用示例
+
+### 示例 1：本地文件到本地输出（测试）
+
+最简单的测试场景，适合快速验证功能：
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    'source': {
+        'type': 'local',
+        'directory': './test_files',
+        'pattern': '*.pdf'
+    },
+    'destination': {
+        'type': 'local',
+        'output_dir': './test_output'
+    },
+    'api_base_url': 'https://api.textin.com/api/xparse',
+    'api_headers': {
+        'x-ti-app-id': 'your-app-id',
+        'x-ti-secret-code': 'your-secret-code'
+    },
+    'chunk_config': {
+        'strategy': 'basic',
+        'max_characters': 1024
+    },
+    'embed_config': {
+        'provider': 'qwen',
+        'model_name': 'text-embedding-v3'
+    }
+}
+
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+### 示例 2：S3 到 Milvus（生产环境）
+
+典型的生产环境配置，从 S3 读取文档，存储到 Milvus 向量数据库：
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    'source': {
+        'type': 's3',
+        'endpoint': 'https://your-minio.com',
+        'access_key': 'your-access-key',
+        'secret_key': 'your-secret-key',
+        'bucket': 'documents',
+        'prefix': 'pdfs/',
+        'region': 'us-east-1'
+    },
+    'destination': {
+        'type': 'milvus',
+        'db_path': './vectors.db',
+        'collection_name': 'documents',
+        'dimension': 1024
+    },
+    'api_base_url': 'https://api.textin.com/api/xparse',
+    'api_headers': {
+        'x-ti-app-id': 'your-app-id',
+        'x-ti-secret-code': 'your-secret-code'
+    },
+    'chunk_config': {
+        'strategy': 'by_title',           # 按标题分块
+        'include_orig_elements': False,
+        'new_after_n_chars': 512,
+        'max_characters': 1024,
+        'overlap': 50                    # 块之间重叠 50 字符
+    },
+    'embed_config': {
+        'provider': 'qwen',
+        'model_name': 'text-embedding-v3'
+    }
+}
+
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+### 示例 3：不同分块策略的配置
+
+根据文档类型选择合适的分块策略：
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+# 配置 1：按页面分块（适合 PDF 文档）
+config_by_page = {
+    'source': {...},
+    'destination': {...},
+    'api_base_url': 'https://api.textin.com/api/xparse',
+    'api_headers': {...},
+    'chunk_config': {
+        'strategy': 'by_page',         # 按页面分块
+        'max_characters': 2048,        # 增大块大小
+        'overlap': 100                 # 页面间重叠 100 字符
+    },
+    'embed_config': {
+        'provider': 'qwen',
+        'model_name': 'text-embedding-v4'  # 使用更高精度的模型
+    }
+}
+
+# 配置 2：按标题分块（适合结构化文档）
+config_by_title = {
+    'source': {...},
+    'destination': {...},
+    'api_base_url': 'https://api.textin.com/api/xparse',
+    'api_headers': {...},
+    'chunk_config': {
+        'strategy': 'by_title',        # 按标题分块
+        'include_orig_elements': True,  # 保留原始元素信息
+        'max_characters': 1536
+    },
+    'embed_config': {
+        'provider': 'qwen',
+        'model_name': 'text-embedding-v3'
+    }
+}
+
+# 根据文档类型选择配置
+pipeline = create_pipeline_from_config(config_by_page)
+pipeline.run()
+```
+
+### 示例 4：处理单个文件并获取统计信息
+
+如果您需要处理单个文件并获取详细的统计信息：
+
+```python
+from xparse_pipeline import LocalSource, LocalDestination, Pipeline, ChunkConfig, EmbedConfig
+
+# 创建 pipeline
+source = LocalSource(directory='./docs', pattern='*.pdf')
+destination = LocalDestination(output_dir='./output')
+
+chunk_config = ChunkConfig(
+    strategy='by_page',
+    max_characters=2048,
+    overlap=100
+)
+
+embed_config = EmbedConfig(
+    provider='qwen',
+    model_name='text-embedding-v4'
+)
+
+pipeline = Pipeline(
+    source=source,
+    destination=destination,
+    api_base_url='https://api.textin.com/api/xparse',
+    api_headers={
+        'x-ti-app-id': 'your-app-id',
+        'x-ti-secret-code': 'your-secret-code'
+    },
+    chunk_config=chunk_config,
+    embed_config=embed_config
+)
+
+# 处理单个文件并获取统计信息
+file_path = 'document.pdf'
+file_bytes = source.read_file(file_path)
+result = pipeline.process_with_pipeline(file_bytes, file_path)
+
+if result:
+    elements, stats = result
+    print(f"原始元素: {stats.original_elements}")
+    print(f"分块后: {stats.chunked_elements}")
+    print(f"向量化: {stats.embedded_elements}")
+    print(f"使用配置:")
+    print(f"  - 分块策略: {stats.chunk_config.strategy}")
+    print(f"  - 向量模型: {stats.embed_config.model_name}")
+    
+    # 写入目的地
+    metadata = {'file_name': file_path}
+    pipeline.destination.write(elements, metadata)
+```
+
+## 查看结果
+
+### 本地文件输出
+
+如果使用本地文件系统作为目标存储，处理结果会保存为 JSON 文件：
+
+```json
+{
+  "metadata": {
+    "file_name": "document.pdf",
+    "total_elements": 42,
+    "processed_at": "2024-01-01T12:00:00",
+    "stats": {
+      "original_elements": 25,
+      "chunked_elements": 42,
+      "embedded_elements": 42
+    }
+  },
+  "data": [
+    {
+      "element_id": "f6d5beee53d4f3d90589472974abd7f75c54988c72375cd206f74089391c92b2",
+      "type": "plaintext",
+      "text": "文本内容...",
+      "metainfo": {
+        "embedded": [0.1, 0.2, 0.3, ...],
+        "record_id": "08f8e327d05f97e545d04c81d2ef8de1",
+        ...
+      }
+    }
+  ],
+  "timestamp": "2024-01-01T12:00:00"
+}
+```
+
+### Milvus 向量数据库
+
+如果使用 Milvus 作为目标存储，向量数据会直接存储到集合中，您可以使用 Milvus 客户端进行查询：
+
+```python
+from pymilvus import MilvusClient
+
+# 连接 Milvus
+client = MilvusClient(uri='./milvus_pipeline.db')
+
+# 查询向量
+results = client.search(
+    collection_name='documents',
+    data=[[0.1, 0.2, 0.3, ...]],  # 查询向量
+    limit=5
+)
+
+print(results)
+```
+
+## 下一步
+
+- **阅读[RAG 场景教程](/pipeline/rag-tutorial)**：了解如何构建完整的 RAG 应用
+- **查看[API 文档](/api-reference/endpoint/pipeline)**：了解 Pipeline API 的详细参数和返回格式
+- **探索最佳实践**：学习分块策略选择、性能优化等技巧
+
+<Tip>
+  如果您在使用过程中遇到问题，可以查看 [故障排除指南](#故障排除) 或联系技术支持。
+</Tip>
+
+## 故障排除
+
+### API 连接失败
+
+- 检查 `api_base_url` 是否正确（应为 `https://api.textin.com/api/xparse`）
+- 确认 `x-ti-app-id` 和 `x-ti-secret-code` 配置正确
+- 确认网络连接正常
+
+### S3 连接失败
+
+- 验证 endpoint、access_key、secret_key 是否正确
+- 确认 bucket 存在且有访问权限
+- 检查网络连接和防火墙设置
+
+### Milvus 写入失败
+
+- 检查向量维度是否匹配（当前 Pipeline API 使用 1024 维度）
+- 确认集合中包含必需字段：`element_id`、`text`、`record_id`、`embeddings`、`metadata`
+- 查看 Milvus 日志获取详细错误信息
+
+### 本地文件找不到
+
+- 确认文件路径正确
+- 检查文件匹配模式（pattern）是否正确
+- 验证文件权限
+
+### 处理速度慢
+
+- 考虑使用更高性能的向量模型（如 `text-embedding-v4`）
+- 调整分块策略，减少分块数量
+- 检查网络连接速度
+

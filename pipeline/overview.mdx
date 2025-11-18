@@ -1,0 +1,87 @@
+---
+title: "产品简介"
+description: "xParse Pipeline - 端到端文档处理 AI Infra"
+---
+
+xParse Pipeline 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。通过统一的 Pipeline API，一次性完成文档解析（Parse）、智能分块（Chunk）和向量化（Embed）全流程，让您的文档数据无缝流入向量数据库，为 RAG、Agentic Workflow 等 AI 应用提供强大的数据底座。
+
+xParse Pipeline 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、本地文件系统、FTP 等多种数据源读取文档，经过智能处理后，将向量数据存储到 Milvus/Zilliz 向量数据库或本地文件系统，实现从文档到向量数据库的完整自动化链路。
+
+### xParse Pipeline - 让文档处理像流水线一样简单
+
+提供端到端的文档处理 AI 基础设施，从非结构化文档到向量数据库，一键完成全流程处理，您只需关心业务，剩下的交给 Pipeline。
+
+![Pipeline 架构图](/images/pipeline-architecture.svg)
+
+### 立即开始
+
+<CardGroup cols={2}>
+  <Card title="快速启动" icon="sparkles" href="/pipeline/quickstart">
+    5 分钟快速上手，从安装到运行第一个 Pipeline
+  </Card>
+  <Card title="RAG 场景教程" icon="sparkles" href="/pipeline/rag-tutorial">
+    完整 RAG 应用构建指南，包含企业知识库、法律文档检索等场景
+  </Card>
+  <Card title="API 参考" icon="sparkles" href="/api-reference/endpoint/pipeline">
+    查看完整的 Pipeline API 接口文档
+  </Card>
+  <Card title="在线体验" icon="sparkles" href="https://www.textin.com/console/recognition/robot_markdown?service=pdf_to_markdown">
+    免费试用文档解析能力，体验解析效果
+  </Card>
+</CardGroup>
+
+### 核心优势
+
+- **统一 Pipeline API，一键完成全流程**：通过 `/api/xparse/pipeline` 接口，一次性完成文档解析、智能分块和向量化，无需多次调用，大幅简化开发流程，提升处理效率。
+
+- **灵活的数据源支持**：支持兼容 S3 协议的对象存储（如 MinIO）、本地文件系统和 FTP 协议文件系统，轻松对接各种数据存储场景，满足企业级部署需求。
+
+- **灵活的向量存储方案**：支持 Milvus/Zilliz 向量数据库和本地文件系统输出，可根据业务需求选择云端或本地部署，灵活适配不同规模的应用场景。
+
+- **智能分块策略**：提供 `basic`、`by_title`、`by_page` 三种分块策略，支持自定义字符数、重叠等参数，确保分块结果既保持语义完整性，又适合向量检索。
+
+- **多模型向量化支持**：支持通义千问（Qwen）和火山引擎（Doubao）的多种向量模型，包括 `text-embedding-v3`、`text-embedding-v4` 等，可根据精度和性能需求灵活选择。
+
+- **配置化处理，易于扩展**：基于抽象类设计，支持灵活配置 parse、chunk、embed 参数，同时易于扩展新的 Source 和 Destination，满足定制化需求。
+
+- **详细统计信息**：返回每个阶段的处理统计数据，包括原始元素数、分块后元素数、向量化元素数等，便于监控和优化处理流程。
+
+- **完整日志和错误追踪**：提供详细的处理日志和错误追踪，帮助快速定位问题，保障生产环境稳定运行。
+
+### 适用场景
+
+#### RAG（检索增强生成）应用
+
+将企业文档、技术资料、法律文件等非结构化文档处理成向量数据，构建智能问答系统，让大模型能够基于企业知识库进行准确回答。
+
+#### 企业知识库构建
+
+批量处理企业内部文档（如产品手册、技术文档、培训材料等），构建统一的知识库，支持语义检索和智能问答。
+
+#### Agent 应用数据准备
+
+为 AI Agent 应用准备结构化数据，将文档内容转化为向量表示，支持 Agent 进行知识检索和推理。
+
+#### 文档智能检索系统
+
+构建基于语义相似度的文档检索系统，支持从海量文档中快速找到相关内容，提升信息检索效率。
+
+### 技术架构
+
+xParse Pipeline 采用模块化设计，核心组件包括：
+
+- **Source（数据源）**：抽象数据源接口，支持 S3Source、LocalSource、FtpSource 等实现
+- **Pipeline（处理管线）**：核心处理逻辑，调用统一 Pipeline API 完成文档处理
+- **Destination（目标存储）**：抽象目标存储接口，支持 MilvusDestination、LocalDestination 等实现
+- **配置类**：ParseConfig、ChunkConfig、EmbedConfig 等配置数据类，支持灵活的参数配置
+
+### 快速体验
+
+想要快速体验 xParse Pipeline 的能力？您可以：
+
+1. **查看[快速启动指南](/pipeline/quickstart)**：5 分钟完成安装和第一个 Pipeline 运行
+2. **阅读[RAG 场景教程](/pipeline/rag-tutorial)**：了解如何构建完整的 RAG 应用
+3. **参考[API 文档](/api-reference/endpoint/pipeline)**：查看详细的接口说明和参数配置
+
+更多详情见：[TextIn xParse 产品介绍](https://www.textin.com/market/detail/xparse)
+

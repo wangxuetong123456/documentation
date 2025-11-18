@@ -53,6 +53,14 @@
                 ]
               },
               {
+                "group": "文档处理流水线",
+                "pages": [
+                  "pipeline/overview",
+                  "pipeline/quickstart",
+                  "pipeline/rag-tutorial"
+                ]
+              },
+              {
                 "group": "FAQ",
                 "pages": [
                   "xparse/charge"

@@ -1,0 +1,64 @@
+<svg width="600" height="500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .box { fill: #f8f9fa; stroke: #495057; stroke-width: 2; rx: 8; }
+      .source-box { fill: #e1f5ff; stroke: #0277bd; }
+      .pipeline-box { fill: #fff4e1; stroke: #f57c00; }
+      .process-box { fill: #e8f5e9; stroke: #2e7d32; }
+      .dest-box { fill: #fce4ec; stroke: #c2185b; }
+      .text { font-family: 'Arial', 'Microsoft YaHei', sans-serif; font-size: 14px; text-anchor: middle; }
+      .title-text { font-size: 16px; font-weight: bold; }
+      .subtitle-text { font-size: 12px; fill: #666; }
+      .arrow { stroke: #495057; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .label-text { font-size: 11px; fill: #666; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#495057" />
+    </marker>
+  </defs>
+  
+  <!-- Source Box -->
+  <rect x="200" y="20" width="200" height="80" class="box source-box" />
+  <text x="300" y="50" class="text title-text">Source</text>
+  <text x="300" y="70" class="text subtitle-text">数据源（S3/本地/FTP/...）</text>
+  
+  <!-- Arrow from Source -->
+  <line x1="300" y1="100" x2="300" y2="140" class="arrow" />
+  <text x="320" y="125" class="label-text">read_file()</text>
+  
+  <!-- Pipeline API Box -->
+  <rect x="50" y="150" width="500" height="200" class="box pipeline-box" />
+  <text x="300" y="180" class="text title-text">Pipeline API</text>
+  <text x="300" y="200" class="text subtitle-text">/api/xparse/pipeline</text>
+  
+  <!-- Parse Box -->
+  <rect x="100" y="240" width="100" height="70" class="box process-box" />
+  <text x="150" y="270" class="text title-text">Parse</text>
+  <text x="150" y="290" class="text subtitle-text">文档解析</text>
+  
+  <!-- Arrow from Parse to Chunk -->
+  <line x1="200" y1="275" x2="250" y2="275" class="arrow" />
+  
+  <!-- Chunk Box -->
+  <rect x="250" y="240" width="100" height="70" class="box process-box" />
+  <text x="300" y="270" class="text title-text">Chunk</text>
+  <text x="300" y="290" class="text subtitle-text">智能分块</text>
+  
+  <!-- Arrow from Chunk to Embed -->
+  <line x1="350" y1="275" x2="400" y2="275" class="arrow" />
+  
+  <!-- Embed Box -->
+  <rect x="400" y="240" width="100" height="70" class="box process-box" />
+  <text x="450" y="270" class="text title-text">Embed</text>
+  <text x="450" y="290" class="text subtitle-text">向量化</text>
+  
+  <!-- Arrow from Pipeline to Destination -->
+  <line x1="300" y1="350" x2="300" y2="390" class="arrow" />
+  <text x="320" y="375" class="label-text">embeddings + stats</text>
+  
+  <!-- Destination Box -->
+  <rect x="200" y="400" width="200" height="80" class="box dest-box" />
+  <text x="300" y="430" class="text title-text">Destination</text>
+  <text x="300" y="450" class="text subtitle-text">目的地（Milvus/Zilliz/本地/...）</text>
+</svg>
+

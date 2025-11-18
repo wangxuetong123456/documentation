@@ -1,0 +1,740 @@
+---
+title: "RAG 场景教程"
+description: "使用 xParse Pipeline 构建完整的 RAG 应用，包含企业知识库、法律文档检索等实际场景"
+---
+
+<Tip>
+  本教程将带您了解如何使用 xParse Pipeline 构建完整的 RAG（检索增强生成）应用。我们将通过三个实际场景，展示从文档处理到向量检索的完整流程。
+</Tip>
+
+## 什么是 RAG？
+
+RAG（Retrieval-Augmented Generation，检索增强生成）是一种结合信息检索和生成式 AI 的技术。通过 RAG，大模型可以基于企业知识库进行回答，而不是仅依赖训练数据，从而提供更准确、更相关的答案。
+
+RAG 的核心流程包括：
+1. **文档处理**：将非结构化文档转换为向量表示
+2. **向量存储**：将向量数据存储到向量数据库
+3. **检索查询**：根据用户问题检索相关文档片段
+4. **生成回答**：将检索到的内容作为上下文，让大模型生成答案
+
+xParse Pipeline 专注于解决第一步和第二步，为您提供端到端的文档处理能力。
+
+## RAG 完整流程
+
+```
+文档文件 (PDF/Word/Excel...)
+    ↓
+[xParse Pipeline]
+    ├─ Parse: 文档解析
+    ├─ Chunk: 智能分块
+    └─ Embed: 向量化
+    ↓
+向量数据库 (Milvus/Zilliz)
+    ↓
+[检索系统]
+    ├─ 用户问题 → 向量化
+    ├─ 向量相似度检索
+    └─ 返回相关文档片段
+    ↓
+[大模型生成]
+    └─ 基于检索内容生成答案
+```
+
+## 场景 1：企业知识库构建
+
+### 需求描述
+
+某企业需要构建内部知识库，包含产品手册、技术文档、培训材料等。员工可以通过自然语言提问，快速找到相关信息。
+
+**文档特点**：
+- 格式多样：PDF、Word、Excel
+- 结构清晰：有明确的章节标题
+- 内容专业：技术术语较多
+
+**处理要求**：
+- 保持章节完整性
+- 支持语义检索
+- 快速响应查询
+
+### 配置方案
+
+针对结构化文档，我们使用 `by_title` 分块策略，保持章节完整性：
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    # 数据源：本地文档目录
+    'source': {
+        'type': 'local',
+        'directory': './knowledge_base',
+        'pattern': '**/*.{pdf,docx}'  # 支持 PDF 和 Word
+    },
+    
+    # 目标存储：Milvus 向量数据库
+    'destination': {
+        'type': 'milvus',
+        'db_path': './kb_vectors.db',
+        'collection_name': 'knowledge_base',
+        'dimension': 1024
+    },
+    
+    # API 配置
+    'api_base_url': 'https://api.textin.com/api/xparse',
+    'api_headers': {
+        'x-ti-app-id': 'your-app-id',
+        'x-ti-secret-code': 'your-secret-code'
+    },
+    
+    # 分块配置：按标题分块，保持章节完整性
+    'chunk_config': {
+        'strategy': 'by_title',           # 按标题分块
+        'include_orig_elements': False,
+        'new_after_n_chars': 512,         # 512 字符后考虑新块
+        'max_characters': 1536,           # 最大 1536 字符
+        'overlap': 100                    # 章节间重叠 100 字符
+    },
+    
+    # 向量化配置：使用高精度模型
+    'embed_config': {
+        'provider': 'qwen',
+        'model_name': 'text-embedding-v4'  # 使用 v4 模型提高精度
+    }
+}
+
+# 运行 Pipeline
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+### 完整代码示例
+
+```python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+企业知识库构建示例
+"""
+
+from xparse_pipeline import create_pipeline_from_config
+from pymilvus import MilvusClient
+import json
+
+def build_knowledge_base():
+    """构建知识库"""
+    print("=" * 60)
+    print("开始构建企业知识库...")
+    print("=" * 60)
+    
+    # Pipeline 配置
+    config = {
+        'source': {
+            'type': 'local',
+            'directory': './knowledge_base',
+            'pattern': '**/*.{pdf,docx}'
+        },
+        'destination': {
+            'type': 'milvus',
+            'db_path': './kb_vectors.db',
+            'collection_name': 'knowledge_base',
+            'dimension': 1024
+        },
+        'api_base_url': 'https://api.textin.com/api/xparse',
+        'api_headers': {
+            'x-ti-app-id': 'your-app-id',
+            'x-ti-secret-code': 'your-secret-code'
+        },
+        'chunk_config': {
+            'strategy': 'by_title',
+            'max_characters': 1536,
+            'overlap': 100
+        },
+        'embed_config': {
+            'provider': 'qwen',
+            'model_name': 'text-embedding-v4'
+        }
+    }
+    
+    # 运行 Pipeline
+    pipeline = create_pipeline_from_config(config)
+    pipeline.run()
+    
+    print("\n" + "=" * 60)
+    print("知识库构建完成！")
+    print("=" * 60)
+
+def query_knowledge_base(question: str, top_k: int = 5):
+    """查询知识库"""
+    # 连接 Milvus
+    client = MilvusClient(uri='./kb_vectors.db')
+    
+    # 将问题向量化（这里需要调用 embed API，简化示例）
+    # 实际使用时，需要调用相同的 embed API 将问题转换为向量
+    query_vector = [0.1] * 1024  # 示例向量，实际需要调用 API
+    
+    # 检索相似文档
+    results = client.search(
+        collection_name='knowledge_base',
+        data=[query_vector],
+        limit=top_k,
+        search_params={"metric_type": "COSINE", "params": {"nprobe": 10}}
+    )
+    
+    print(f"\n问题: {question}")
+    print(f"\n找到 {len(results[0])} 个相关文档片段:\n")
+    
+    for i, result in enumerate(results[0], 1):
+        print(f"{i}. 相似度: {result['distance']:.4f}")
+        print(f"   文档: {result['entity'].get('metadata', {}).get('file_name', 'N/A')}")
+        print(f"   内容: {result['entity'].get('text', '')[:200]}...")
+        print()
+
+if __name__ == '__main__':
+    # 构建知识库
+    build_knowledge_base()
+    
+    # 查询示例
+    query_knowledge_base("如何使用产品 API？")
+```
+
+## 场景 2：法律文档检索系统
+
+### 需求描述
+
+律师事务所需要构建法律文档检索系统，包含合同、判决书、法律条文等。律师可以通过关键词或自然语言快速检索相关案例和法律依据。
+
+**文档特点**：
+- 主要是 PDF 格式
+- 页面结构清晰
+- 需要保持页面完整性
+- 跨页内容需要关联
+
+**处理要求**：
+- 按页面分块，保持页面完整性
+- 支持精确检索
+- 保留文档元数据（如案件编号、日期等）
+
+### 配置方案
+
+针对 PDF 文档，我们使用 `by_page` 分块策略，保持页面完整性：
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    # 数据源：S3 存储的法律文档
+    'source': {
+        'type': 's3',
+        'endpoint': 'https://your-s3-endpoint.com',
+        'access_key': 'your-access-key',
+        'secret_key': 'your-secret-key',
+        'bucket': 'legal-documents',
+        'prefix': 'cases/',
+        'region': 'us-east-1'
+    },
+    
+    # 目标存储：Zilliz 云端向量数据库
+    'destination': {
+        'type': 'zilliz',
+        'db_path': 'https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
+        'collection_name': 'legal_documents',
+        'dimension': 1024,
+        'api_key': 'your-zilliz-api-key'
+    },
+    
+    # API 配置
+    'api_base_url': 'https://api.textin.com/api/xparse',
+    'api_headers': {
+        'x-ti-app-id': 'your-app-id',
+        'x-ti-secret-code': 'your-secret-code'
+    },
+    
+    # 分块配置：按页面分块
+    'chunk_config': {
+        'strategy': 'by_page',           # 按页面分块
+        'include_orig_elements': True,    # 保留原始元素，便于追溯
+        'max_characters': 2048,          # PDF 页面可能较长
+        'overlap': 150                   # 页面间重叠，保持上下文
+    },
+    
+    # 向量化配置
+    'embed_config': {
+        'provider': 'qwen',
+        'model_name': 'text-embedding-v4'
+    }
+}
+
+# 运行 Pipeline
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+### 完整代码示例
+
+```python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+法律文档检索系统示例
+"""
+
+from xparse_pipeline import create_pipeline_from_config
+from pymilvus import MilvusClient
+from typing import List, Dict
+
+def build_legal_document_index():
+    """构建法律文档索引"""
+    print("=" * 60)
+    print("开始构建法律文档检索系统...")
+    print("=" * 60)
+    
+    config = {
+        'source': {
+            'type': 's3',
+            'endpoint': 'https://your-s3-endpoint.com',
+            'access_key': 'your-access-key',
+            'secret_key': 'your-secret-key',
+            'bucket': 'legal-documents',
+            'prefix': 'cases/',
+            'region': 'us-east-1'
+        },
+        'destination': {
+            'type': 'zilliz',
+            'db_path': 'https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
+            'collection_name': 'legal_documents',
+            'dimension': 1024,
+            'api_key': 'your-zilliz-api-key'
+        },
+        'api_base_url': 'https://api.textin.com/api/xparse',
+        'api_headers': {
+            'x-ti-app-id': 'your-app-id',
+            'x-ti-secret-code': 'your-secret-code'
+        },
+        'chunk_config': {
+            'strategy': 'by_page',
+            'include_orig_elements': True,
+            'max_characters': 2048,
+            'overlap': 150
+        },
+        'embed_config': {
+            'provider': 'qwen',
+            'model_name': 'text-embedding-v4'
+        }
+    }
+    
+    pipeline = create_pipeline_from_config(config)
+    pipeline.run()
+    
+    print("\n" + "=" * 60)
+    print("法律文档索引构建完成！")
+    print("=" * 60)
+
+def search_legal_documents(query: str, case_type: str = None, top_k: int = 10) -> List[Dict]:
+    """检索法律文档"""
+    # 连接 Zilliz
+    client = MilvusClient(
+        uri='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
+        token='your-zilliz-api-key'
+    )
+    
+    # 将查询向量化（需要调用 embed API）
+    query_vector = [0.1] * 1024  # 示例，实际需要调用 API
+    
+    # 构建过滤条件
+    expr = None
+    if case_type:
+        expr = f'metadata["case_type"] == "{case_type}"'
+    
+    # 检索
+    results = client.search(
+        collection_name='legal_documents',
+        data=[query_vector],
+        limit=top_k,
+        expr=expr,
+        search_params={"metric_type": "COSINE", "params": {"nprobe": 10}},
+        output_fields=['text', 'metadata', 'record_id']
+    )
+    
+    return results[0]
+
+def format_search_results(results: List[Dict]) -> str:
+    """格式化检索结果"""
+    output = []
+    for i, result in enumerate(results, 1):
+        metadata = result['entity'].get('metadata', {})
+        output.append(f"{i}. 【相似度: {1 - result['distance']:.2%}】")
+        output.append(f"   文档: {metadata.get('file_name', 'N/A')}")
+        output.append(f"   页码: {metadata.get('page_number', 'N/A')}")
+        output.append(f"   内容: {result['entity'].get('text', '')[:300]}...")
+        output.append("")
+    return "\n".join(output)
+
+if __name__ == '__main__':
+    # 构建索引
+    build_legal_document_index()
+    
+    # 检索示例
+    query = "合同违约责任"
+    results = search_legal_documents(query, top_k=5)
+    print(f"\n查询: {query}")
+    print("\n检索结果:")
+    print(format_search_results(results))
+```
+
+## 场景 3：技术文档问答系统
+
+### 需求描述
+
+技术团队需要构建 API 文档问答系统，开发者可以通过自然语言提问，快速找到 API 使用方法、参数说明等。
+
+**文档特点**：
+- 主要是 Markdown 和 PDF 格式
+- 代码示例较多
+- 结构相对简单
+- 需要精确匹配 API 名称
+
+**处理要求**：
+- 基础分块即可
+- 支持代码块识别
+- 快速检索响应
+
+### 配置方案
+
+针对技术文档，我们使用 `basic` 分块策略，简单高效：
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    # 数据源：本地技术文档
+    'source': {
+        'type': 'local',
+        'directory': './api_docs',
+        'pattern': '**/*.{md,pdf}'
+    },
+    
+    # 目标存储：本地 Milvus
+    'destination': {
+        'type': 'milvus',
+        'db_path': './api_docs.db',
+        'collection_name': 'api_documentation',
+        'dimension': 1024
+    },
+    
+    # API 配置
+    'api_base_url': 'https://api.textin.com/api/xparse',
+    'api_headers': {
+        'x-ti-app-id': 'your-app-id',
+        'x-ti-secret-code': 'your-secret-code'
+    },
+    
+    # 分块配置：基础分块
+    'chunk_config': {
+        'strategy': 'basic',              # 基础分块
+        'include_orig_elements': False,
+        'new_after_n_chars': 512,
+        'max_characters': 1024,
+        'overlap': 50                    # 适度的重叠
+    },
+    
+    # 向量化配置：使用标准模型
+    'embed_config': {
+        'provider': 'qwen',
+        'model_name': 'text-embedding-v3'  # 标准模型，速度快
+    }
+}
+
+# 运行 Pipeline
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+### 完整代码示例（集成大模型）
+
+```python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+技术文档问答系统示例（集成大模型）
+"""
+
+from xparse_pipeline import create_pipeline_from_config
+from pymilvus import MilvusClient
+import requests
+import json
+
+class APIDocQASystem:
+    """API 文档问答系统"""
+    
+    def __init__(self, milvus_path: str, collection_name: str, llm_api_url: str):
+        self.client = MilvusClient(uri=milvus_path)
+        self.collection_name = collection_name
+        self.llm_api_url = llm_api_url
+    
+    def build_index(self):
+        """构建文档索引"""
+        config = {
+            'source': {
+                'type': 'local',
+                'directory': './api_docs',
+                'pattern': '**/*.{md,pdf}'
+            },
+            'destination': {
+                'type': 'milvus',
+                'db_path': './api_docs.db',
+                'collection_name': 'api_documentation',
+                'dimension': 1024
+            },
+            'api_base_url': 'https://api.textin.com/api/xparse',
+            'api_headers': {
+                'x-ti-app-id': 'your-app-id',
+                'x-ti-secret-code': 'your-secret-code'
+            },
+            'chunk_config': {
+                'strategy': 'basic',
+                'max_characters': 1024,
+                'overlap': 50
+            },
+            'embed_config': {
+                'provider': 'qwen',
+                'model_name': 'text-embedding-v3'
+            }
+        }
+        
+        pipeline = create_pipeline_from_config(config)
+        pipeline.run()
+        print("文档索引构建完成！")
+    
+    def _embed_query(self, query: str) -> list:
+        """将查询转换为向量（需要调用 embed API）"""
+        # 这里需要调用相同的 embed API
+        # 简化示例，实际需要调用 API
+        response = requests.post(
+            'https://api.textin.com/api/xparse/embed',
+            headers={
+                'x-ti-app-id': 'your-app-id',
+                'x-ti-secret-code': 'your-secret-code'
+            },
+            json={
+                'texts': [query],
+                'provider': 'qwen',
+                'model_name': 'text-embedding-v3'
+            }
+        )
+        result = response.json()
+        return result['data']['embeddings'][0]
+    
+    def retrieve(self, query: str, top_k: int = 3) -> List[Dict]:
+        """检索相关文档"""
+        # 向量化查询
+        query_vector = self._embed_query(query)
+        
+        # 检索
+        results = self.client.search(
+            collection_name=self.collection_name,
+            data=[query_vector],
+            limit=top_k,
+            search_params={"metric_type": "COSINE", "params": {"nprobe": 10}},
+            output_fields=['text', 'metadata']
+        )
+        
+        return results[0]
+    
+    def answer(self, question: str) -> str:
+        """基于检索结果生成答案"""
+        # 检索相关文档
+        results = self.retrieve(question, top_k=3)
+        
+        # 构建上下文
+        context = "\n\n".join([
+            f"文档片段 {i+1}:\n{result['entity']['text']}"
+            for i, result in enumerate(results)
+        ])
+        
+        # 调用大模型生成答案
+        prompt = f"""基于以下文档内容回答用户问题。
+
+文档内容：
+{context}
+
+用户问题：{question}
+
+请基于文档内容回答问题，如果文档中没有相关信息，请说明。"""
+        
+        # 调用大模型 API（示例，实际需要替换为真实 API）
+        response = requests.post(
+            self.llm_api_url,
+            json={'prompt': prompt}
+        )
+        
+        return response.json()['answer']
+
+def main():
+    # 创建问答系统
+    qa_system = APIDocQASystem(
+        milvus_path='./api_docs.db',
+        collection_name='api_documentation',
+        llm_api_url='https://your-llm-api.com/chat'
+    )
+    
+    # 构建索引（首次运行）
+    # qa_system.build_index()
+    
+    # 问答示例
+    questions = [
+        "如何使用用户认证 API？",
+        "API 的 rate limit 是多少？",
+        "如何上传文件？"
+    ]
+    
+    for question in questions:
+        print(f"\n问题: {question}")
+        answer = qa_system.answer(question)
+        print(f"回答: {answer}")
+
+if __name__ == '__main__':
+    main()
+```
+
+## 与向量数据库集成
+
+### Milvus 使用说明
+
+Milvus 是一个开源的向量数据库，xParse Pipeline 会自动创建集合和索引：
+
+```python
+from pymilvus import MilvusClient
+
+# 连接 Milvus
+client = MilvusClient(uri='./vectors.db')
+
+# 查看集合
+collections = client.list_collections()
+print(f"集合列表: {collections}")
+
+# 查询向量
+results = client.search(
+    collection_name='documents',
+    data=[[0.1] * 1024],  # 查询向量
+    limit=5,
+    search_params={"metric_type": "COSINE", "params": {"nprobe": 10}},
+    output_fields=['text', 'metadata']
+)
+
+for result in results[0]:
+    print(f"相似度: {result['distance']}")
+    print(f"文本: {result['entity']['text'][:100]}...")
+```
+
+### Zilliz 使用说明
+
+Zilliz 是 Milvus 的云端托管版本，使用方式类似：
+
+```python
+from pymilvus import MilvusClient
+
+# 连接 Zilliz
+client = MilvusClient(
+    uri='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
+    token='your-api-key'
+)
+
+# 使用方式与 Milvus 相同
+results = client.search(
+    collection_name='documents',
+    data=[[0.1] * 1024],
+    limit=5
+)
+```
+
+## 检索和查询最佳实践
+
+### 1. 查询向量化
+
+查询时需要将用户问题转换为向量，使用与 Pipeline 相同的 embed 配置：
+
+```python
+import requests
+
+def embed_query(query: str, provider: str = 'qwen', model_name: str = 'text-embedding-v3'):
+    """将查询转换为向量"""
+    response = requests.post(
+        'https://api.textin.com/api/xparse/embed',
+        headers={
+            'x-ti-app-id': 'your-app-id',
+            'x-ti-secret-code': 'your-secret-code'
+        },
+        json={
+            'texts': [query],
+            'provider': provider,
+            'model_name': model_name
+        }
+    )
+    result = response.json()
+    return result['data']['embeddings'][0]
+```
+
+### 2. 相似度阈值
+
+设置合适的相似度阈值，过滤低质量结果：
+
+```python
+def search_with_threshold(query_vector, threshold=0.7):
+    """带阈值的检索"""
+    results = client.search(
+        collection_name='documents',
+        data=[query_vector],
+        limit=10
+    )
+    
+    # 过滤低相似度结果
+    filtered = [
+        r for r in results[0] 
+        if (1 - r['distance']) >= threshold  # COSINE 距离转换为相似度
+    ]
+    
+    return filtered
+```
+
+### 3. 混合检索
+
+结合向量检索和关键词检索：
+
+```python
+def hybrid_search(query: str, query_vector: list):
+    """混合检索：向量 + 关键词"""
+    # 向量检索
+    vector_results = client.search(
+        collection_name='documents',
+        data=[query_vector],
+        limit=5
+    )
+    
+    # 关键词检索（需要 Milvus 支持）
+    keyword_results = client.query(
+        collection_name='documents',
+        expr=f'text like "%{query}%"',
+        limit=5
+    )
+    
+    # 合并结果
+    return combine_results(vector_results, keyword_results)
+```
+
+## 性能优化建议
+
+1. **批量处理**：使用 Pipeline 的批量处理能力，一次性处理多个文档
+2. **分块策略优化**：根据文档类型选择合适的分块策略，减少不必要的分块
+3. **向量模型选择**：平衡精度和速度，生产环境可考虑使用 `text-embedding-v3`
+4. **索引优化**：在 Milvus 中创建合适的索引，提升检索速度
+
+## 下一步
+
+- **查看[快速启动指南](/pipeline/quickstart)**：了解 Pipeline 的基本使用方法
+- **阅读[API 文档](/api-reference/endpoint/pipeline)**：了解详细的接口参数和配置选项
+- **探索更多场景**：根据您的业务需求，定制 Pipeline 配置
+
+<Tip>
+  如果您在构建 RAG 应用时遇到问题，可以参考这些示例代码，或联系技术支持获取帮助。
+</Tip>
+
