@@ -28,6 +28,13 @@ paths:
       summary: 文档处理流水线
       description: |
         执行文档处理流水线，可以组合使用 parse、chunk、embed 三种处理阶段。
+        
+        **流水线规则**
+          - **parse** 节点是必需的，且必须是第一个节点
+          - **chunk** 和 **embed** 节点是可选的
+          - 如果同时使用 chunk 和 embed，chunk 必须在 embed 之前
+          - 每种类型的节点最多只能出现一次
+          - stages 数组长度必须在 1-3 之间
       operationId: executePipeline
       tags:
         - XParse Pipeline
@@ -49,30 +56,32 @@ paths:
                   type: string
                   description: |
                     流水线配置的 JSON 字符串，必须是 PipelineStage 数组。
-                    
                     注意：虽然这里是 string 类型（因为 form-data 限制），但内容必须是有效的 JSON 数组字符串。
+
+                    **使用示例**
+        
+                    仅解析：
+                    ```json
+                    [{"type": "parse", "config": {"provider": "textin"}}]
+                    ```
                     
-                    示例 JSON 配置：
+                    解析 + 分块：
                     ```json
                     [
-                      {
-                        "type": "parse",
-                        "config": {
-                          "provider": "textin"
-                        }
-                      },
-                      {
-                        "type": "chunk",
-                        "config": {
-                          "strategy": "basic",
-                          "max_characters": 1024
-                        }
-                      }
+                      {"type": "parse", "config": {"provider": "textin"}},
+                      {"type": "chunk", "config": {"strategy": "basic", "max_characters": 1000}}
                     ]
                     ```
                     
-                    实际使用时需要序列化成 JSON 字符串。
-                  example: '[{"type":"parse","config":{"provider":"textin"}},{"type":"chunk","config":{"strategy":"basic","max_characters":1024}}}]'
+                    解析 + 分块 + 向量化：
+                    ```json
+                    [
+                      {"type": "parse", "config": {"provider": "textin"}},
+                      {"type": "chunk", "config": {"strategy": "by_title", "max_characters": 500}},
+                      {"type": "embed", "config": {"provider": "qwen", "model_name": "text-embedding-v4"}}
+                    ]
+                    ```
+                  example: '[{"type":"parse","config":{"provider":"textin"}}]'
             encoding:
               stages:
                 contentType: application/json
@@ -101,8 +110,7 @@ paths:
                       embedded_elements: 0
                       stages:
                         - type: "parse"
-                          config:
-                            provider: "textin"
+                          config: {"provider": "textin"}
                 
                 fullPipeline:
                   summary: 完整流水线示例
@@ -123,8 +131,7 @@ paths:
                       embedded_elements: 15
                       stages:
                         - type: "parse"
-                          config:
-                            provider: "textin"
+                          config: {"provider": "textin"}
                         - type: "chunk"
                           config:
                             strategy: "basic"
@@ -181,16 +188,16 @@ paths:
 
 components:
   securitySchemes:
-    AppIdAuth:
-      type: apiKey
-      in: header
-      name: x-ti-app-id
-      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
-    SecretCodeAuth:
-      type: apiKey
-      in: header
-      name: x-ti-secret-code
-      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+      AppIdAuth:
+        type: apiKey
+        in: header
+        name: x-ti-app-id
+        description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+      SecretCodeAuth:
+        type: apiKey
+        in: header
+        name: x-ti-secret-code
+        description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
 
 
   schemas:
@@ -329,7 +336,9 @@ components:
       required:
         - provider
       description: |
-        支持的 Parser 供应商：
+        文档解析配置。支持 PDF、图片等多种文档格式的解析。
+        
+        **支持的 Parser 供应商：**
         - textin: TextIn 自研解析引擎
         - mineru: MinerU 解析引擎
         - paddle: PaddleOCR 解析引擎
@@ -344,6 +353,241 @@ components:
             - paddle: PaddleOCR 解析引擎
           default: "textin"
           example: "textin"
+        
+        pdf_pwd:
+          type: string
+          description: |
+            PDF 密码。当 PDF 为加密文档时，需要提供密码。
+            
+            **安全提示**：对前端封装该接口参数时，需要自行对密码进行安全防护。
+          example: "password123"
+        
+        page_start:
+          type: integer
+          minimum: 1
+          description: |
+            起始页码。当上传的是 PDF 时，表示从第几页开始解析。
+            取值范围从 1 开始，不传该参数时默认从首页开始。
+          default: 1
+          example: 1
+        
+        page_count:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: |
+            解析页数。当上传的是 PDF 时，表示要进行解析的 PDF 页数。
+            总页数不得超过 1000 页。
+          default: 1000
+          example: 10
+        
+        parse_mode:
+          type: string
+          enum: [auto, scan]
+          description: |
+            PDF 文档的解析模式。图片不用设置，均默认按 scan 模式处理。
+            
+            - **auto**: 综合文字识别和解析模式，对 PDF 电子档解析会直接提取 PDF 中的文字
+            - **scan**: 仅按文字识别模式，将 PDF 当成图片处理
+          default: "scan"
+          example: "scan"
+        
+        dpi:
+          type: integer
+          enum: [72, 144, 216]
+          description: |
+            PDF 文档的坐标基准，与 parse_mode 参数联动：
+            
+            - 当 parse_mode=auto 时：默认动态，支持 72、144、216
+            - 当 parse_mode=scan 时：默认 144，支持 72、144、216
+          default: 144
+          example: 144
+        
+        apply_document_tree:
+          type: integer
+          enum: [0, 1]
+          description: |
+            Markdown 中是否生成标题层级。
+            
+            - **0**: 不生成标题（同时也不会返回 catalog 字段）
+            - **1**: 生成标题
+          default: 1
+          example: 1
+        
+        table_flavor:
+          type: string
+          enum: [md, html, none]
+          description: |
+            Markdown 里的表格格式。
+            
+            - **md**: 按 Markdown 语法输出表格
+            - **html**: 按 HTML 语法输出表格
+            - **none**: 不进行表格识别，把表格图像当成普通文字段落来识别
+          default: "html"
+          example: "html"
+        
+        get_image:
+          type: string
+          enum: [none, page, objects, both]
+          description: |
+            获取 Markdown 里的图片。
+            
+            - **none**: 不返回任何图像
+            - **page**: 返回每一页的整页图像（即 PDF 页的完整页图片）
+            - **objects**: 返回页面内的子图像（即 PDF 页内的各个子图片）
+            - **both**: 返回整页图像和图像对象
+          default: "none"
+          example: "none"
+        
+        image_output_type:
+          type: string
+          enum: [base64str, default]
+          description: |
+            指定返回的图片对象输出类型。
+            
+            - **base64str**: 指定所有图片对象为 base64 字符串，适用于没有云存储的用户，但是引擎返回结果体积会很大
+            - **default**: 指定子图片对象为图片 URL，页图片对象为图片 ID
+          default: "default"
+          example: "default"
+        
+        apply_image_analysis:
+          type: integer
+          enum: [0, 1]
+          description: |
+            图像分析参数。利用大模型对文档中的子图片进行分析，分析结果以 Markdown 格式输出，
+            并替换掉子图片的文本识别内容。
+            
+            - **0**: 不进行图像分析
+            - **1**: 进行图像分析
+          default: 0
+          example: 0
+        
+        paratext_mode:
+          type: string
+          enum: [none, annotation, body]
+          description: |
+            Markdown 中非正文文本内容展示模式。非正文内容包括页眉页脚、子图中的文本。
+            
+            - **none**: 不展示
+            - **annotation**: 以注释格式插入到 Markdown 中（页眉页脚中的图片只保留文本，图片 base64 或 URL 不保留）
+            - **body**: 以正文格式插入到 Markdown 中
+          default: "annotation"
+          example: "annotation"
+        
+        formula_level:
+          type: integer
+          enum: [0, 1, 2]
+          description: |
+            公式识别等级。开启公式识别后，会使用 LaTeX 表达式。
+            
+            - **0**: 行间公式和行内公式都识别
+            - **1**: 仅识别行间公式，行内公式不识别
+            - **2**: 不识别公式
+          default: 0
+          example: 0
+        
+        underline_level:
+          type: integer
+          enum: [0, 1, 2]
+          description: |
+            控制下划线识别范围。
+            
+            - **0**: 不识别
+            - **1**: 仅识别无文字的下划线（仅 scan 模式可用）
+            - **2**: 识别全部的下划线（仅 scan 模式可用）
+          default: 0
+          example: 0
+        
+        apply_merge:
+          type: integer
+          enum: [0, 1]
+          description: |
+            是否进行段落合并和表格合并。
+            
+            - **0**: 不合并
+            - **1**: 合并段落和表格
+          default: 1
+          example: 1
+        
+        raw_ocr:
+          type: integer
+          enum: [0, 1]
+          description: |
+            是否返回全部文字识别结果（包含字符坐标信息），结果字段为 raw_ocr。
+            与 page_details 参数联动，当 page_details 为 0 时不返回。
+            
+            - **0**: 不返回
+            - **1**: 返回
+          default: 0
+          example: 0
+        
+        char_details:
+          type: integer
+          enum: [0, 1]
+          description: |
+            是否返回结果中的 char_pos 字段（保存每个字符的位置信息）和 raw_ocr 中的 char_ 相关字段。
+            
+            - **0**: 不返回
+            - **1**: 返回
+          default: 0
+          example: 0
+        
+        catalog_details:
+          type: integer
+          enum: [0, 1]
+          description: |
+            是否返回结果中的 catalog 字段，保存目录相关信息。
+            与 apply_document_tree 参数联动，当 apply_document_tree 为 0 时不返回。
+            
+            - **0**: 不返回
+            - **1**: 返回
+          default: 0
+          example: 0
+        
+        get_excel:
+          type: integer
+          enum: [0, 1]
+          description: |
+            是否返回 Excel 的 base64 结果，结果字段为 excel_base64。
+            可以根据该字段进行后处理保存 Excel 文件。
+            
+            - **0**: 不返回
+            - **1**: 返回
+          default: 0
+          example: 0
+        
+        crop_dewarp:
+          type: integer
+          enum: [0, 1]
+          description: |
+            切边矫正。是否进行切边矫正预处理。
+            
+            - **0**: 不进行切边矫正
+            - **1**: 进行切边矫正
+          default: 0
+          example: 0
+        
+        remove_watermark:
+          type: integer
+          enum: [0, 1]
+          description: |
+            去水印。是否进行去水印预处理。
+            
+            - **0**: 不去水印
+            - **1**: 去水印
+          default: 0
+          example: 0
+        
+        apply_chart:
+          type: integer
+          enum: [0, 1]
+          description: |
+            图表识别。是否开启图表识别，开启图表识别会将识别到的图表以表格形式输出。
+            
+            - **0**: 不开启图表识别
+            - **1**: 开启图表识别
+          default: 0
+          example: 0
     
     ChunkConfig:
       type: object
