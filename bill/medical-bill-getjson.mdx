@@ -9,130 +9,406 @@ title: "返回JSON结构说明"
 ```json
 {
     "code": 200,
-    "duration": 11927,
     "message": "success",
+    "version": "v1.1.0",
+    "duration": 3810,
     "result": {
+        "success_count": 1,
+        "page_count": 1,
+        "ppi": 144,
         "image_list": [
             {
                 "image_angle": 0,
-                "image_position": [],
+                "rotated_image_width": 476,
+                "rotated_image_height": 318,
                 "page_id": 0,
-                "rotated_image_height": 1420,
-                "rotated_image_width": 1016
+                "image_id": 0,
+                "image_position": [3,4,479,4,478,322,4,321]
             }
         ],
         "object_list": [
             {
+                "type": "inpatient_medical_invoice",
+                "type_description": "住院发票",
                 "details": {
                     "invoice_information": {
-                        "current_page_number": {
-                            "description": "当前页码",
-                            "value": ""
-                        },
                         "document_title_name": {
+                            "value": "电子发票（铁路电子客票）",
                             "description": "单据标题名称",
-                            "value": "首都医科大学附属首都儿童医学中心影像科报告单"
+                            "bounding_regions": [
+                                {
+                                    "page_id": 0,
+                                    "value": "电子发票（铁路电子客票）",
+                                    "position": [145,15,327,15,327,36,146,36],
+                                    "char_pos": [
+                                        [145,16,161,16,161,33,146,33], 
+                                        [161,17,176,17,176,33,161,33], 
+                                        [176,18,191,18,191,33,176,33], 
+                                        [193,16,209,16,209,36,193,36], 
+                                        [209,15,224,15,224,36,209,36], 
+                                        [224,15,236,15,236,32,224,32], 
+                                        [236,15,253,15,253,32,236,32], 
+                                        [253,15,269,15,269,33,253,33],
+                                        [269,17,288,17,288,36,269,36], 
+                                        [288,16,304,16,304,33,288,33], 
+                                        [305,16,320,16,320,33,305,33], 
+                                        [321,17,327,17,327,31,321,31]
+                                    ],
+                                    "image_id": 0
+                                }
+                            ]
                         },
-                        "inspection_item_name": {
-                            "description": "检查项目名称",
-                            "value": "胸部正位(5岁以下)"
+                        "invoice_code": {
+                            "value": "",
+                            "description": "票据代码",
+                            "bounding_regions": []
                         },
-                        "report_date": {
-                            "description": "报告日期",
-                            "value": "2025-08-07"
+                        "invoice_number": {
+                            "value": "24319366100000000299",
+                            "description": "票据号码",
+                            "bounding_regions": [
+                                {
+                                    "page_id": 0,
+                                    "value": "24319366100000000299",
+                                    "position": [68,41,163,41,163,50,68,50],
+                                    "char_pos": [
+                                        [68,41,72,41,72,50,68,50],
+                                        [72,42,76,42,76,49,72,49], 
+                                        [77,41,83,41,83,49,77,49],
+                                        [83,42,87,42,87,50,83,50], 
+                                        [87,42,92,42,92,49,87,49], 
+                                        [92,41,97,41,97,49,92,49], 
+                                        [97,41,101,41,101,49,97,49], 
+                                        [101,41,106,41,106,49,101,49], 
+                                        [106,42,111,42,111,49,106,49], 
+                                        [111,41,115,41,115,49,111,49], 
+                                        [115,41,120,41,120,49,115,49], 
+                                        [120,41,126,41,126,49,120,49], 
+                                        [126,41,130,41,130,49,126,49], 
+                                        [130,41,135,41,135,49,130,49], 
+                                        [135,41,140,41,140,49,135,49], 
+                                        [140,41,145,41,145,49,140,49], 
+                                        [145,41,149,41,149,49,145,49], 
+                                        [149,41,154,41,154,50,149,50], 
+                                        [154,42,159,42,159,49,154,49], 
+                                        [159,42,163,42,163,49,159,49]
+                                    ],
+                                    "image_id": 0
+                                }
+                            ]
+                        },
+                        "business_serial_number": {
+                            "value": "",
+                            "description": "业务流水号",
+                            "bounding_regions": []
+                        },
+                        "bill_verification_code": {
+                            "value": "",
+                            "description": "票据校验码",
+                            "bounding_regions": []
+                        },
+                        "issuance_date": {
+                            "value": "2024年11月10日",
+                            "description": "开具日期",
+                            "bounding_regions": [
+                                {
+                                    "page_id": 0,
+                                    "value": "2024年11月10日",
+                                    "position": [391, 39, 454, 39, 454, 49, 391, 49],
+                                    "char_pos": [
+                                        [391, 40, 395, 40, 395, 48, 391, 48],
+                                        [395, 40, 400, 40, 400, 48, 395, 48],
+                                        [400, 40, 404, 40, 404, 49, 400, 49],
+                                        [404, 40, 409, 40, 409, 48, 404, 48],
+                                        [409, 39, 418, 39, 418, 48, 409, 49],
+                                        [418, 40, 424, 40, 424, 48, 418, 48],
+                                        [424, 41, 428, 41, 428, 48, 424, 48],
+                                        [428, 40, 436, 40, 436, 48, 428, 48],
+                                        [437, 41, 442, 41, 442, 48, 437, 48],
+                                        [442, 41, 446, 40, 446, 48, 442, 48],
+                                        [447, 39, 454, 39, 454, 48, 447, 48]
+                                    ],
+                                    "image_id": 0
+                                }
+                            ]
                         },
                         "total_pages_of_invoice": {
+                            "value": "",
                             "description": "票据总页数",
-                            "value": ""
-                        }
-                    },
-                    "medical_visit_institution_information": {
-                        "audit_doctor": {
-                            "description": "审核医生",
-                            "value": "田*"
+                            "bounding_regions": []
                         },
-                        "clinical_doctor": {
-                            "description": "临床医生",
-                            "value": ""
-                        },
-                        "department": {
-                            "description": "科别",
-                            "value": "骨科病房"
-                        },
-                        "diagnosis_content": {
-                            "description": "诊断内容",
-                            "value": "骨性胸廓对称，气管居中，双肺纹理粗重、模糊，未见明显片影。双肺门影不大，纵隔居中，心脏大小形态未见明显异常，双膈面光滑，双肋膈角锐利。"
-                        },
-                        "diagnosis_result": {
-                            "description": "诊断结果/意见",
-                            "value": "双肺纹理粗重、模糊。请结合临床，随诊复查。"
-                        },
-                        "inspection_number": {
-                            "description": "检查编号",
-                            "value": "CR2508070000241"
-                        },
-                        "inspection_time": {
-                            "description": "检查时间",
-                            "value": "2025-08-07"
-                        },
-                        "laboratory_doctor": {
-                            "description": "检验医生",
-                            "value": "田*"
-                        },
-                        "name_of_medical_institution": {
-                            "description": "医疗机构名称",
-                            "value": "首都医科大学附属首都儿童医学中心"
-                        },
-                        "type_of_medical_institution": {
-                            "description": "医疗机构类型",
-                            "value": ""
+                        "current_page_number": {
+                            "value": "",
+                            "description": "当前页码",
+                            "bounding_regions": []
                         }
                     },
                     "patient_information": {
-                        "age": {
-                            "description": "年龄",
-                            "value": "2岁"
-                        },
-                        "bed_number": {
-                            "description": "床号",
-                            "value": "027+"
+                        "name": {
+                            "value": "",
+                            "description": "患者姓名",
+                            "bounding_regions": []
                         },
                         "gender": {
-                            "description": "性别",
-                            "value": "女"
+                            "value": "",
+                            "description": "患者性别",
+                            "bounding_regions": []
+                        },
+                        "age": {
+                            "value": "",
+                            "description": "患者年龄",
+                            "bounding_regions": []
                         },
                         "inpatient_number": {
+                            "value": "",
                             "description": "住院号",
-                            "value": ""
+                            "bounding_regions": []
                         },
                         "medical_record_number": {
+                            "value": "",
                             "description": "病历号",
-                            "value": ""
+                            "bounding_regions": []
                         },
-                        "name": {
-                            "description": "姓名",
-                            "value": "王**"
+                        "bed_number": {
+                            "value": "",
+                            "description": "患者床号",
+                            "bounding_regions": []
                         },
-                        "outpatient_number": {
-                            "description": "门诊号",
-                            "value": ""
+                        "ward": {
+                            "value": "",
+                            "description": "病区",
+                            "bounding_regions": []
+                        },
+                        "medical_insurance_number": {
+                            "value": "",
+                            "description": "患者医保编号",
+                            "bounding_regions": []
+                        },
+                        "medical_insurance_type": {
+                            "value": "",
+                            "description": "患者医保类型",
+                            "bounding_regions": []
+                        },
+                        "social_security_card_number": {
+                            "value": "",
+                            "description": "患者社保卡号",
+                            "bounding_regions": []
                         }
-                    }
+                    },
+                    "medical_visit_institution_information": {
+                        "name_of_medical_institution": {
+                            "value": "",
+                            "description": "医疗机构名称",
+                            "bounding_regions": []
+                        },
+                        "type_of_medical_institution": {
+                            "value": "",
+                            "description": "医疗机构类型",
+                            "bounding_regions": []
+                        },
+                        "department": {
+                            "value": "",
+                            "description": "科别",
+                            "bounding_regions": []
+                        },
+                        "admission_time": {
+                            "value": "",
+                            "description": "入院时间",
+                            "bounding_regions": []
+                        },
+                        "discharge_time": {
+                            "value": "",
+                            "description": "出院时间",
+                            "bounding_regions": []
+                        },
+                        "hospitalization_days": {
+                            "value": "",
+                            "description": "住院天数",
+                            "bounding_regions": []
+                        },
+                        "medical_treatment_date": {
+                            "value": "",
+                            "description": "就诊日期",
+                            "bounding_regions": []
+                        }
+                    },
+                    "expense_information": {
+                        "total_amount_in_words": {
+                            "value": "",
+                            "description": "大写合计金额",
+                            "bounding_regions": []
+                        },
+                        "total_expense_amount": {
+                            "value": "",
+                            "description": "费用合计金额",
+                            "bounding_regions": []
+                        },
+                        "personal_account_balance": {
+                            "value": "",
+                            "description": "个人账户余额",
+                            "bounding_regions": []
+                        },
+                        "personal_self_payment_amount": {
+                            "value": "",
+                            "description": "个人自付金额",
+                            "bounding_regions": []
+                        },
+                        "personal_self_funded_amount": {
+                            "value": "",
+                            "description": "个人自费金额",
+                            "bounding_regions": []
+                        },
+                        "prepaid_amount": {
+                            "value": "",
+                            "description": "预缴金额",
+                            "bounding_regions": []
+                        },
+                        "supplementary_payment_amount": {
+                            "value": "",
+                            "description": "补缴金额",
+                            "bounding_regions": []
+                        },
+                        "refund_amount": {
+                            "value": "",
+                            "description": "退费金额",
+                            "bounding_regions": []
+                        },
+                        "personal_account_payment": {
+                            "value": "",
+                            "description": "个人账户支付",
+                            "bounding_regions": []
+                        },
+                        "personal_cash_payment": {
+                            "value": "",
+                            "description": "个人现金支付",
+                            "bounding_regions": []
+                        },
+                        "other_payments": {
+                            "value": "",
+                            "description": "其他支付",
+                            "bounding_regions": []
+                        },
+                        "payee_organization": {
+                            "value": "",
+                            "description": "收款单位",
+                            "bounding_regions": []
+                        },
+                        "payee": {
+                            "value": "",
+                            "description": "收款人",
+                            "bounding_regions": []
+                        },
+                        "reviewer": {
+                            "value": "",
+                            "description": "复核人",
+                            "bounding_regions": []
+                        },
+                        "payer": {
+                            "value": "朱曦",
+                            "description": "交款人",
+                            "bounding_regions": [
+                                {
+                                    "page_id": 0,
+                                    "value": "朱曦",
+                                    "position": [173, 180, 192, 180, 192, 190, 173, 190],
+                                    "char_pos": [
+                                        [173, 180, 182, 180, 182, 190, 173, 190], 
+                                        [182, 180, 192, 180, 192, 190, 182, 190]
+                                    ],
+                                    "image_id": 0
+                                }
+                            ]
+                        },
+                        "category_self_payment_amount": {
+                            "value": "",
+                            "description": "分类自付金额",
+                            "bounding_regions": []
+                        },
+                        "rounding_amount": {
+                            "value": "",
+                            "description": "抹零金额",
+                            "bounding_regions": []
+                        },
+                        "medical_insurance_payment": {
+                            "value": "",
+                            "description": "医保统筹基金支付",
+                            "bounding_regions": []
+                        },
+                        "additional_fund_payment": {
+                            "value": "",
+                            "description": "附加基金支付",
+                            "bounding_regions": []
+                        },
+                        "current_year_balance": {
+                            "value": "",
+                            "description": "医保当年账户余额",
+                            "bounding_regions": []
+                        },
+                        "cumulative_balance": {
+                            "value": "",
+                            "description": "医保历年账户余额",
+                            "bounding_regions": []
+                        },
+                        "cumulative_insurance_payment": {
+                            "value": "",
+                            "description": "累计统筹报销金额",
+                            "bounding_regions": []
+                        },
+                        "cumulative_deductible_amount": {
+                            "value": "",
+                            "description": "累计起付线金额",
+                            "bounding_regions": []
+                        }
+                    },
+                    "item_summary_table": [
+                        {
+                            "amount": {
+                                "value": "",
+                                "description": "金额",
+                                "bounding_regions": []
+                            },
+                            "remarks": {
+                                "value": "",
+                                "description": "备注",
+                                "bounding_regions": []
+                            },
+                            "project_name": {
+                                "value": "",
+                                "description": "项目名称",
+                                "bounding_regions": []
+                            },
+                            "quantity": {
+                                "value": "",
+                                "description": "数量",
+                                "bounding_regions": []
+                            },
+                            "unit": {
+                                "value": "",
+                                "description": "单位",
+                                "bounding_regions": []
+                            },
+                            "project_number": {
+                                "value": "",
+                                "description": "项目编码",
+                                "bounding_regions": []
+                            },
+                            "reimbursement_type": {
+                                "value": "",
+                                "description": "医保报销类别",
+                                "bounding_regions": []
+                            }
+                        }
+                    ]
                 },
-                "image_ids": [
-                    0
-                ],
                 "page_ids": [
                     0
                 ],
-                "type": "medical_diagnostic_report"
+                "image_ids": [
+                    0
+                ]
             }
-        ],
-        "page_count": 1,
-        "ppi": 144,
-        "success_count": 1
-    },
-    "version": "v1.0.0"
+        ]
+    }
 }
 ```
 
@@ -161,20 +437,19 @@ image_list 包含票据的各类图像信息，具体包括：切分后单张票
 
 ### object_list：票据的各类结构化信息
 
-object_list包含医疗票据的类型、在 PDF 中的页码、对应图片标识以及票据全量结构化信息（涵盖票据信息、患者核心信息、就诊与机构信息、费用汇总信息、支付方式信息、项目明细等）。
+object_list包含医疗票据的类型、在 PDF 中的页码、对应图片标识以及票据全量结构化信息（涵盖票据信息、患者核心信息、就诊与机构信息、费用汇总与支付、以及以表格形式结构化的信息等）。
 
 object_list:票据的各类结构化信息
-
 - type：单份医疗票据的类型，例如medical_invoice,医疗发票识别。
 - page_ids：如果是pdf文件，该份票据样本在pdf中的页码，例如“0,1,2”。
 - image_ids：该份票据在image_list中的所有图片，例如“0,1,2”。
+- type_description：票据类型描述，例如“住院发票”。
 - details：票据结构化信息的识别结果，全量的结构化信息字段，可参考分票种字段对照表（分票种字段对照表）。
-    - invoice_information：票据信息，例如document_title_name，单据标题名称。
-    - patient_information：患者核心信息，例如patient_medical_insurance_number，患者医保编号。
-    - medical_visit_institution_information：就诊与机构信息，例如hospitalization_days，住院天数。
-    - expense_information：费用汇总信息，例如total_expense_amount，费用合计金额。
-    - payment_method：支付方式信息，例如Personal_Cash_Payment，个人现金支付。
-    - item_details：项目明细，这会是一个数组（Array），元素类型为对象（Object），例如，project_name，项目名称。
+  - invoice_information：票据信息，例如“document_title_name”，单据标题名称。
+  - patient_information：患者核心信息，例如“patient_medical_insurance_number”，患者医保编号。
+  - medical_visit_institution_information：就诊与机构信息，例如“name_of_medical_institution”，医疗机构名称。
+  - expense_information：费用汇总与支付信息，例如“category_self_payment_amount”，分类自付金额。
+  - item_summary_table：项目明细汇总表，不同票种的表格表头字段会有差异，且可能存在多个表。
 
 ### 其他result字段
 
@@ -183,267 +458,538 @@ object_list:票据的各类结构化信息
 
 ### 票种字段对照表-object_list
 
-#### 医疗发票识别 medical_invoice
+#### 住院发票识别  inpatient_medical_invoice
 
-| 字段名                                       | 类型   | 描述             |
-| -------------------------------------------- | ------ | ---------------- |
-| type                                         | string | 医疗发票类型     |
-| page_ids                                     | array  | 页面ID数组       |
-| image_ids                                    | array  | 图片ID数组       |
-| details                                      | object | 详细信息         |
-| +invoice_information                         | object | 发票信息         |
-| ++document_title_name                        | object | 单据标题名称     |
-| ++invoice_code                               | object | 票据代码         |
-| ++invoice_number                             | object | 票据号码         |
-| ++business_serial_number                     | object | 业务流水号       |
-| ++total_pages_of_invoice                     | object | 票据总页数       |
-| ++current_page_number                        | object | 当前页码         |
-| +patient_information                         | object | 患者核心信息     |
-| ++gender                                     | object | 性别             |
-| ++inpatient_number                           | object | 住院号           |
-| ++medical_record_number                      | object | 病历号           |
-| ++outpatient_number                          | object | 门诊号           |
-| ++patient_medical_insurance_number           | object | 患者医保编号     |
-| ++patient_medical_insurance_type             | object | 患者医保类型     |
-| ++patient_social_security_card_number        | object | 患者社保卡号     |
-| +medical_visit_institution_information       | object | 就诊与机构信息   |
-| ++name_of_medical_institution                | object | 医疗机构名称     |
-| ++type_of_medical_institution                | object | 医疗机构类型     |
-| ++department                                 | object | 科别             |
-| ++admission_time                             | object | 入院时间         |
-| ++discharge_time                             | object | 出院时间         |
-| ++hospitalization_days                       | object | 住院天数         |
-| +expense_information                         | object | 费用汇总信息     |
-| ++total_amount_in_words                      | object | 大写合计金额     |
-| ++total_expense_amount                       | object | 费用合计金额     |
-| ++personal_account_balance                   | object | 个人账户余额     |
-| ++personal_self_payment_amount               | object | 个人自付金额     |
-| ++personal_self_funded_amount                | object | 个人自费金额     |
-| ++prepaid_amount                             | object | 预缴金额         |
-| ++supplementary_payment_amount               | object | 补缴金额         |
-| ++refund_amount                              | object | 退费金额         |
-| +payment_method                              | object | 费用明细表数组   |
-| ++payee_unit                                 | object | 收款单位         |
-| ++payee                                      | object | 收款人           |
-| ++reviewer                                   | object | 复核人           |
-| ++payer                                      | object | 交款人           |
-| ++medical_insurance_overall_planning_payment | object | 医保统筹支付     |
-| ++personal_account_payment                   | object | 个人账户支付     |
-| ++personal_cash_payment                      | object | 个人现金支付     |
-| ++other_payments                             | object | 其他支付         |
-| +item_details                                | array  | 费用明细表数组   |
-| ++[0]                                        | array  | 第一个明细表数组 |
-| +++[0]                                       | object | 明细项目         |
-| ++++amount                                   | object | 金额             |
-| ++++remarks                                  | object | 备注             |
-| ++++project_name                             | object | 项目名称         |
-| ++++quantity                                 | object | 数量             |
-| ++++specification                            | object | 规格             |
-| ++++unit_price                               | object | 单价             |
-| ++++project_code_symbol                      | object | 项目编码/代号    |
+| 字段名                                 | 类型    | 描述                 |
+| -------------------------------------- | ------- | -------------------- |
+| type                                   | string  | 医疗类票据的具体类型 |
+| page_ids                               | array | 页面ID数组           |
+| image_ids                              | array | 图片ID数组           |
+| type_description                       | string  | 票据类别中文描述     |
+| details                                | object  | 票据结构化内容明细   |
+| +invoice_information                   | object  | 票据信息             |
+| ++document_title_name                  | string  | 单据标题名称         |
+| ++total_pages_of_invoice               | string  | 票据总页数           |
+| ++current_page_number                  | string  | 当前页码             |
+| ++invoice_code                         | string  | 票据代码             |
+| ++invoice_number                       | string  | 票据号码             |
+| ++business_serial_number               | string  | 业务流水号           |
+| ++bill_verification_code               | string  | 票据校验码           |
+| ++issuance_date                        | string  | 开具日期             |
+| +patient_information                   | object  | 患者核心信息         |
+| ++name                                 | string  | 患者姓名             |
+| ++gender                               | string  | 患者性别             |
+| ++age                                  | string  | 患者年龄             |
+| ++inpatient_number                     | string  | 住院号               |
+| ++medical_record_number                | string  | 病历号               |
+| ++bed_number                           | string  | 患者床号             |
+| ++ward                                 | string  | 病区                 |
+| ++medical_insurance_number             | string  | 患者医保编号         |
+| ++medical_insurance_type               | string  | 患者医保类型         |
+| ++social_security_card_number          | string  | 患者社保卡号         |
+| +medical_visit_institution_information | object  | 就诊与机构信息       |
+| ++name_of_medical_institution          | string  | 医疗机构名称         |
+| ++type_of_medical_institution          | string  | 医疗机构类型         |
+| ++department                           | string  | 科别                 |
+| ++medical_treatment_date               | string  | 就诊日期             |
+| ++admission_time                       | string  | 入院时间             |
+| ++discharge_time                       | string  | 出院时间             |
+| ++hospitalization_days                 | string  | 住院天数             |
+| +expense_information                   | object  | 费用汇总与支付       |
+| ++total_amount_in_words                | string  | 大写合计金额         |
+| ++total_expense_amount                 | string  | 费用合计金额         |
+| ++personal_account_balance             | string  | 个人账户余额         |
+| ++personal_self_payment_amount         | string  | 个人自付金额         |
+| ++category_self_payment_amount         | string  | 分类自付金额         |
+| ++personal_self_funded_amount          | string  | 个人自费金额         |
+| ++prepaid_amount                       | string  | 预缴金额             |
+| ++supplementary_payment_amount         | string  | 补缴金额             |
+| ++refund_amount                        | string  | 退费金额             |
+| ++rounding_amount                      | string  | 抹零金额             |
+| ++medical_insurance_payment            | string  | 医保统筹基金支付     |
+| ++additional_fund_payment              | string  | 附加基金支付         |
+| ++personal_account_payment             | string  | 个人账户支付         |
+| ++personal_cash_payment                | string  | 个人现金支付         |
+| ++other_payments                       | string  | 其他支付             |
+| ++payee_organization                   | string  | 收款单位             |
+| ++payee                                | string  | 收款人               |
+| ++reviewer                             | string  | 复核人               |
+| ++payer                                | string  | 交款人               |
+| ++current_year_balance                 | string  | 医保当年账户余额     |
+| ++cumulative_balance                   | string  | 医保历年账户余额     |
+| ++cumulative_insurance_payment         | string  | 累计统筹报销金额     |
+| ++cumulative_deductible_amount         | string  | 累计起付线金额       |
+| +item_summary_table                    | array   | 项目明细汇总表       |
+| ++project_name                         | string  | 项目名称             |
+| ++amount                               | string  | 金额                 |
+| ++remarks                              | string  | 备注                 |
+| ++quantity                             | string  | 数量                 |
+| ++unit                                 | string  | 单位                 |
+| ++project_number                       | string  | 项目编号             |
+| ++reimbursement_type                   | string  | 医保报销类别         |
 
+#### 门诊发票识别  outpatient_medical_invoice
 
-#### 医疗费用明细 medical_cost_details
+| 字段名                                 | 类型    | 描述                 |
+| -------------------------------------- | ------- | -------------------- |
+| type                                   | string  | 医疗类票据的具体类型 |
+| page_ids                               | array | 页面ID数组           |
+| image_ids                              | array       | 图片ID数组           |
+| type_description                       | string  | 票据类别中文描述     |
+| details                                | object  | 票据结构化内容明细   |
+| +invoice_information                   | object  | 票据信息             |
+| ++document_title_name                  | string  | 单据标题名称         |
+| ++total_pages_of_invoice               | string  | 票据总页数           |
+| ++current_page_number                  | string  | 当前页码             |
+| ++invoice_code                         | string  | 票据代码             |
+| ++invoice_number                       | string  | 票据号码             |
+| ++business_serial_number               | string  | 业务流水号           |
+| ++bill_verification_code               | string  | 票据校验码           |
+| ++issuance_date                        | string  | 开具日期             |
+| +patient_information                   | object  | 患者核心信息         |
+| ++name                                 | string  | 患者姓名             |
+| ++gender                               | string  | 患者性别             |
+| ++age                                  | string  | 患者年龄             |
+| ++outpatient_number                    | string  | 门诊号               |
+| ++medical_insurance_number             | string  | 患者医保编号         |
+| ++medical_insurance_type               | string  | 患者医保类型         |
+| ++social_security_card_number          | string  | 患者社保卡号         |
+| +medical_visit_institution_information | object  | 就诊与机构信息       |
+| ++name_of_medical_institution          | string  | 医疗机构名称         |
+| ++type_of_medical_institution          | string  | 医疗机构类型         |
+| ++department                           | string  | 科别                 |
+| ++medical_treatment_date               | string  | 就诊日期             |
+| +expense_information                   | object  | 费用汇总与支付       |
+| ++total_amount_in_words                | string  | 大写合计金额         |
+| ++total_expense_amount                 | string  | 费用合计金额         |
+| ++personal_account_balance             | string  | 个人账户余额         |
+| ++personal_self_payment_amount         | string  | 个人自付金额         |
+| ++category_self_payment_amount         | string  | 分类自付金额         |
+| ++personal_self_funded_amount          | string  | 个人自费金额         |
+| ++prepaid_amount                       | string  | 预缴金额             |
+| ++supplementary_payment_amount         | string  | 补缴金额             |
+| ++refund_amount                        | string  | 退费金额             |
+| ++rounding_amount                      | string  | 抹零金额             |
+| ++medical_insurance_payment            | string  | 医保统筹基金支付     |
+| ++additional_fund_payment              | string  | 附加基金支付         |
+| ++personal_account_payment             | string  | 个人账户支付         |
+| ++personal_cash_payment                | string  | 个人现金支付         |
+| ++other_payments                       | string  | 其他支付             |
+| ++payee_organization                   | string  | 收款单位             |
+| ++payee                                | string  | 收款人               |
+| ++reviewer                             | string  | 复核人               |
+| ++payer                                | string  | 交款人               |
+| ++current_year_balance                 | string  | 医保当年账户余额     |
+| ++cumulative_balance                   | string  | 医保历年账户余额     |
+| ++cumulative_insurance_payment         | string  | 累计统筹报销金额     |
+| ++cumulative_deductible_amount         | string  | 累计起付线金额       |
+| +item_summary_table                    | array   | 项目明细汇总表       |
+| ++project_name                         | string  | 项目名称             |
+| ++amount                               | string  | 金额                 |
+| ++remarks                              | string  | 备注                 |
+| ++quantity                             | string  | 数量                 |
+| ++unit                                 | string  | 单位                 |
+| ++project_number                       | string  | 项目编号             |
+| ++reimbursement_type                   | string  | 医保报销类别         |
 
-| 字段名                                 | 类型   | 描述             |
-| -------------------------------------- | ------ | ---------------- |
-| type                                   | string | 医疗发票类型     |
-| page_ids                               | array  | 页面ID数组       |
-| image_ids                              | array  | 图片ID数组       |
-| details                                | object | 详细信息         |
-| +invoice_information                   | object | 票据信息         |
-| ++document_title_name                  | object | 单据标题名称     |
-| ++invoice_code                         | object | 票据代码         |
-| ++invoice_number                       | object | 票据号码         |
-| ++total_pages_of_invoice               | object | 票据总页数       |
-| ++current_page_number                  | object | 当前页码         |
-| +patient_information                   | object | 患者核心信息     |
-| ++name                                 | object | 姓名             |
-| ++gender                               | object | 性别             |
-| ++age                                  | object | 年龄             |
-| ++inpatient_number                     | object | 住院号           |
-| ++medical_record_number                | object | 病历号           |
-| ++outpatient_number                    | object | 门诊号           |
-| ++bed_number                           | object | 床号             |
-| +medical_visit_institution_information | object | 就诊与机构信息   |
-| ++name_of_medical_institution          | object | 医疗机构名称     |
-| ++type_of_medical_institution          | object | 医疗机构类型     |
-| ++department                           | object | 科别             |
-| ++admission_time                       | object | 入院时间         |
-| ++discharge_time                       | object | 出院时间         |
-| ++hospitalization_days                 | object | 住院天数         |
-| ++medical_treatment_date               | object | 就诊日期         |
-| +expense_information                   | object | 费用汇总信息     |
-| ++total_expense_amount                 | object | 费用合计金额     |
-| +item_details                          | array  | 费用明细表数组   |
-| ++[0]                                  | array  | 第一个明细表数组 |
-| +++[0]                                 | object | 明细项目         |
-| ++++amount                             | object | 金额             |
-| ++++remarks                            | object | 备注             |
-| ++++project_name                       | object | 项目名称         |
-| ++++quantity                           | object | 数量             |
-| ++++specification                      | object | 规格             |
-| ++++unit_price                         | object | 单价             |
-| ++++project_code_symbol                | object | 项目编码/代号    |
+#### 医疗费用结算单  medical_insurance_settlement
 
+| 字段名                                 | 类型    | 描述                 |
+| -------------------------------------- | ------- | -------------------- |
+| type                                   | string  | 医疗类票据的具体类型 |
+| page_ids                               | array | 页面ID数组           |
+| image_ids                              | array | 图片ID数组           |
+| type_description                       | string  | 票据类别中文描述     |
+| details                                | object  | 票据结构化内容明细   |
+| +invoice_information                   | object  | 票据信息             |
+| ++document_title_name                  | string  | 单据标题名称         |
+| ++total_pages_of_invoice               | string  | 票据总页数           |
+| ++current_page_number                  | string  | 当前页码             |
+| ++business_serial_number               | string  | 业务流水号           |
+| ++settlement_time                      | string  | 结算时间             |
+| +patient_information                   | object  | 患者核心信息         |
+| ++name                                 | string  | 患者姓名             |
+| ++gender                               | string  | 患者性别             |
+| ++age                                  | string  | 患者年龄             |
+| ++medical_insurance_number             | string  | 患者医保编号         |
+| ++medical_insurance_type               | string  | 患者医保类型         |
+| ++id_number                            | string  | 患者身份证号         |
+| ++social_security_card_number          | string  | 患者社保卡号         |
+| ++insurance_location                   | string  | 参保地               |
+| ++treatment_location                   | string  | 就医地               |
+| ++visit_type                           | string  | 就诊类型             |
+| ++insurance_type                       | string  | 险种类型             |
+| ++personnel_category                   | string  | 人员类别             |
+| ++affiliated_unit                      | string  | 所属单位             |
+| ++reimbursement_type                   | string  | 报销类型             |
+| ++outpatient_number                    | string  | 门诊号               |
+| ++inpatient_number                     | string  | 住院号               |
+| ++medical_record_number                | string  | 病历号               |
+| ++bed_number                           | string  | 患者床号             |
+| ++ward                                 | string  | 病区                 |
+| +medical_visit_institution_information | object  | 就诊与机构信息       |
+| ++name_of_medical_institution          | string  | 医疗机构名称         |
+| ++type_of_medical_institution          | string  | 医疗机构类型         |
+| ++department                           | string  | 科别                 |
+| ++medical_treatment_date               | string  | 就诊日期             |
+| ++admission_time                       | string  | 入院时间             |
+| ++discharge_time                       | string  | 出院时间             |
+| ++hospitalization_days                 | string  | 住院天数             |
+| ++main_diagnosis                       | string  | 主要诊断             |
+| ++secondary_diagnosis                  | string  | 次要诊断             |
+| +expense_information                   | object  | 费用汇总与支付       |
+| ++total_expense_amount                 | string  | 费用合计金额         |
+| ++deductible_amount                    | string  | 起付线金额           |
+| ++personal_self_payment_amount         | string  | 个人自付金额         |
+| ++personal_self_funded_amount          | string  | 个人自费金额         |
+| ++medical_insurance_payment            | string  | 医保统筹基金支付     |
+| ++cumulative_insurance_payment         | string  | 医保统筹基金累计支付 |
+| ++insurance_reimbursement_rate         | string  | 统筹报销比例         |
+| ++additional_fund_payment              | string  | 附加基金支付         |
+| ++prepaid_amount                       | string  | 预缴金额             |
+| ++supplementary_payment_amount         | string  | 补缴金额             |
+| ++refund_amount                        | string  | 退费金额             |
+| ++rounding_amount                      | string  | 抹零金额             |
+| ++personal_account_payment             | string  | 个人账户支付         |
+| ++personal_cash_payment                | string  | 个人现金支付         |
+| ++other_payments                       | string  | 其他支付             |
+| ++current_year_balance                 | string  | 医保当年账户余额     |
+| ++cumulative_balance                   | string  | 医保历年账户余额     |
+| +expense_summary_table                 | array   | 费用明细汇总表       |
+| ++expense_name                         | string  | 费用名称             |
+| ++amount                               | string  | 金额                 |
+| ++self_funded_amount                   | string  | 自费                 |
+| ++category_b_advance_payment           | string  | 乙类先行自付         |
+| ++excess_price_self_payment            | string  | 超限价自付           |
+| +funds_payment_summary_table           | array   | 基金支付合计汇总表   |
+| ++fund_type                            | string  | 基金类型             |
+| ++fund_payment_amount                  | string  | 基金支付金额         |
+| ++cumulative_fund_payment              | string  | 基金累计支付金额     |
+| ++fund_deductible                      | string  | 对应基金起付线       |
+| ++fund_reimbursement_rate              | string  | 对应报销比例         |
 
-#### 医疗费用结算单 medical_insurance_settlement 
+#### 医疗费用明细  medical_cost_details
 
-| 字段名                                       | 类型   | 描述           |
-| -------------------------------------------- | ------ | -------------- |
-| type                                         | string | 医疗发票类型   |
-| page_ids                                     | array  | 页面ID数组     |
-| image_ids                                    | array  | 图片ID数组     |
-| details                                      | object | 详细信息       |
-| +invoice_information                         | object | 票据信息       |
-| ++document_title_name                        | object | 单据标题名称   |
-| ++total_pages_of_invoice                     | object | 票据总页数     |
-| ++current_page_number                        | object | 当前页码       |
-| +patient_information                         | object | 患者核心信息   |
-| ++name                                       | object | 姓名           |
-| ++gender                                     | object | 性别           |
-| ++age                                        | object | 年龄           |
-| ++patient_medical_insurance_number           | object | 患者医保编号   |
-| ++patient_medical_insurance_type             | object | 患者医保类型   |
-| ++patient_id_number                          | object | 患者身份证号   |
-| +medical_visit_institution_information       | object | 就诊与机构信息 |
-| ++name_of_medical_institution                | object | 医疗机构名称   |
-| ++type_of_medical_institution                | object | 医疗机构类型   |
-| ++department                                 | object | 科别           |
-| ++admission_time                             | object | 入院时间       |
-| ++discharge_time                             | object | 出院时间       |
-| ++hospitalization_days                       | object | 住院天数       |
-| ++medical_treatment_date                     | object | 就诊日期       |
-| +expense_information                         | object | 费用汇总信息   |
-| ++total_amount_in_words                      | object | 大写合计金额   |
-| ++total_expense_amount                       | object | 费用合计金额   |
-| ++personal_self_payment_amount               | object | 个人自付金额   |
-| ++personal_self_funded_amount                | object | 个人自费金额   |
-| +payment_method                              | object | 支付方式信息   |
-| ++medical_insurance_overall_planning_payment | object | 医保统筹支付   |
-| ++personal_account_payment                   | object | 个人账户支付   |
-| ++personal_cash_payment                      | object | 个人现金支付   |
-| ++other_payments                             | object | 其他支付       |
+| 字段名                                 | 类型    | 描述                 |
+| -------------------------------------- | ------- | -------------------- |
+| type                                   | string  | 医疗类票据的具体类型 |
+| page_ids                               | array | 页面ID数组           |
+| image_ids                              | array       | 图片ID数组           |
+| type_description                       | string  | 票据类别中文描述     |
+| details                                | object  | 票据结构化内容明细   |
+| +invoice_information                   | object  | 票据信息             |
+| ++document_title_name                  | string  | 单据标题名称         |
+| ++total_pages_of_invoice               | string  | 票据总页数           |
+| ++current_page_number                  | string  | 当前页码             |
+| ++invoice_code                         | string  | 票据代码             |
+| ++invoice_number                       | string  | 票据号码             |
+| ++issuance_date                        | string  | 开具日期             |
+| +patient_information                   | object  | 患者核心信息         |
+| ++name                                 | string  | 患者姓名             |
+| ++gender                               | string  | 患者性别             |
+| ++age                                  | string  | 患者年龄             |
+| ++personnel_category                   | string  | 人员类别             |
+| ++outpatient_number                    | string  | 门诊号               |
+| ++inpatient_number                     | string  | 住院号               |
+| ++medical_record_number                | string  | 病历号               |
+| ++bed_number                           | string  | 患者床号             |
+| ++ward                                 | string  | 病区                 |
+| +medical_visit_institution_information | object  | 就诊与机构信息       |
+| ++name_of_medical_institution          | string  | 医疗机构名称         |
+| ++type_of_medical_institution          | string  | 医疗机构类型         |
+| ++department                           | string  | 科别                 |
+| ++medical_treatment_date               | string  | 就诊日期             |
+| ++admission_time                       | string  | 入院时间             |
+| ++discharge_time                       | string  | 出院时间             |
+| ++hospitalization_days                 | string  | 住院天数             |
+| +expense_information                   | object  | 费用汇总与支付       |
+| ++total_expense_amount                 | string  | 费用合计金额         |
+| ++payer                                | string  | 交款人               |
+| ++payee_organization                   | string  | 收款单位             |
+| +treatment_summary_table               | array   | 诊疗清单汇总表       |
+| ++project_name                         | string  | 项目名称             |
+| ++project_category                     | string  | 项目类别（费目）     |
+| ++project_code                         | string  | 项目编号             |
+| ++quantity                             | string  | 数量                 |
+| ++unit                                 | string  | 单位                 |
+| ++amount                               | string  | 金额                 |
+| ++unit_price                           | string  | 单价                 |
+| ++specification                        | string  | 规格                 |
+| ++reimbursement_type                   | string  | 医保报销类别         |
+| ++self_funded_amount                   | string  | 自费                 |
+| ++category_self_payment_amount         | string  | 分类自付             |
+| ++remarks                              | string  | 备注                 |
 
+#### 医疗处方单  medical_prescription
 
-#### 医疗处方单 medical_prescription
+| 字段名                                 | 类型    | 描述                 |
+| -------------------------------------- | ------- | -------------------- |
+| type                                   | string  | 医疗类票据的具体类型 |
+| page_ids                               | array | 页面ID数组           |
+| image_ids                              | array       | 图片ID数组           |
+| type_description                       | string  | 票据类别中文描述     |
+| details                                | object  | 票据结构化内容明细   |
+| +invoice_information                   | object  | 票据信息             |
+| ++document_title_name                  | string  | 单据标题名称         |
+| ++total_pages_of_invoice               | string  | 票据总页数           |
+| ++current_page_number                  | string  | 当前页码             |
+| ++prescription_number                  | string  | 处方号               |
+| ++issuance_date                        | string  | 开具日期             |
+| +patient_information                   | object  | 患者核心信息         |
+| ++name                                 | string  | 患者姓名             |
+| ++gender                               | string  | 患者性别             |
+| ++age                                  | string  | 患者年龄             |
+| ++outpatient_number                    | string  | 门诊号               |
+| ++inpatient_number                     | string  | 住院号               |
+| ++medical_record_number                | string  | 病历号               |
+| ++bed_number                           | string  | 患者床号             |
+| ++ward                                 | string  | 病区                 |
+| +medical_visit_institution_information | object  | 就诊与机构信息       |
+| ++name_of_medical_institution          | string  | 医疗机构名称         |
+| ++type_of_medical_institution          | string  | 医疗机构类型         |
+| ++department                           | string  | 科别                 |
+| ++medical_treatment_date               | string  | 就诊日期             |
+| ++clinical_diagnosis_symptoms          | string  | 临床诊断             |
+| ++prescribing_doctor                   | string  | 开单医生             |
+| ++dispensing_pharmacist                | string  | 发药药师             |
+| +expense_information                   | object  | 费用汇总与支付       |
+| ++total_expense_amount                 | string  | 费用合计金额         |
+| +prescription_summary_table            | array   | 处方明细汇总表       |
+| ++project_name                         | string  | 项目名称             |
+| ++quantity                             | string  | 数量                 |
+| ++unit                                 | string  | 单位                 |
+| ++specification                        | string  | 规格                 |
+| ++usage                                | string  | 用法                 |
+| ++dosage                               | string  | 用量                 |
+| ++unit_price                           | string  | 单价                 |
+| ++amount                               | string  | 金额                 |
+| ++project_code                         | string  | 项目编号             |
 
-| 字段名                                 | 类型   | 描述             |
-| -------------------------------------- | ------ | ---------------- |
-| type                                   | string | 医疗发票类型     |
-| page_ids                               | array  | 页面ID数组       |
-| image_ids                              | array  | 图片ID数组       |
-| details                                | object | 详细信息         |
-| +invoice_information                   | object | 票据信息         |
-| ++document_title_name                  | object | 单据标题名称     |
-| ++prescription_number                  | object | 处方号           |
-| ++issuance_date                        | object | 开具日期         |
-| ++total_pages_of_invoice               | object | 票据总页数       |
-| ++current_page_number                  | object | 当前页码         |
-| +patient_information                   | object | 患者核心信息     |
-| ++name                                 | object | 姓名             |
-| ++gender                               | object | 性别             |
-| ++age                                  | object | 年龄             |
-| ++inpatient_number                     | object | 住院号           |
-| ++medical_record_number                | object | 病历号           |
-| ++outpatient_number                    | object | 门诊号           |
-| +medical_visit_institution_information | object | 就诊与机构信息   |
-| ++name_of_medical_institution          | object | 医疗机构名称     |
-| ++department                           | object | 科别             |
-| ++medical_treatment_date               | object | 就诊日期         |
-| ++diagnosis_result                     | object | 诊断结果         |
-| +expense_information                   | object | 费用汇总信息     |
-| ++total_expense_amount                 | object | 费用合计金额     |
-| +item_details                          | array  | 费用明细表数组   |
-| ++[0]                                  | array  | 第一个明细表数组 |
-| +++[0]                                 | object | 明细项目         |
-| ++++amount                             | object | 金额             |
-| ++++project_name                       | object | 项目名称         |
-| ++++quantity                           | object | 数量             |
-| ++++specification                      | object | 规格             |
-| ++++unit_price                         | object | 单价             |
-| ++++usage                              | object | 用法             |
+#### 医疗检验报告单  medical_laboratory_report
 
+| 字段名                                 | 类型    | 描述                 |
+| -------------------------------------- | ------- | -------------------- |
+| type                                   | string  | 医疗类票据的具体类型 |
+| page_ids                               | array | 页面ID数组           |
+| image_ids                              | array       | 图片ID数组           |
+| type_description                       | string  | 票据类别中文描述     |
+| details                                | object  | 票据结构化内容明细   |
+| +invoice_information                   | object  | 票据信息             |
+| ++document_title_name                  | string  | 单据标题名称         |
+| ++total_pages_of_invoice               | string  | 票据总页数           |
+| ++current_page_number                  | string  | 当前页码             |
+| ++report_time                          | string  | 报告时间             |
+| +patient_information                   | object  | 患者核心信息         |
+| ++name                                 | string  | 患者姓名             |
+| ++gender                               | string  | 患者性别             |
+| ++age                                  | string  | 患者年龄             |
+| ++outpatient_number                    | string  | 门诊号               |
+| ++inpatient_number                     | string  | 住院号               |
+| ++medical_record_number                | string  | 病历号               |
+| ++patient_number                       | string  | 病人编号             |
+| ++bed_number                           | string  | 患者床号             |
+| ++ward                                 | string  | 病区                 |
+| +medical_visit_institution_information | object  | 就诊与机构信息       |
+| ++name_of_medical_institution          | string  | 医疗机构名称         |
+| ++type_of_medical_institution          | string  | 医疗机构类型         |
+| ++department                           | string  | 科别                 |
+| ++inspection_item_name                 | string  | 检查项目名称         |
+| ++inspection_time                      | string  | 检查时间             |
+| ++submission_time                      | string  | 送检时间             |
+| ++receipt_time                         | string  | 接收时间             |
+| ++inspection_number                    | string  | 检查编号             |
+| ++specimen_number                      | string  | 标本号               |
+| ++specimen_type                        | string  | 标本类型             |
+| ++clinical_doctor                      | string  | 临床医生             |
+| ++sampling_doctor                      | string  | 采样医生             |
+| ++laboratory_doctor                    | string  | 检验医生             |
+| ++audit_doctor                         | string  | 审核医生             |
+| ++clinical_diagnosis_symptoms          | string  | 临床诊断/症状        |
+| ++diagnosis_result                     | string  | 诊断意见/结果        |
+| +test_results_summary_table            | array   | 检验结果汇总表       |
+| ++project_name                         | string  | 项目名称             |
+| ++result                               | string  | 结果                 |
+| ++reference_value                      | string  | 参考值               |
+| ++prompt                               | string  | 提示                 |
+| ++unit                                 | string  | 单位                 |
+| ++laboratory_instrument                | string  | 检验仪器             |
+| ++experimental_method                  | string  | 实验方法             |
 
-#### 医疗检验报告单 medical_laboratory_report 
+#### 医疗诊断报告单  medical_diagnostic_report
 
-| 字段名                                 | 类型   | 描述             |
-| -------------------------------------- | ------ | ---------------- |
-| type                                   | string | 医疗发票类型     |
-| page_ids                               | array  | 页面ID数组       |
-| image_ids                              | array  | 图片ID数组       |
-| details                                | object | 详细信息         |
-| +invoice_information                   | object | 票据信息         |
-| ++document_title_name                  | object | 单据标题名称     |
-| ++total_pages_of_invoice               | object | 票据总页数       |
-| ++current_page_number                  | object | 当前页码         |
-| ++inspection_item_name                 | object | 检查项目名称     |
-| ++report_date                          | object | 报告日期         |
-| +patient_information                   | object | 患者核心信息     |
-| ++name                                 | object | 姓名             |
-| ++gender                               | object | 性别             |
-| ++age                                  | object | 年龄             |
-| ++inpatient_number                     | object | 住院号           |
-| ++medical_record_number                | object | 病历号           |
-| ++outpatient_number                    | object | 门诊号           |
-| ++bed_number                           | object | 床号             |
-| +medical_visit_institution_information | object | 就诊与机构信息   |
-| ++name_of_medical_institution          | object | 医疗机构名称     |
-| ++type_of_medical_institution          | object | 医疗机构类型     |
-| ++department                           | object | 科别             |
-| ++clinical_doctor                      | object | 临床医生         |
-| ++sampling_doctor                      | object | 采样医生         |
-| ++laboratory_doctor                    | object | 检验医生         |
-| ++audit_doctor                         | object | 审核医生         |
-| ++diagnosis_result                     | object | 诊断结果         |
-| ++inspection_time                      | object | 检查时间         |
-| ++inspection_number                    | object | 检查编号         |
-| ++clinical_diagnosis_symptoms          | object | 临床诊断/症状    |
-| ++specimen_number                      | object | 标本号           |
-| ++specimen_type                        | object | 标本类型         |
-| +item_details                          | array  | 费用明细表数组   |
-| ++[0]                                  | array  | 第一个明细表数组 |
-| +++[0]                                 | object | 明细项目         |
-| ++++remarks                            | object | 备注             |
-| ++++project_code_symbol                | object | 项目编码/代号    |
-| ++++project_name                       | object | 项目名称         |
-| ++++measured_value                     | object | 测量值           |
-| ++++reference_value                    | object | 参考值           |
+| 字段名                                 | 类型    | 描述                 |
+| -------------------------------------- | ------- | -------------------- |
+| type                                   | string  | 医疗类票据的具体类型 |
+| page_ids                               | array | 页面ID数组           |
+| image_ids                              | array       | 图片ID数组           |
+| type_description                       | string  | 票据类别中文描述     |
+| details                                | object  | 票据结构化内容明细   |
+| +invoice_information                   | object  | 票据信息             |
+| ++document_title_name                  | string  | 单据标题名称         |
+| ++total_pages_of_invoice               | string  | 票据总页数           |
+| ++current_page_number                  | string  | 当前页码             |
+| ++report_time                          | string  | 报告时间             |
+| +patient_information                   | object  | 患者核心信息         |
+| ++name                                 | string  | 患者姓名             |
+| ++gender                               | string  | 患者性别             |
+| ++age                                  | string  | 患者年龄             |
+| ++outpatient_number                    | string  | 门诊号               |
+| ++inpatient_number                     | string  | 住院号               |
+| ++medical_record_number                | string  | 病历号               |
+| ++patient_number                       | string  | 病人编号             |
+| ++bed_number                           | string  | 患者床号             |
+| ++ward                                 | string  | 病区                 |
+| +medical_visit_institution_information | object  | 就诊与机构信息       |
+| ++name_of_medical_institution          | string  | 医疗机构名称         |
+| ++type_of_medical_institution          | string  | 医疗机构类型         |
+| ++department                           | string  | 科别                 |
+| ++inspection_item_name                 | string  | 检查项目名称         |
+| ++inspection_time                      | string  | 检查时间             |
+| ++inspection_number                    | string  | 检查编号             |
+| ++clinical_doctor                      | string  | 临床医生             |
+| ++laboratory_doctor                    | string  | 检验医生             |
+| ++audit_doctor                         | string  | 审核医生             |
+| ++diagnosis_content                    | string  | 诊断内容             |
+| ++diagnosis_result                     | string  | 诊断意见/结果        |
 
+#### 门诊病历  outpatient_medical_record
 
-#### 医疗诊断报告单 medical_diagnostic_report 
+| 字段名                                 | 类型    | 描述                 |
+| -------------------------------------- | ------- | -------------------- |
+| type                                   | string  | 医疗类票据的具体类型 |
+| page_ids                               | array | 页面ID数组           |
+| image_ids                              | array | 图片ID数组           |
+| type_description                       | string  | 票据类别中文描述     |
+| details                                | object  | 票据结构化内容明细   |
+| +invoice_information                   | object  | 票据信息             |
+| ++document_title_name                  | string  | 单据标题名称         |
+| ++business_serial_number               | string  | 业务流水号           |
+| ++total_pages_of_invoice               | string  | 票据总页数           |
+| ++current_page_number                  | string  | 当前页码             |
+| ++issuance_date                        | string  | 开具日期             |
+| +patient_information                   | object  | 患者核心信息         |
+| ++name                                 | string  | 患者姓名             |
+| ++gender                               | string  | 患者性别             |
+| ++age                                  | string  | 患者年龄             |
+| ++outpatient_number                    | string  | 门诊号               |
+| +medical_visit_institution_information | object  | 就诊与机构信息       |
+| ++name_of_medical_institution          | string  | 医疗机构名称         |
+| ++type_of_medical_institution          | string  | 医疗机构类型         |
+| ++medical_treatment_date               | string  | 就诊日期             |
+| ++department                           | string  | 科别                 |
+| ++clinical_doctor                      | string  | 临床医生             |
+| ++chief_complaint                      | string  | 主诉                 |
+| ++present_illness_history              | string  | 现病史               |
+| ++past_medical_history                 | string  | 既往史               |
+| ++allergy_history                      | string  | 过敏史               |
+| ++personal_history                     | string  | 个人史               |
+| ++physical_examination                 | string  | 体格检查             |
+| ++auxiliary_examination                | string  | 辅助检查             |
+| ++clinical_diagnosis_symptoms          | string  | 临床诊断/症状        |
+| ++diagnosis_result                     | string  | 诊断结果             |
+| ++outpatient_treatment                 | string  | 门诊处置             |
+| ++medical_advice                       | string  | 医学建议/医嘱        |
+| +prescription_summary_table            | array   | 处方汇总表           |
+| ++drug_name                            | string  | 药品名称             |
+| ++usage                                | string  | 用法                 |
+| ++dosage                               | string  | 用量                 |
+| ++medication_frequency                 | string  | 用药频率             |
+| ++medication_course                    | string  | 用药疗程             |
+| ++specification                        | string  | 规格                 |
+| ++notes_or_instructions                | string  | 提示/嘱托            |
 
-| 字段名                                   | 类型   | 描述           |
-| ---------------------------------------- | ------ | -------------- |
-| type                                     | string | 医疗发票类型   |
-| page_ids                                 | array  | 页面ID数组     |
-| image_ids                                | array  | 图片ID数组     |
-| details                                  | object | 详细信息       |
-| ++ invoice_information                   | object | 票据信息       |
-| +++ document_title_name                  | object | 单据标题名称   |
-| +++ total_pages_of_invoice               | object | 票据总页数     |
-| +++ current_page_number                  | object | 当前页码       |
-| +++ inspection_item_name                 | object | 检查项目名称   |
-| +++ report_date                          | object | 报告日期       |
-| ++ patient_information                   | object | 患者核心信息   |
-| +++ name                                 | object | 姓名           |
-| +++ gender                               | object | 性别           |
-| +++ age                                  | object | 年龄           |
-| +++ inpatient_number                     | object | 住院号         |
-| +++ medical_record_number                | object | 病历号         |
-| +++ outpatient_number                    | object | 门诊号         |
-| +++ bed_number                           | object | 床号           |
-| ++ medical_visit_institution_information | object | 就诊与机构信息 |
-| +++ name_of_medical_institution          | object | 医疗机构名称   |
-| +++ type_of_medical_institution          | object | 医疗机构类型   |
-| +++ department                           | object | 科别           |
-| +++ clinical_doctor                      | object | 临床医生       |
-| +++ laboratory_doctor                    | object | 检验医生       |
-| +++ audit_doctor                         | object | 审核医生       |
-| +++ diagnosis_content                    | object | 诊断内容       |
-| +++ diagnosis_result                     | object | 诊断结果/意见  |
-| +++ inspection_time                      | object | 检查时间       |
-| +++ inspection_number                    | object | 检查编号       |
+#### 出院小结  discharge_summary
 
+| 字段名                                  | 类型    | 描述                 |
+| --------------------------------------- | ------- | -------------------- |
+| type                                    | string  | 医疗类票据的具体类型 |
+| page_ids                                | array | 页面ID数组           |
+| image_ids                               | array       | 图片ID数组           |
+| type_description                        | string  | 票据类别中文描述     |
+| details                                 | object  | 票据结构化内容明细   |
+| +invoice_information                    | object  | 票据信息             |
+| ++document_title_name                   | string  | 单据标题名称         |
+| ++total_pages_of_invoice                | string  | 票据总页数           |
+| ++current_page_number                   | string  | 当前页码             |
+| ++issuance_date                         | string  | 开具日期             |
+| +patient_information                    | object  | 患者核心信息         |
+| ++name                                  | string  | 患者姓名             |
+| ++gender                                | string  | 患者性别             |
+| ++age                                   | string  | 患者年龄             |
+| ++inpatient_number                      | string  | 住院号               |
+| ++medical_record_number                 | string  | 病历号               |
+| ++bed_number                            | string  | 患者床号             |
+| ++ward                                  | string  | 病区                 |
+| +medical_visit_institution_information  | object  | 就诊与机构信息       |
+| ++name_of_medical_institution           | string  | 医疗机构名称         |
+| ++type_of_medical_institution           | string  | 医疗机构类型         |
+| ++admission_time                        | string  | 入院时间             |
+| ++discharge_time                        | string  | 出院时间             |
+| ++hospitalization_days                  | string  | 住院天数             |
+| ++department                            | string  | 科别                 |
+| ++outpatient_diagnosis                  | string  | 门诊诊断             |
+| ++admission_diagnosis                   | string  | 入院诊断             |
+| ++discharge_diagnosis                   | string  | 出院诊断             |
+| ++admission_symptoms_and_signs          | string  | 入院症状与体征       |
+| ++discharge_symptoms_and_signs          | string  | 出院症状与体征       |
+| ++treatment_overview                    | string  | 诊疗经过概览         |
+| ++treatment_result                      | string  | 治疗结果             |
+| ++medical_advice                        | string  | 医学建议/医嘱        |
+| ++clinical_doctor                       | string  | 临床医生             |
+| ++attending_doctor                      | string  | 住院医生             |
+| +treatment_summary_table                | array   | 诊疗经过详情汇总表   |
+| ++treatment_time                        | string  | 诊疗时间             |
+| ++treatment_item_name                   | string  | 诊疗项目名称         |
+| ++treatment_content                     | string  | 诊疗内容             |
+| ++treatment_result                      | string  | 诊疗结果             |
+| +discharge_medication_summary_table     | array   | 出院带药汇总表       |
+| ++drug_name                             | string  | 药品名称             |
+| ++usage                                 | string  | 用法                 |
+| ++dosage                                | string  | 用量                 |
+| ++medication_frequency                  | string  | 用药频率             |
+| ++medication_course                     | string  | 用药疗程             |
+| ++medication_quantity                   | string  | 带药数量             |
+| ++specification                         | string  | 规格                 |
+| ++notes_or_instructions                 | string  | 提示/嘱托            |
+| +self_provided_medication_summary_table | array   | 自备药汇总表         |
+| ++drug_name                             | string  | 药品名称             |
+| ++usage                                 | string  | 用法                 |
+| ++dosage                                | string  | 用量                 |
+| ++medication_frequency                  | string  | 用药频率             |
+| ++medication_course                     | string  | 用药疗程             |
+| ++notes_or_instructions                 | string  | 提示/嘱托            |
 
+#### 医疗诊断证明  diagnosis_certificate
 
+| 字段名                                 | 类型    | 描述                 |
+| -------------------------------------- | ------- | -------------------- |
+| type                                   | string  | 医疗类票据的具体类型 |
+| page_ids                               | array | 页面ID数组           |
+| image_ids                              | array        | 图片ID数组           |
+| type_description                       | string  | 票据类别中文描述     |
+| details                                | object  | 票据结构化内容明细   |
+| +invoice_information                   | object  | 票据信息             |
+| ++document_title_name                  | string  | 单据标题名称         |
+| ++business_serial_number               | string  | 业务流水号           |
+| ++total_pages_of_invoice               | string  | 票据总页数           |
+| ++current_page_number                  | string  | 当前页码             |
+| ++issuance_date                        | string  | 开具日期             |
+| +patient_information                   | object  | 患者核心信息         |
+| ++name                                 | string  | 患者姓名             |
+| ++gender                               | string  | 患者性别             |
+| ++age                                  | string  | 患者年龄             |
+| ++outpatient_number                    | string  | 门诊号               |
+| ++inpatient_number                     | string  | 住院号               |
+| ++medical_record_number                | string  | 病历/案号            |
+| ++bed_number                           | string  | 患者床号             |
+| +medical_visit_institution_information | object  | 就诊与机构信息       |
+| ++name_of_medical_institution          | string  | 医疗机构名称         |
+| ++type_of_medical_institution          | string  | 医疗机构类型         |
+| ++medical_treatment_date               | string  | 就诊日期             |
+| ++admission_time                       | string  | 入院时间             |
+| ++discharge_time                       | string  | 出院时间             |
+| ++hospitalization_days                 | string  | 住院天数             |
+| ++department                           | string  | 科别                 |
+| ++clinical_doctor                      | string  | 临床医生             |
+| ++diagnosis_result                     | string  | 诊断结果             |
+| ++medical_advice                       | string  | 医学建议/医嘱        |

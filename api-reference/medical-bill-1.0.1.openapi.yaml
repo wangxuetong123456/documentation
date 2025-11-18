@@ -1,0 +1,1590 @@
+# 2024/7/30
+openapi: 3.0.3
+info:
+  version: 2.0.0
+  title: 医疗票据识别v1.1.0接口
+servers:
+  - url: https://api.textin.com
+    description: Production server
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /ai/service/v1/medical_recognize:
+    post:
+      summary: 医疗票据v1接口识别
+
+      parameters:
+        - name: crop_image
+          in: query
+          description: 选择是否需要进行图片切分，0关闭切分，1开启切分，默认为0
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1            
+            default: 0
+
+        - name: return_image_base64
+          in: query
+          description: 选择是否需要输出图片base64，对应image_list中image_base64，0关闭，1开启，默认为0
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1            
+            default: 0
+
+        - name: category
+          in: query
+          description: |
+            指定样本类型，不进行样本分类，直接抽取结果，默认为0不使用该功能
+            1: 住院发票 
+            2: 门诊发票 
+            3: 医疗费用结算单 
+            4: 医疗费用明细 
+            5: 医疗处方单 
+            6: 医疗检验报告单 
+            7: 医疗诊断报告单 
+            8: 门诊病历 
+            9: 出院小结 
+            10: 诊断证明 
+          schema:
+            type: integer
+            enum:
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+              - 8
+              - 9
+              - 10
+            default: 0
+
+        - name: coord_restore
+          in: query
+          description: 调整各字段的返回坐标逻辑，1代表坐标以原图为基准，0代表坐标以切图后转正图为基准，默认为0
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1            
+            default: 0
+
+        - name: is_same_file
+          in: query
+          description: PDF是否为一个整份文件，开启则不再对每一页进行单独切图和分类
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1            
+            default: 0
+
+      operationId: ai_service_v1_medical_crop_and_recog_multi
+
+      requestBody:
+        description: 要上传的图片，目前支持jpg, png, bmp, pdf, tiff, ofd, webp, 单帧gif等大部分格式.
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+              example: success
+
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CodeMessage'
+                  - $ref: '#/components/schemas/Response'
+            
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+  schemas:
+    Response:
+      type: object
+      required:
+        - duration
+        - version
+        - result
+      description: ''
+      properties:
+        duration:
+          type: integer
+          description: 接口总耗时，单位为毫秒
+          example: 100
+        version:
+          type: string
+          description: 接口版本
+          example: v1.0.0
+        result:
+          type: object
+          required:
+            - success_count
+            - page_count
+            - ppi
+            - image_list
+            - object_list
+          description: 样本识别结果
+          properties:
+            success_count:
+              type: integer
+              description: 成功识别的图片数量
+              example: 1
+            page_count:
+              type: integer
+              description: 样本总页数
+              example: 1
+            ppi:
+              type: integer
+              description: pdf解析分辨率，默认144
+              example: 144
+            image_list:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/ImageItem'
+            object_list:
+              type: array
+              items:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/ObjectItem'
+
+    ImageItem:
+      type: object
+      required:
+        - image_angle
+        - rotated_image_width
+        - rotated_image_height
+        - page_id
+        - image_position
+      properties:
+        image_angle:
+          type: integer
+          description: 切分后单张票据的角度
+          enum:
+            - 0
+            - 90
+            - 180
+            - 270
+          example: 0
+
+        rotated_image_width:
+          type: integer
+          description: 切分后单张票据转正后的宽度
+          minimum: 1
+          example: 1000
+
+        rotated_image_height:
+          type: integer
+          description: 切分后单张票据转正后的高度
+          minimum: 1
+          example: 3000
+
+        page_id:
+          type: integer
+          description: 如果是pdf样本，该图片在pdf上的所在页，默认0，第一页
+          minimum: 0
+          example: 0
+
+        image_base64:
+          type: string
+          description: 图片base64
+          example: ""
+
+        image_position:
+            type: array
+            minItems: 0
+            maxItems: 8
+            items:
+              type: integer
+              description: |
+                开启图片切分后单张票据在原图中的坐标位置
+                [0,1,2,3,4,5,6,7]
+                - (0, 1) 左上角坐标
+                - (2, 3) 右上角坐标
+                - (4, 5) 右下角坐标
+                - (6, 7) 左下角坐标
+              example: 100
+            example: [100,100,200,100,200,200,100,200]
+ 
+    ObjectItem:
+      type: object
+      required:
+        - type
+        - image_ids
+        - details
+        - page_ids
+        - type_description
+      properties:
+        type:
+          type: string
+          description: |
+            单份医疗票据类型
+            - inpatient_medical_invoice      住院发票
+            - outpatient_medical_invoice     门诊发票
+            - medical_cost_details           医疗费用明细
+            - medical_insurance_settlement   医疗费用结算单
+            - medical_prescription           医疗处方单
+            - medical_laboratory_report      医疗检验报告单
+            - medical_diagnostic_report      医疗诊断报告单
+            - discharge_summary              出院小结
+            - diagnosis_certificate          诊断证明
+            - outpatient_medical_record      门诊病历
+            - other                          其他
+          enum:
+            - inpatient_medical_invoice
+            - outpatient_medical_invoice 
+            - medical_cost_details
+            - medical_insurance_settlement
+            - medical_prescription
+            - medical_laboratory_report
+            - medical_diagnostic_report
+            - discharge_summary
+            - diagnosis_certificate
+            - outpatient_medical_record
+            - other     
+          example: inpatient_medical_invoice
+
+        page_ids:
+          type: array
+          description: 如果是pdf文件，该份票据样本在pdf中的页码
+          minItems: 0
+          items:
+            type: integer
+            description: pdf页码，默认为0
+            example: 0
+          example: [0]
+
+        image_ids:
+          type: array
+          description: 该份票据在image_list中的所有图片
+          minItems: 0
+          items:
+            type: integer
+            description: image_list中的图片索引id，默认为0
+            example: 0
+          example: [0]
+
+        type_description:
+          type: string
+          description: 票据类型描述
+          example: ""
+
+        details:
+          type: object
+          description: 识别结果
+          oneOf:
+            - $ref: '#/components/schemas/Type_inpatient_medical_invoice'
+            - $ref: '#/components/schemas/Type_outpatient_medical_invoice'
+            - $ref: '#/components/schemas/Type_medical_cost_details'
+            - $ref: '#/components/schemas/Type_medical_insurance_settlement'
+            - $ref: '#/components/schemas/Type_medical_prescription'
+            - $ref: '#/components/schemas/Type_medical_laboratory_report'
+            - $ref: '#/components/schemas/Type_medical_diagnostic_report'
+            - $ref: '#/components/schemas/Type_discharge_summary'
+            - $ref: '#/components/schemas/Type_diagnosis_certificate'
+            - $ref: '#/components/schemas/Type_outpatient_medical_record'
+            - $ref: '#/components/schemas/Type_other'
+
+    BoundingRegions:
+        type: object
+        required:
+          - page_id
+          - image_id
+          - value
+          - position
+          - char_pos
+        properties:
+          page_id:
+            type: integer
+            description: 坐标所在页码
+            example: 0
+          image_id:
+            type: integer
+            description: 坐标所在图片在image_list中的索引id
+            example: 0
+          value:
+            type: string
+            description: 字段识别结果
+            example: ""
+          position:
+            type: array
+            description: |
+              字段坐标位置
+              [0,1,2,3,4,5,6,7]
+              - (0, 1) 左上角坐标
+              - (2, 3) 右上角坐标
+              - (4, 5) 右下角坐标
+              - (6, 7) 左下角坐标
+            items:
+              type: integer
+              description: 坐标点
+              example: 100
+            example: [100,100,200,100,200,200,100,200]
+          char_pos:
+            type: array
+            description: 识别结果所有字符的坐标位置
+            items:
+              type: array
+              description: |
+                单个字符的坐标位置
+                [0,1,2,3,4,5,6,7]
+                - (0, 1) 左上角坐标
+                - (2, 3) 右上角坐标
+                - (4, 5) 右下角坐标
+                - (6, 7) 左下角坐标
+              items:
+                type: integer
+                description: 坐标点
+                example: 100
+            example: [[100,100,200,100,200,200,100,200]]
+
+    BasicField:
+      type: object
+      required:
+        - value
+        - description
+        - bounding_regions
+      properties:
+        value:
+          type: string
+          description: 字段识别结果
+          example: ""
+        description:
+          type: string
+          description: 字段中文描述
+          example: ""
+        bounding_regions:
+          type: array
+          description: 字段坐标
+          items:
+            $ref: '#/components/schemas/BoundingRegions'
+          minItems: 0
+
+    Type_inpatient_medical_invoice:
+      type: object
+      required:
+        - invoice_information
+        - patient_information
+        - medical_visit_institution_information
+        - expense_information
+        - item_summary_table
+      description: 住院发票识别结果
+      properties:
+        invoice_information:
+          type: object
+          required:
+            - document_title_name
+            - invoice_code
+            - invoice_number
+            - business_serial_number
+            - bill_verification_code
+            - issuance_date
+            - total_pages_of_invoice
+            - current_page_number
+          description: 票据信息
+          properties:
+            document_title_name: { $ref: '#/components/schemas/BasicField' }
+            invoice_code: { $ref: '#/components/schemas/BasicField' }
+            invoice_number: { $ref: '#/components/schemas/BasicField' }
+            business_serial_number: { $ref: '#/components/schemas/BasicField' }
+            bill_verification_code: { $ref: '#/components/schemas/BasicField' }
+            issuance_date: { $ref: '#/components/schemas/BasicField' }
+            total_pages_of_invoice: { $ref: '#/components/schemas/BasicField' }
+            current_page_number: { $ref: '#/components/schemas/BasicField' }
+        patient_information:
+          type: object
+          required:
+            - name
+            - gender
+            - age
+            - inpatient_number
+            - medical_record_number
+            - bed_number
+            - ward
+            - medical_insurance_number
+            - medical_insurance_type
+            - social_security_card_number
+          description: 患者核心信息
+          properties:
+            name: { $ref: '#/components/schemas/BasicField' }
+            gender: { $ref: '#/components/schemas/BasicField' }
+            age: { $ref: '#/components/schemas/BasicField' }
+            inpatient_number: { $ref: '#/components/schemas/BasicField' }
+            medical_record_number: { $ref: '#/components/schemas/BasicField' }
+            bed_number: { $ref: '#/components/schemas/BasicField' }
+            ward: { $ref: '#/components/schemas/BasicField' }
+            medical_insurance_number: { $ref: '#/components/schemas/BasicField' }
+            medical_insurance_type: { $ref: '#/components/schemas/BasicField' }
+            social_security_card_number: { $ref: '#/components/schemas/BasicField' }
+        medical_visit_institution_information:
+          type: object
+          required:
+            - name_of_medical_institution
+            - type_of_medical_institution
+            - admission_time
+            - discharge_time
+            - hospitalization_days
+            - medical_treatment_date
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            type_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            department: { $ref: '#/components/schemas/BasicField' }
+            admission_time: { $ref: '#/components/schemas/BasicField' }
+            discharge_time: { $ref: '#/components/schemas/BasicField' }
+            hospitalization_days: { $ref: '#/components/schemas/BasicField' }
+            medical_treatment_date: { $ref: '#/components/schemas/BasicField' }
+        expense_information:
+          type: object
+          required:
+            - total_amount_in_words
+            - total_expense_amount
+            - personal_account_balance
+            - personal_self_payment_amount
+            - personal_self_funded_amount
+            - prepaid_amount
+            - supplementary_payment_amount
+            - refund_amount
+            - personal_account_payment
+            - personal_cash_payment
+            - other_payments
+            - payee_organization
+            - payee
+            - reviewer
+            - payer
+            - category_self_payment_amount
+            - rounding_amount
+            - medical_insurance_payment
+            - additional_fund_payment
+            - current_year_balance
+            - cumulative_balance
+            - cumulative_insurance_payment
+            - cumulative_deductible_amount
+          description: 费用汇总信息
+          properties:
+            total_amount_in_words: { $ref: '#/components/schemas/BasicField' }
+            total_expense_amount: { $ref: '#/components/schemas/BasicField' }
+            personal_account_balance: { $ref: '#/components/schemas/BasicField' }
+            personal_self_payment_amount: { $ref: '#/components/schemas/BasicField' }
+            personal_self_funded_amount: { $ref: '#/components/schemas/BasicField' }
+            prepaid_amount: { $ref: '#/components/schemas/BasicField' }
+            supplementary_payment_amount: { $ref: '#/components/schemas/BasicField' }
+            refund_amount: { $ref: '#/components/schemas/BasicField' }
+            personal_account_payment: { $ref: '#/components/schemas/BasicField' }
+            personal_cash_payment: { $ref: '#/components/schemas/BasicField' }
+            other_payments: { $ref: '#/components/schemas/BasicField' }
+            payee_organization: { $ref: '#/components/schemas/BasicField' }
+            payee: { $ref: '#/components/schemas/BasicField' }
+            reviewer: { $ref: '#/components/schemas/BasicField' }
+            payer: { $ref: '#/components/schemas/BasicField' }
+            category_self_payment_amount: { $ref: '#/components/schemas/BasicField' }
+            rounding_amount: { $ref: '#/components/schemas/BasicField' }
+            medical_insurance_payment: { $ref: '#/components/schemas/BasicField' }
+            additional_fund_payment: { $ref: '#/components/schemas/BasicField' }
+            current_year_balance: { $ref: '#/components/schemas/BasicField' }
+            cumulative_balance: { $ref: '#/components/schemas/BasicField' }
+            cumulative_insurance_payment: { $ref: '#/components/schemas/BasicField' }
+            cumulative_deductible_amount: { $ref: '#/components/schemas/BasicField' }
+        item_summary_table:
+          type: array
+          description: 项目明细汇总表
+          items:
+            type: object
+            required:
+              - project_name
+              - project_number
+              - quantity
+              - unit
+              - amount
+              - reimbursement_type
+              - remarks
+            description: 单行识别结果
+            properties:
+              project_name: { $ref: '#/components/schemas/BasicField' }
+              project_number: { $ref: '#/components/schemas/BasicField' }
+              quantity: { $ref: '#/components/schemas/BasicField' }
+              unit: { $ref: '#/components/schemas/BasicField' }
+              amount: { $ref: '#/components/schemas/BasicField' }
+              reimbursement_type: { $ref: '#/components/schemas/BasicField' }
+              remarks: { $ref: '#/components/schemas/BasicField' }
+
+    Type_outpatient_medical_invoice:
+      type: object
+      required:
+        - invoice_information
+        - patient_information
+        - medical_visit_institution_information
+        - expense_information
+        - item_summary_table
+      description: 门诊发票识别结果
+      properties:
+        invoice_information:
+          type: object
+          required:
+            - document_title_name
+            - invoice_code
+            - invoice_number
+            - business_serial_number
+            - bill_verification_code
+            - issuance_date
+            - total_pages_of_invoice
+            - current_page_number
+          description: 票据信息
+          properties:
+            document_title_name: { $ref: '#/components/schemas/BasicField' }
+            invoice_code: { $ref: '#/components/schemas/BasicField' }
+            invoice_number: { $ref: '#/components/schemas/BasicField' }
+            business_serial_number: { $ref: '#/components/schemas/BasicField' }
+            bill_verification_code: { $ref: '#/components/schemas/BasicField' }
+            issuance_date: { $ref: '#/components/schemas/BasicField' }
+            total_pages_of_invoice: { $ref: '#/components/schemas/BasicField' }
+            current_page_number: { $ref: '#/components/schemas/BasicField' }
+        patient_information:
+          type: object
+          required:
+            - name
+            - gender
+            - age
+            - medical_insurance_number
+            - medical_insurance_type
+            - social_security_card_number
+            - outpatient_number
+          description: 患者核心信息
+          properties:
+            name: { $ref: '#/components/schemas/BasicField' }
+            gender: { $ref: '#/components/schemas/BasicField' }
+            age: { $ref: '#/components/schemas/BasicField' }
+            medical_insurance_number: { $ref: '#/components/schemas/BasicField' }
+            medical_insurance_type: { $ref: '#/components/schemas/BasicField' }
+            social_security_card_number: { $ref: '#/components/schemas/BasicField' }
+            outpatient_number: { $ref: '#/components/schemas/BasicField' }
+        medical_visit_institution_information:
+          type: object
+          required:
+            - name_of_medical_institution
+            - type_of_medical_institution
+            - department
+            - medical_treatment_date
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            type_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            department: { $ref: '#/components/schemas/BasicField' }
+            medical_treatment_date: { $ref: '#/components/schemas/BasicField' }
+        expense_information:
+          type: object
+          required:
+            - total_amount_in_words
+            - total_expense_amount
+            - personal_account_balance
+            - personal_self_payment_amount
+            - personal_self_funded_amount
+            - prepaid_amount
+            - supplementary_payment_amount
+            - refund_amount
+            - personal_account_payment
+            - personal_cash_payment
+            - other_payments
+            - payee_organization
+            - payee
+            - reviewer
+            - payer
+            - category_self_payment_amount
+            - rounding_amount
+            - medical_insurance_payment
+            - additional_fund_payment
+            - current_year_balance
+            - cumulative_balance
+            - cumulative_insurance_payment
+            - cumulative_deductible_amount
+          description: 费用汇总信息
+          properties:
+            total_amount_in_words: { $ref: '#/components/schemas/BasicField' }
+            total_expense_amount: { $ref: '#/components/schemas/BasicField' }
+            personal_account_balance: { $ref: '#/components/schemas/BasicField' }
+            personal_self_payment_amount: { $ref: '#/components/schemas/BasicField' }
+            personal_self_funded_amount: { $ref: '#/components/schemas/BasicField' }
+            prepaid_amount: { $ref: '#/components/schemas/BasicField' }
+            supplementary_payment_amount: { $ref: '#/components/schemas/BasicField' }
+            refund_amount: { $ref: '#/components/schemas/BasicField' }
+            personal_account_payment: { $ref: '#/components/schemas/BasicField' }
+            personal_cash_payment: { $ref: '#/components/schemas/BasicField' }
+            other_payments: { $ref: '#/components/schemas/BasicField' }
+            payee_organization: { $ref: '#/components/schemas/BasicField' }
+            payee: { $ref: '#/components/schemas/BasicField' }
+            reviewer: { $ref: '#/components/schemas/BasicField' }
+            payer: { $ref: '#/components/schemas/BasicField' }
+            category_self_payment_amount: { $ref: '#/components/schemas/BasicField' }
+            rounding_amount: { $ref: '#/components/schemas/BasicField' }
+            medical_insurance_payment: { $ref: '#/components/schemas/BasicField' }
+            additional_fund_payment: { $ref: '#/components/schemas/BasicField' }
+            current_year_balance: { $ref: '#/components/schemas/BasicField' }
+            cumulative_balance: { $ref: '#/components/schemas/BasicField' }
+            cumulative_insurance_payment: { $ref: '#/components/schemas/BasicField' }
+            cumulative_deductible_amount: { $ref: '#/components/schemas/BasicField' }
+        item_summary_table:
+          type: array
+          description: 项目明细汇总表
+          items:
+            type: object
+            required:
+              - project_name
+              - project_number
+              - quantity
+              - unit
+              - amount
+              - reimbursement_type
+              - remarks
+            description: 单行识别结果
+            properties:
+              project_name: { $ref: '#/components/schemas/BasicField' }
+              project_number: { $ref: '#/components/schemas/BasicField' }
+              quantity: { $ref: '#/components/schemas/BasicField' }
+              unit: { $ref: '#/components/schemas/BasicField' }
+              amount: { $ref: '#/components/schemas/BasicField' }
+              reimbursement_type: { $ref: '#/components/schemas/BasicField' }
+              remarks: { $ref: '#/components/schemas/BasicField' }
+
+    Type_medical_cost_details:
+      type: object
+      required:
+        - invoice_information
+        - patient_information
+        - medical_visit_institution_information
+        - expense_information
+        - treatment_summary_table
+      description: 医疗费用明细识别结果
+      properties:
+        invoice_information:
+          type: object
+          required:
+            - document_title_name
+            - invoice_code
+            - invoice_number
+            - total_pages_of_invoice
+            - current_page_number
+            - issuance_date
+          description: 票据信息
+          properties:
+            document_title_name: { $ref: '#/components/schemas/BasicField' }
+            invoice_code: { $ref: '#/components/schemas/BasicField' }
+            invoice_number: { $ref: '#/components/schemas/BasicField' }
+            total_pages_of_invoice: { $ref: '#/components/schemas/BasicField' }
+            current_page_number: { $ref: '#/components/schemas/BasicField' }
+            issuance_date: { $ref: '#/components/schemas/BasicField' }
+        patient_information:
+          type: object
+          required:
+            - name
+            - gender
+            - age
+            - inpatient_number
+            - medical_record_number
+            - outpatient_number
+            - bed_number
+            - personnel_category
+            - ward
+          description: 患者核心信息
+          properties:
+            name: { $ref: '#/components/schemas/BasicField' }
+            gender: { $ref: '#/components/schemas/BasicField' }
+            age: { $ref: '#/components/schemas/BasicField' }
+            inpatient_number: { $ref: '#/components/schemas/BasicField' }
+            medical_record_number: { $ref: '#/components/schemas/BasicField' }
+            outpatient_number: { $ref: '#/components/schemas/BasicField' }
+            bed_number: { $ref: '#/components/schemas/BasicField' }
+            personnel_category: { $ref: '#/components/schemas/BasicField' }
+            ward: { $ref: '#/components/schemas/BasicField' }
+        medical_visit_institution_information:
+          type: object
+          required:
+            - name_of_medical_institution
+            - type_of_medical_institution
+            - department
+            - admission_time
+            - discharge_time
+            - hospitalization_days
+            - medical_treatment_date
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            type_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            department: { $ref: '#/components/schemas/BasicField' }
+            admission_time: { $ref: '#/components/schemas/BasicField' }
+            discharge_time: { $ref: '#/components/schemas/BasicField' }
+            hospitalization_days: { $ref: '#/components/schemas/BasicField' }
+            medical_treatment_date: { $ref: '#/components/schemas/BasicField' }
+        expense_information:
+          type: object
+          required:
+            - total_expense_amount
+            - payer
+            - payee_organization
+          description: 费用汇总信息
+          properties:
+            total_expense_amount: { $ref: '#/components/schemas/BasicField' }
+            payer: { $ref: '#/components/schemas/BasicField' }
+            payee_organization: { $ref: '#/components/schemas/BasicField' }
+        treatment_summary_table:
+          type: array
+          description: 诊疗清单汇总表
+          items:
+            type: object
+            required:
+              - amount
+              - remarks
+              - project_name
+              - quantity
+              - specification
+              - unit_price
+              - project_code
+              - project_category
+              - unit
+              - reimbursement_type
+              - self_funded_amount
+              - category_self_payment_amount
+            description: 单行识别结果
+            properties:
+              amount: { $ref: '#/components/schemas/BasicField' }
+              remarks: { $ref: '#/components/schemas/BasicField' }
+              project_name: { $ref: '#/components/schemas/BasicField' }
+              quantity: { $ref: '#/components/schemas/BasicField' }
+              specification: { $ref: '#/components/schemas/BasicField' }
+              unit_price: { $ref: '#/components/schemas/BasicField' }
+              project_code: { $ref: '#/components/schemas/BasicField' }
+              project_category: { $ref: '#/components/schemas/BasicField' }
+              unit: { $ref: '#/components/schemas/BasicField' }
+              reimbursement_type: { $ref: '#/components/schemas/BasicField' }
+              self_funded_amount: { $ref: '#/components/schemas/BasicField' }
+              category_self_payment_amount: { $ref: '#/components/schemas/BasicField' }
+
+    Type_medical_insurance_settlement:
+      type: object
+      required:
+        - invoice_information
+        - patient_information
+        - medical_visit_institution_information
+        - expense_information
+        - expense_summary_table
+        - funds_payment_summary_table
+      description: 医疗费用结算单识别结果
+      properties:
+        invoice_information:
+          type: object
+          required:
+            - document_title_name
+            - total_pages_of_invoice
+            - current_page_number
+            - business_serial_number
+            - settlement_time
+          description: 票据信息
+          properties:
+            document_title_name: { $ref: '#/components/schemas/BasicField' }
+            total_pages_of_invoice: { $ref: '#/components/schemas/BasicField' }
+            current_page_number: { $ref: '#/components/schemas/BasicField' }
+            business_serial_number: { $ref: '#/components/schemas/BasicField' }
+            settlement_time: { $ref: '#/components/schemas/BasicField' }
+        patient_information:
+          type: object
+          required:
+            - name
+            - gender
+            - age
+            - medical_insurance_number
+            - medical_insurance_type
+            - id_number
+            - social_security_card_number
+            - insurance_location
+            - treatment_location
+            - visit_type
+            - insurance_type
+            - personnel_category
+            - affiliated_unit
+            - reimbursement_type
+            - outpatient_number
+            - inpatient_number
+            - medical_record_number
+            - bed_number
+            - ward
+          description: 患者核心信息
+          properties:
+            name: { $ref: '#/components/schemas/BasicField' }
+            gender: { $ref: '#/components/schemas/BasicField' }
+            age: { $ref: '#/components/schemas/BasicField' }
+            medical_insurance_number: { $ref: '#/components/schemas/BasicField' }
+            medical_insurance_type: { $ref: '#/components/schemas/BasicField' }
+            id_number: { $ref: '#/components/schemas/BasicField' }
+            social_security_card_number: { $ref: '#/components/schemas/BasicField' }
+            insurance_location: { $ref: '#/components/schemas/BasicField' }
+            treatment_location: { $ref: '#/components/schemas/BasicField' }
+            visit_type: { $ref: '#/components/schemas/BasicField' }
+            insurance_type: { $ref: '#/components/schemas/BasicField' }
+            personnel_category: { $ref: '#/components/schemas/BasicField' }
+            affiliated_unit: { $ref: '#/components/schemas/BasicField' }
+            reimbursement_type: { $ref: '#/components/schemas/BasicField' }
+            outpatient_number: { $ref: '#/components/schemas/BasicField' }
+            inpatient_number: { $ref: '#/components/schemas/BasicField' }
+            medical_record_number: { $ref: '#/components/schemas/BasicField' }
+            bed_number: { $ref: '#/components/schemas/BasicField' }
+            ward: { $ref: '#/components/schemas/BasicField' }
+        medical_visit_institution_information:
+          type: object
+          required:
+            - name_of_medical_institution
+            - type_of_medical_institution
+            - department
+            - admission_time
+            - discharge_time
+            - hospitalization_days
+            - medical_treatment_date
+            - main_diagnosis
+            - secondary_diagnosis
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            type_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            department: { $ref: '#/components/schemas/BasicField' }
+            admission_time: { $ref: '#/components/schemas/BasicField' }
+            discharge_time: { $ref: '#/components/schemas/BasicField' }
+            hospitalization_days: { $ref: '#/components/schemas/BasicField' }
+            medical_treatment_date: { $ref: '#/components/schemas/BasicField' }
+            main_diagnosis: { $ref: '#/components/schemas/BasicField' }
+            secondary_diagnosis: { $ref: '#/components/schemas/BasicField' }
+        expense_information:
+          type: object
+          required:
+            - total_expense_amount
+            - personal_self_payment_amount
+            - personal_self_funded_amount
+            - personal_account_payment
+            - personal_cash_payment
+            - other_payments
+            - deductible_amount
+            - medical_insurance_payment
+            - cumulative_insurance_payment
+            - insurance_reimbursement_rate
+            - additional_fund_payment
+            - prepaid_amount
+            - supplementary_payment_amount
+            - refund_amount
+            - rounding_amount
+            - current_year_balance
+            - cumulative_balance
+          description: 费用汇总信息
+          properties:
+            total_expense_amount: { $ref: '#/components/schemas/BasicField' }
+            personal_self_payment_amount: { $ref: '#/components/schemas/BasicField' }
+            personal_self_funded_amount: { $ref: '#/components/schemas/BasicField' }
+            personal_account_payment: { $ref: '#/components/schemas/BasicField' }
+            personal_cash_payment: { $ref: '#/components/schemas/BasicField' }
+            other_payments: { $ref: '#/components/schemas/BasicField' }
+            deductible_amount: { $ref: '#/components/schemas/BasicField' }
+            medical_insurance_payment: { $ref: '#/components/schemas/BasicField' }
+            cumulative_insurance_payment: { $ref: '#/components/schemas/BasicField' }
+            insurance_reimbursement_rate: { $ref: '#/components/schemas/BasicField' }
+            additional_fund_payment: { $ref: '#/components/schemas/BasicField' }
+            prepaid_amount: { $ref: '#/components/schemas/BasicField' }
+            supplementary_payment_amount: { $ref: '#/components/schemas/BasicField' }
+            refund_amount: { $ref: '#/components/schemas/BasicField' }
+            rounding_amount: { $ref: '#/components/schemas/BasicField' }
+            current_year_balance: { $ref: '#/components/schemas/BasicField' }
+            cumulative_balance: { $ref: '#/components/schemas/BasicField' }
+        expense_summary_table:
+          type: array
+          description: 费用明细汇总表
+          items:
+            type: object
+            required:
+              - expense_name
+              - amount
+              - self_funded_amount
+              - category_b_advance_payment
+              - excess_price_self_payment
+            description: 单行识别结果
+            properties:
+              expense_name: { $ref: '#/components/schemas/BasicField' }
+              amount: { $ref: '#/components/schemas/BasicField' }
+              self_funded_amount: { $ref: '#/components/schemas/BasicField' }
+              category_b_advance_payment: { $ref: '#/components/schemas/BasicField' }
+              excess_price_self_payment: { $ref: '#/components/schemas/BasicField' }
+        funds_payment_summary_table:
+          type: array
+          description: 基金支付合计汇总表
+          items:
+            type: object
+            required:
+              - fund_type
+              - fund_payment_amount
+              - cumulative_fund_payment
+              - fund_deductible
+              - fund_reimbursement_rate
+            description: 单行识别结果
+            properties:
+              fund_type: { $ref: '#/components/schemas/BasicField' }
+              fund_payment_amount: { $ref: '#/components/schemas/BasicField' }
+              cumulative_fund_payment: { $ref: '#/components/schemas/BasicField' }
+              fund_deductible: { $ref: '#/components/schemas/BasicField' }
+              fund_reimbursement_rate: { $ref: '#/components/schemas/BasicField' }
+
+    Type_medical_prescription:
+      type: object
+      required:
+        - invoice_information
+        - patient_information
+        - medical_visit_institution_information
+        - expense_information
+        - prescription_summary_table
+      description: 医疗处方单识别结果
+      properties:
+        invoice_information:
+          type: object
+          required:
+            - document_title_name
+            - prescription_number
+            - issuance_date
+            - total_pages_of_invoice
+            - current_page_number
+          description: 票据信息
+          properties:
+            document_title_name: { $ref: '#/components/schemas/BasicField' }
+            prescription_number: { $ref: '#/components/schemas/BasicField' }
+            issuance_date: { $ref: '#/components/schemas/BasicField' }
+            total_pages_of_invoice: { $ref: '#/components/schemas/BasicField' }
+            current_page_number: { $ref: '#/components/schemas/BasicField' }
+        patient_information:
+          type: object
+          required:
+            - name
+            - gender
+            - age
+            - inpatient_number
+            - medical_record_number
+            - outpatient_number
+            - bed_number
+            - ward
+          description: 患者核心信息
+          properties:
+            name: { $ref: '#/components/schemas/BasicField' }
+            gender: { $ref: '#/components/schemas/BasicField' }
+            age: { $ref: '#/components/schemas/BasicField' }
+            inpatient_number: { $ref: '#/components/schemas/BasicField' }
+            medical_record_number: { $ref: '#/components/schemas/BasicField' }
+            outpatient_number: { $ref: '#/components/schemas/BasicField' }
+            bed_number: { $ref: '#/components/schemas/BasicField' }
+            ward: { $ref: '#/components/schemas/BasicField' }
+        medical_visit_institution_information:
+          type: object
+          required:
+            - name_of_medical_institution
+            - type_of_medical_institution
+            - department
+            - medical_treatment_date
+            - clinical_diagnosis_symptoms
+            - prescribing_doctor
+            - dispensing_pharmacist
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            type_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            department: { $ref: '#/components/schemas/BasicField' }
+            medical_treatment_date: { $ref: '#/components/schemas/BasicField' }
+            clinical_diagnosis_symptoms: { $ref: '#/components/schemas/BasicField' }
+            prescribing_doctor: { $ref: '#/components/schemas/BasicField' }
+            dispensing_pharmacist: { $ref: '#/components/schemas/BasicField' }
+        expense_information:
+          type: object
+          required:
+            - total_expense_amount
+          description: 费用汇总信息
+          properties:
+            total_expense_amount: { $ref: '#/components/schemas/BasicField' }
+        prescription_summary_table:
+          type: array
+          description: 处方明细汇总表
+          items:
+            type: object
+            required:
+              - amount
+              - project_name
+              - quantity
+              - specification
+              - unit_price
+              - unit
+              - usage
+              - dosage
+              - project_code
+            description: 单行识别结果
+            properties:
+              amount: { $ref: '#/components/schemas/BasicField' }
+              project_name: { $ref: '#/components/schemas/BasicField' }
+              quantity: { $ref: '#/components/schemas/BasicField' }
+              specification: { $ref: '#/components/schemas/BasicField' }
+              unit_price: { $ref: '#/components/schemas/BasicField' }
+              unit: { $ref: '#/components/schemas/BasicField' }
+              usage: { $ref: '#/components/schemas/BasicField' }
+              dosage: { $ref: '#/components/schemas/BasicField' }
+              project_code: { $ref: '#/components/schemas/BasicField' }
+
+    Type_medical_laboratory_report:
+      type: object
+      required:
+        - invoice_information
+        - patient_information
+        - medical_visit_institution_information
+        - test_results_summary_table
+      description: 医疗检验报告单识别结果
+      properties:
+        invoice_information:
+          type: object
+          required:
+            - document_title_name
+            - total_pages_of_invoice
+            - current_page_number
+            - report_time
+          description: 票据信息
+          properties:
+            document_title_name: { $ref: '#/components/schemas/BasicField' }
+            total_pages_of_invoice: { $ref: '#/components/schemas/BasicField' }
+            current_page_number: { $ref: '#/components/schemas/BasicField' }
+            report_time: { $ref: '#/components/schemas/BasicField' }
+        patient_information:
+          type: object
+          required:
+            - name
+            - gender
+            - age
+            - inpatient_number
+            - medical_record_number
+            - outpatient_number
+            - bed_number
+            - patient_number
+            - ward
+          description: 患者核心信息
+          properties:
+            name: { $ref: '#/components/schemas/BasicField' }
+            gender: { $ref: '#/components/schemas/BasicField' }
+            age: { $ref: '#/components/schemas/BasicField' }
+            inpatient_number: { $ref: '#/components/schemas/BasicField' }
+            medical_record_number: { $ref: '#/components/schemas/BasicField' }
+            outpatient_number: { $ref: '#/components/schemas/BasicField' }
+            bed_number: { $ref: '#/components/schemas/BasicField' }
+            patient_number: { $ref: '#/components/schemas/BasicField' }
+            ward: { $ref: '#/components/schemas/BasicField' }
+        medical_visit_institution_information:
+          type: object
+          required:
+            - name_of_medical_institution
+            - type_of_medical_institution
+            - department
+            - clinical_doctor
+            - sampling_doctor
+            - laboratory_doctor
+            - audit_doctor
+            - inspection_time
+            - inspection_number
+            - clinical_diagnosis_symptoms
+            - specimen_number
+            - specimen_type
+            - inspection_item_name
+            - submission_time
+            - receipt_time
+            - diagnosis_result
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            type_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            department: { $ref: '#/components/schemas/BasicField' }
+            clinical_doctor: { $ref: '#/components/schemas/BasicField' }
+            sampling_doctor: { $ref: '#/components/schemas/BasicField' }
+            laboratory_doctor: { $ref: '#/components/schemas/BasicField' }
+            audit_doctor: { $ref: '#/components/schemas/BasicField' }
+            inspection_time: { $ref: '#/components/schemas/BasicField' }
+            inspection_number: { $ref: '#/components/schemas/BasicField' }
+            clinical_diagnosis_symptoms: { $ref: '#/components/schemas/BasicField' }
+            specimen_number: { $ref: '#/components/schemas/BasicField' }
+            specimen_type: { $ref: '#/components/schemas/BasicField' }
+            inspection_item_name: { $ref: '#/components/schemas/BasicField' }
+            submission_time: { $ref: '#/components/schemas/BasicField' }
+            receipt_time: { $ref: '#/components/schemas/BasicField' }
+            diagnosis_result: { $ref: '#/components/schemas/BasicField' }
+        test_results_summary_table:
+          type: array
+          description: 检验结果汇总表
+          items:
+            type: object
+            required:
+              - project_name
+              - reference_value
+              - result
+              - prompt
+              - unit
+              - laboratory_instrument
+              - experimental_method
+            description: 单行识别结果
+            properties:
+              project_name: { $ref: '#/components/schemas/BasicField' }
+              reference_value: { $ref: '#/components/schemas/BasicField' }
+              result: { $ref: '#/components/schemas/BasicField' }
+              prompt: { $ref: '#/components/schemas/BasicField' }
+              unit: { $ref: '#/components/schemas/BasicField' }
+              laboratory_instrument: { $ref: '#/components/schemas/BasicField' }
+              experimental_method: { $ref: '#/components/schemas/BasicField' }
+
+    Type_medical_diagnostic_report:
+      type: object
+      required:
+        - invoice_information
+        - patient_information
+        - medical_visit_institution_information
+      description: 医疗诊断报告单
+      properties:
+        invoice_information:
+          type: object
+          required:
+            - document_title_name
+            - report_time
+            - total_pages_of_invoice
+            - current_page_number
+          description: 票据信息
+          properties:
+            document_title_name: { $ref: '#/components/schemas/BasicField' }
+            report_time: { $ref: '#/components/schemas/BasicField' }
+            total_pages_of_invoice: { $ref: '#/components/schemas/BasicField' }
+            current_page_number: { $ref: '#/components/schemas/BasicField' }
+        patient_information:
+          type: object
+          required:
+            - name
+            - gender
+            - age
+            - inpatient_number
+            - medical_record_number
+            - outpatient_number
+            - bed_number
+            - patient_number
+            - ward
+          description: 患者核心信息
+          properties:
+            name: { $ref: '#/components/schemas/BasicField' }
+            gender: { $ref: '#/components/schemas/BasicField' }
+            age: { $ref: '#/components/schemas/BasicField' }
+            inpatient_number: { $ref: '#/components/schemas/BasicField' }
+            medical_record_number: { $ref: '#/components/schemas/BasicField' }
+            outpatient_number: { $ref: '#/components/schemas/BasicField' }
+            bed_number: { $ref: '#/components/schemas/BasicField' }
+            patient_number: { $ref: '#/components/schemas/BasicField' }
+            ward: { $ref: '#/components/schemas/BasicField' }
+        medical_visit_institution_information:
+          type: object
+          required:
+            - name_of_medical_institution
+            - type_of_medical_institution
+            - department
+            - clinical_doctor
+            - laboratory_doctor
+            - audit_doctor
+            - diagnosis_content
+            - diagnosis_result
+            - inspection_time
+            - inspection_number
+            - inspection_item_name
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            type_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            department: { $ref: '#/components/schemas/BasicField' }
+            clinical_doctor: { $ref: '#/components/schemas/BasicField' }
+            laboratory_doctor: { $ref: '#/components/schemas/BasicField' }
+            audit_doctor: { $ref: '#/components/schemas/BasicField' }
+            diagnosis_content: { $ref: '#/components/schemas/BasicField' }
+            diagnosis_result: { $ref: '#/components/schemas/BasicField' }
+            inspection_time: { $ref: '#/components/schemas/BasicField' }
+            inspection_number: { $ref: '#/components/schemas/BasicField' }
+            inspection_item_name: { $ref: '#/components/schemas/BasicField' }
+
+    Type_discharge_summary:
+      type: object
+      required:
+        - invoice_information
+        - patient_information
+        - medical_visit_institution_information
+        - treatment_summary_table
+        - discharge_medication_summary_table
+        - self_provided_medication_summary_table
+      description: 出院小结
+      properties:
+        invoice_information:
+          type: object
+          required:
+            - document_title_name
+            - total_pages_of_invoice
+            - current_page_number
+            - issuance_date
+          description: 票据信息
+          properties:
+            document_title_name: { $ref: '#/components/schemas/BasicField' }
+            total_pages_of_invoice: { $ref: '#/components/schemas/BasicField' }
+            current_page_number: { $ref: '#/components/schemas/BasicField' }
+            issuance_date: { $ref: '#/components/schemas/BasicField' }
+        patient_information:
+          type: object
+          required:
+            - name
+            - gender
+            - age
+            - inpatient_number
+            - medical_record_number
+            - bed_number
+            - ward
+          description: 患者核心信息
+          properties:
+            name: { $ref: '#/components/schemas/BasicField' }
+            gender: { $ref: '#/components/schemas/BasicField' }
+            age: { $ref: '#/components/schemas/BasicField' }
+            inpatient_number: { $ref: '#/components/schemas/BasicField' }
+            medical_record_number: { $ref: '#/components/schemas/BasicField' }
+            bed_number: { $ref: '#/components/schemas/BasicField' }
+            ward: { $ref: '#/components/schemas/BasicField' }
+        medical_visit_institution_information:
+          type: object
+          required:
+            - name_of_medical_institution
+            - type_of_medical_institution
+            - admission_time
+            - discharge_time
+            - hospitalization_days
+            - department
+            - outpatient_diagnosis
+            - admission_diagnosis
+            - discharge_diagnosis
+            - admission_symptoms_and_signs
+            - discharge_symptoms_and_signs
+            - treatment_overview
+            - treatment_result
+            - medical_advice
+            - clinical_doctor
+            - attending_doctor
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            type_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            admission_time: { $ref: '#/components/schemas/BasicField' }
+            discharge_time: { $ref: '#/components/schemas/BasicField' }
+            hospitalization_days: { $ref: '#/components/schemas/BasicField' }
+            department: { $ref: '#/components/schemas/BasicField' }
+            outpatient_diagnosis: { $ref: '#/components/schemas/BasicField' }
+            admission_diagnosis: { $ref: '#/components/schemas/BasicField' }
+            discharge_diagnosis: { $ref: '#/components/schemas/BasicField' }
+            admission_symptoms_and_signs: { $ref: '#/components/schemas/BasicField' }
+            discharge_symptoms_and_signs: { $ref: '#/components/schemas/BasicField' }
+            treatment_overview: { $ref: '#/components/schemas/BasicField' }
+            treatment_result: { $ref: '#/components/schemas/BasicField' }
+            medical_advice: { $ref: '#/components/schemas/BasicField' }
+            clinical_doctor: { $ref: '#/components/schemas/BasicField' }
+            attending_doctor: { $ref: '#/components/schemas/BasicField' }
+        treatment_summary_table:
+          type: array
+          description: 诊疗经过详情汇总表
+          items:
+            type: object
+            required:
+              - treatment_time
+              - treatment_item_name
+              - treatment_content
+              - treatment_result
+            description: 单行识别结果
+            properties:
+              treatment_time: { $ref: '#/components/schemas/BasicField' }
+              treatment_item_name: { $ref: '#/components/schemas/BasicField' }
+              treatment_content: { $ref: '#/components/schemas/BasicField' }
+              treatment_result: { $ref: '#/components/schemas/BasicField' }
+        discharge_medication_summary_table:
+          type: array
+          description: 出院带药汇总表
+          items:
+            type: object
+            required:
+              - drug_name
+              - usage
+              - dosage
+              - medication_frequency
+              - medication_course
+              - medication_quantity
+              - specification
+              - notes_or_instructions
+            description: 单行识别结果
+            properties:
+              drug_name: { $ref: '#/components/schemas/BasicField' }
+              usage: { $ref: '#/components/schemas/BasicField' }
+              dosage: { $ref: '#/components/schemas/BasicField' }
+              medication_frequency: { $ref: '#/components/schemas/BasicField' }
+              medication_course: { $ref: '#/components/schemas/BasicField' }
+              medication_quantity: { $ref: '#/components/schemas/BasicField' }
+              specification: { $ref: '#/components/schemas/BasicField' }
+              notes_or_instructions: { $ref: '#/components/schemas/BasicField' }
+        self_provided_medication_summary_table:
+          type: array
+          description: 自备药汇总表
+          items:
+            type: object
+            required:
+              - drug_name
+              - usage
+              - dosage
+              - medication_frequency
+              - medication_course
+              - notes_or_instructions
+            description: 单行识别结果
+            properties:
+              drug_name: { $ref: '#/components/schemas/BasicField' }
+              usage: { $ref: '#/components/schemas/BasicField' }
+              dosage: { $ref: '#/components/schemas/BasicField' }
+              medication_frequency: { $ref: '#/components/schemas/BasicField' }
+              medication_course: { $ref: '#/components/schemas/BasicField' }
+              notes_or_instructions: { $ref: '#/components/schemas/BasicField' }
+
+    Type_diagnosis_certificate:
+      type: object
+      required:
+        - invoice_information
+        - patient_information
+        - medical_visit_institution_information
+      description: 诊断证明
+      properties:
+        invoice_information:
+          type: object
+          required:
+            - document_title_name
+            - business_serial_number
+            - total_pages_of_invoice
+            - current_page_number
+            - issuance_date
+          description: 票据信息
+          properties:
+            document_title_name: { $ref: '#/components/schemas/BasicField' }
+            business_serial_number: { $ref: '#/components/schemas/BasicField' }
+            total_pages_of_invoice: { $ref: '#/components/schemas/BasicField' }
+            current_page_number: { $ref: '#/components/schemas/BasicField' }
+            issuance_date: { $ref: '#/components/schemas/BasicField' }
+        patient_information:
+          type: object
+          required:
+            - name
+            - gender
+            - age
+            - outpatient_number
+            - inpatient_number
+            - medical_record_number
+            - bed_number
+          description: 患者核心信息
+          properties:
+            name: { $ref: '#/components/schemas/BasicField' }
+            gender: { $ref: '#/components/schemas/BasicField' }
+            age: { $ref: '#/components/schemas/BasicField' }
+            outpatient_number: { $ref: '#/components/schemas/BasicField' }
+            inpatient_number: { $ref: '#/components/schemas/BasicField' }
+            medical_record_number: { $ref: '#/components/schemas/BasicField' }
+            bed_number: { $ref: '#/components/schemas/BasicField' }
+        medical_visit_institution_information:
+          type: object
+          required:
+            - name_of_medical_institution
+            - type_of_medical_institution
+            - medical_treatment_date
+            - admission_time
+            - discharge_time
+            - hospitalization_days
+            - department
+            - clinical_doctor
+            - diagnosis_result
+            - medical_advice
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            type_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            medical_treatment_date: { $ref: '#/components/schemas/BasicField' }
+            admission_time: { $ref: '#/components/schemas/BasicField' }
+            discharge_time: { $ref: '#/components/schemas/BasicField' }
+            hospitalization_days: { $ref: '#/components/schemas/BasicField' }
+            department: { $ref: '#/components/schemas/BasicField' }
+            clinical_doctor: { $ref: '#/components/schemas/BasicField' }
+            diagnosis_result: { $ref: '#/components/schemas/BasicField' }
+            medical_advice: { $ref: '#/components/schemas/BasicField' }
+
+    Type_outpatient_medical_record:
+      type: object
+      required:
+        - invoice_information
+        - patient_information
+        - medical_visit_institution_information
+        - prescription_summary_table
+      description: 门诊病历
+      properties:
+        invoice_information:
+          type: object
+          required:
+            - document_title_name
+            - business_serial_number
+            - total_pages_of_invoice
+            - current_page_number
+            - issuance_date
+          description: 票据信息
+          properties:
+            document_title_name: { $ref: '#/components/schemas/BasicField' }
+            business_serial_number: { $ref: '#/components/schemas/BasicField' }
+            total_pages_of_invoice: { $ref: '#/components/schemas/BasicField' }
+            current_page_number: { $ref: '#/components/schemas/BasicField' }
+            issuance_date: { $ref: '#/components/schemas/BasicField' }
+        patient_information:
+          type: object
+          required:
+            - name
+            - gender
+            - age
+            - outpatient_number
+          description: 患者核心信息
+          properties:
+            name: { $ref: '#/components/schemas/BasicField' }
+            gender: { $ref: '#/components/schemas/BasicField' }
+            age: { $ref: '#/components/schemas/BasicField' }
+            outpatient_number: { $ref: '#/components/schemas/BasicField' }
+        medical_visit_institution_information:
+          type: object
+          required:
+            - name_of_medical_institution
+            - type_of_medical_institution
+            - medical_treatment_date
+            - department
+            - clinical_doctor
+            - chief_complaint
+            - present_illness_history
+            - past_medical_history
+            - allergy_history
+            - personal_history
+            - physical_examination
+            - auxiliary_examination
+            - clinical_diagnosis_symptoms
+            - diagnosis_result
+            - outpatient_treatment
+            - medical_advice
+          description: 就诊与机构信息
+          properties:
+            name_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            type_of_medical_institution: { $ref: '#/components/schemas/BasicField' }
+            medical_treatment_date: { $ref: '#/components/schemas/BasicField' }
+            department: { $ref: '#/components/schemas/BasicField' }
+            clinical_doctor: { $ref: '#/components/schemas/BasicField' }
+            chief_complaint: { $ref: '#/components/schemas/BasicField' }
+            present_illness_history: { $ref: '#/components/schemas/BasicField' }
+            past_medical_history: { $ref: '#/components/schemas/BasicField' }
+            allergy_history: { $ref: '#/components/schemas/BasicField' }
+            personal_history: { $ref: '#/components/schemas/BasicField' }
+            physical_examination: { $ref: '#/components/schemas/BasicField' }
+            auxiliary_examination: { $ref: '#/components/schemas/BasicField' }
+            clinical_diagnosis_symptoms: { $ref: '#/components/schemas/BasicField' }
+            diagnosis_result: { $ref: '#/components/schemas/BasicField' }
+            outpatient_treatment: { $ref: '#/components/schemas/BasicField' }
+            medical_advice: { $ref: '#/components/schemas/BasicField' }
+        prescription_summary_table:
+          type: array
+          description: 处方汇总表
+          items:
+            type: object
+            required:
+              - drug_name
+              - usage
+              - dosage
+              - medication_frequency
+              - medication_course
+              - specification
+              - notes_or_instructions
+            description: 单行识别结果
+            properties:
+              drug_name: { $ref: '#/components/schemas/BasicField' }
+              usage: { $ref: '#/components/schemas/BasicField' }
+              dosage: { $ref: '#/components/schemas/BasicField' }
+              medication_frequency: { $ref: '#/components/schemas/BasicField' }
+              medication_course: { $ref: '#/components/schemas/BasicField' }
+              specification: { $ref: '#/components/schemas/BasicField' }
+              notes_or_instructions: { $ref: '#/components/schemas/BasicField' }
+       
+    Type_other:
+      type: object
+      description: 其他类，识别为空
+      additionalProperties: true
+      minProperties: 0
+
+   
+    CodeMessage:
+      type: object
+      required: 
+        - code
+        - message
+      properties:
+        code:
+          example: 200
+          type: integer
+          description: |
+            错误码
+            - 200: success
+            - 40101: x-ti-app-id 或 x-ti-secret-code 为空 
+            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败 
+            - 40103: 客户端IP不在白名单
+            - 40003: 余额不足，请充值后再使用
+            - 40004: 参数错误，请查看技术文档，检查传参 
+            - 40007: 机器人不存在或未发布
+            - 40008: 机器人未开通，请至市场开通后重试
+            - 40301: 图片类型不支持 
+            - 40302: 上传文件大小不符，文件大小不超过 20M
+            - 40303: 文件类型不支持，接口会返回实际检测到的文件类型 
+            - 40304: 图片尺寸不符，长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内
+            - 40305: 识别文件未上传
+            - 40422: 文件损坏（The file is corrupted.）
+            - 40423: PDF密码错误（Password required or incorrect password.）
+            - 30203: 基础服务故障，请稍后重试
+            - 500: 服务器内部错误
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40103
+            - 40003
+            - 40004
+            - 40007
+            - 40008
+            - 40301
+            - 40302
+            - 40303
+            - 40304
+            - 40305
+            - 40422
+            - 40423
+            - 30203
+            - 500
+        message:
+          type: string
+          description: 错误信息
+          example: success

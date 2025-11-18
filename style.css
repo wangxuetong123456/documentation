@@ -3,6 +3,14 @@
   button[data-state="closed"][aria-haspopup="menu"][aria-expanded="false"] {
   display: none;
 }
+#navigation-items #localization-select-trigger {
+  display: none;
+}
+
+/* 隐藏版本选择 */
+#navigation-items > div > button:first-of-type {
+  display: none;
+}
 
 /* 隐藏广告 */
 #footer > :last-child {

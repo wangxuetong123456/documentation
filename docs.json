@@ -8,6 +8,14 @@
     "dark": "#1a66ff"
   },
   "favicon": "/favicon.png",
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
+  },
   "navigation": {
     "versions": [
       {

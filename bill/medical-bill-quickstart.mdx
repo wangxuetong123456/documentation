@@ -100,12 +100,24 @@ if __name__ == "__main__":
   - 1 输出图片base64
 - category：指定样本类型，不进行样本分类，直接抽取结果，默认为0，不使用该功能。
   - 0 不使用该功能
-  - 1 医疗发票识别
-  - 2 医疗费用明细
+  - 1 住院发票识别
+  - 2 门诊发票识别
   - 3 医疗费用结算单
-  - 4 医疗处方单
-  - 5 医疗检测报告单
-  - 6 医疗诊断报告单
+  - 4 医疗费用明细
+  - 5 医疗处方单
+  - 6 医疗检验报告单
+  - 7 医疗诊断报告单
+  - 8 门诊病历
+  - 9 出院小结
+  - 10 医疗诊断证明
+- coord_restore：调整各字段的返回坐标逻辑，选择是参照原图还是切图坐标系返回坐标，默认为0，以切图后转正图为基准。
+  - 0 坐标以切图后转正图为基准
+  - 1 坐标以原图为基准
+- is_same_file：当结构化多页pdf时，选择是否将多页pdf文件作为一个整体进行识别，来保证这一套票的信息结构化完整性（如你可能会遇到一份多页的出院小结票据），默认为0，将多页pdf进行拆分后，逐个进行识别。<br/>
+  注：该参数与crop_image功能效果冲突，因此，开启该参数，crop_image将默认失效。
+  - 0 将多页pdf进行拆分后，逐个进行识别
+  - 1 将多页pdf作为一个份文件，整体进行识别
+  
 
 ### 返回结果示例
 
@@ -138,68 +150,92 @@ if __name__ == "__main__":
         "object_list": [  // 票据识别结果
             {
                 "details": {
-                    "expense_information": {              // 费用汇总信息
-                        "personal_account_balance": {     // key
-                            "description": "个人账户余额", // key中文描述
-                            "value": 0                    // key识别结果
+                    "invoice_information": {                 // 费用汇总信息
+                        "document_title_name": {             // key
+                            "description": "上海市医疗门诊收", // key中文描述
+                            "value": "0",                    // key识别结果
+                            "bounding_regions": [            // key相关的坐标信息
+                                "value": "上海",             // 一行的识别内容
+                                "position": [                // 改行图中的坐标位置
+                                    276,
+                                    208,
+                                    566,
+                                    208,
+                                    566,
+                                    245,
+                                    276,
+                                    245
+                                 ],
+                                 "char_pos": [               // 所有字符的坐标位置
+                                    [
+                                        276,
+                                        212,
+                                        293,
+                                        212,
+                                        293,
+                                        232,
+                                        276,
+                                        232
+                                    ],
+                                    ...
+                                  ]
+                                 "page_id": 0,              // 该字段所在页码
+                                 "image_id": 0              // 该字段所属图片索引id
+                            ]
                         },
                        // [更多key识别结果...]
                     },
-                    "invoice_information": { // 票据信息
-                        "bill_verification_code": {
-                            "description": "票据校验码",
-                            "value": "6tfCtj"
-                        },
-                        // [更多key识别结果...]
-                    },
-                    "item_details": [ // 项目明细
-                        [
-                            {
-                                "amount": {
-                                    "description": "金额",
-                                    "value": "1287.4"
-                                },
-                                // [更多key识别结果...]
-                            },
-                            // [更多行信息...]
-                        ]
-                    ],
                     "medical_visit_institution_information": { // 就诊与机构信息
                         "admission_time": {
                             "description": "入院时间",
-                            "value": "24-3-28"
+                            "value": "24-3-28",
+                            "bounding_regions": []
                         },
                         // [更多key识别结果...]
                     },
                     "patient_information": { // 患者核心信息
                         "gender": {
                             "description": "性别",
-                            "value": "女"
+                            "value": "女",
+                            "bounding_regions": []
                         },
                         // [更多key识别结果...]
                     },
-                    "payment_method": {  // 支付方式信息
+                    "expense_information": {  // 支付方式信息
                         "medical_insurance_overall_planning_payment": {
                             "description": "医保统筹支付",
-                            "value": 9311.82
+                            "value": 9311.82,
+                            "bounding_regions": []
                         },
                         // [更多key识别结果...]
-                    }
+                    },
+                    "item_summary_table": [ // 项目明细汇总表
+                        {
+                            "amount": {
+                                "description": "金额",
+                                "value": "1287.4",
+                                "bounding_regions": []
+                            },
+                            // [更多key识别结果...]
+                        },
+                        // [更多行信息...]
+                    ],
                 },
-                "image_ids": [             // 票据在image_list中的所有图片
+                "image_ids": [                       // 票据在image_list中的所有图片
                     0
                 ],
-                "page_ids": [             // pdf文件，该份票据样本在pdf中的页码
+                "page_ids": [                        // pdf文件，该份票据样本在pdf中的页码
                     0
                 ],
-                "type": "medical_invoice" // 票据类型
+                "type": "inpatient_medical_invoice"， // 票据类型
+                "type_description": "住院发票"         // 票据类型中文描述
             }
         ],
         "page_count": 1,                 // 样本总页数
         "ppi": 144,                      // PDF样本解析PPI
         "success_count": 1               // 成功识别的图片个数
     },
-    "version": "v1.0.0" // 引擎版本号
+    "version": "v1.1.0" // 引擎版本号
 }
 ```
 

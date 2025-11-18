@@ -143,10 +143,23 @@ paths:
             default: 0
             enum: [0, 1, 2]
           description: |
-            公式识别等级，默认为0，全识别。
+            公式识别等级，默认为0，全识别。开启公式识别后，会使用latex表达式。
             - 0 全识别
             - 1 仅识别行间公式，行内公式不识别
             - 2 不识别
+
+        - in: query
+          required: false
+          name: underline_level
+          schema:
+            type: integer
+            default: 0
+            enum: [0, 1, 2]
+          description: |
+            控制下划线识别范围，默认为0，不识别。
+            - 0: 不识别
+            - 1: 仅识别无文字的下划线，仅scan模式可用
+            - 2: 识别全部的下划线，仅scan模式可用
 
         - in: query
           required: false
