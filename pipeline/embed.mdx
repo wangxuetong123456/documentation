@@ -1,0 +1,242 @@
+---
+title: "向量化 - Embed"
+description: "了解 xParse Pipeline 中的向量化模块，将文本转换为向量表示用于语义搜索"
+---
+
+## 概念
+
+向量化是将文本块转换为数值向量的过程，这些向量能够捕捉文本的语义信息，便于相似性搜索和机器学习模型使用。
+
+与传统的基于关键词的搜索不同，向量化支持**语义搜索**，即根据文本的含义而非精确匹配来查找相关内容。这对构建 RAG（检索增强生成）应用、知识库系统等场景非常重要。
+
+## 用途
+
+向量化的主要用途：
+
+- **语义搜索**：通过比较嵌入向量，可以实现基于语义的搜索，找到含义相似的内容
+- **相似度计算**：计算不同文本块之间的语义相似度
+- **向量数据库存储**：将文本转换为向量后，可以存储到向量数据库（如 Milvus、Zilliz）中进行高效检索
+- **RAG 应用**：为检索增强生成应用提供向量化的文档内容
+
+## 参数说明
+
+### provider
+
+**类型**: `string`  
+**必填**: 是  
+**默认值**: `"qwen"`  
+**可选值**: `qwen` | `doubao`
+
+Embedding 供应商选择：
+
+- **qwen**: 阿里云通义千问
+- **doubao**: 字节跳动豆包
+
+### model_name
+
+**类型**: `string`  
+**必填**: 是  
+**默认值**: `"text-embedding-v4"`  
+**可选值**: 取决于 provider
+
+模型名称，必须与 provider 匹配。详见[支持的模型](#支持的模型)部分。
+
+## 支持的模型
+
+### Qwen（阿里云通义千问）
+
+#### text-embedding-v3
+
+- **描述**: 通用向量模型
+- **向量维度**: 1024
+- **特点**: 平衡了精度和速度，适合大多数场景
+- **推荐场景**: 一般性的文档处理和检索场景
+
+#### text-embedding-v4
+
+- **描述**: 更高精度的向量模型
+- **向量维度**: 1024
+- **特点**: 提供更高的精度，适合对精度要求较高的场景
+- **推荐场景**: 对检索精度要求较高的场景，如专业文档检索
+
+### Doubao（字节跳动豆包）
+
+#### doubao-embedding-large-text-250515
+
+- **描述**: 大模型版本
+- **向量维度**: 1024
+- **特点**: 大模型版本，提供更高的精度
+- **推荐场景**: 对精度要求较高的场景
+
+#### doubao-embedding-text-240715
+
+- **描述**: 标准版本
+- **向量维度**: 1024
+- **特点**: 标准版本，平衡了精度和速度
+- **推荐场景**: 一般性的文档处理和检索场景
+
+## 向量维度
+
+当前 Pipeline API 使用的所有模型均为 **1024 维**。在配置向量数据库（如 Milvus）时，需要确保 `dimension` 参数设置为 `1024`。
+
+## 输出结果说明
+
+embed 阶段会在元素顶层添加 `embeddings` 字段，包含该文本的向量表示。如果未执行 embed 阶段，该字段不会出现。
+
+### 向量化后的元素示例
+
+```json
+{
+    "element_id": "7c13f49a2bde45f17c13f49a2bde45f17c13f49a2bde45f17c13f49a2bde45f1",
+    "type": "NarrativeText",
+    "text": "这是由多个原始元素组合而成的文本块。它包含了文档的多个段落，保持了语义的完整性。",
+    "metadata": {
+        "filename": "example.pdf",
+        "file_directory": "/projects/demo/",
+        "filetype": "application/pdf",
+        "orig_elements": [
+            "0a1b2c3d4e5f60710a1b2c3d4e5f60710a1b2c3d4e5f60710a1b2c3d4e5f6071",
+            "9f8e7d6c5b4a39289f8e7d6c5b4a39289f8e7d6c5b4a39289f8e7d6c5b4a3928"
+        ]
+    },
+    "embeddings": [0.1, 0.2, 0.3, 0.4, 0.5, ...]  // 1024 维向量
+}
+```
+
+`embeddings` 字段是一个浮点数数组，长度为 1024，表示文本的语义向量表示。
+
+## 使用示例
+
+### 示例 1：使用 Qwen 模型
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    'source': {
+        'type': 'local',
+        'directory': './documents',
+        'pattern': '*.pdf'
+    },
+    'destination': {
+        'type': 'milvus',
+        'db_path': './vectors.db',
+        'collection_name': 'documents',
+        'dimension': 1024  # 必须与模型维度一致
+    },
+    'api_base_url': 'https://api.textin.com/api/xparse',
+    'api_headers': {
+        'x-ti-app-id': 'your-app-id',
+        'x-ti-secret-code': 'your-secret-code'
+    },
+    'embed_config': {
+        'provider': 'qwen',
+        'model_name': 'text-embedding-v4'
+    }
+}
+
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+### 示例 2：使用 Qwen v3 模型（标准版本）
+
+```python
+config = {
+    # ... 其他配置 ...
+    'embed_config': {
+        'provider': 'qwen',
+        'model_name': 'text-embedding-v3'  # 使用 v3 模型
+    }
+}
+```
+
+### 示例 3：使用 Doubao 模型
+
+```python
+config = {
+    # ... 其他配置 ...
+    'embed_config': {
+        'provider': 'doubao',
+        'model_name': 'doubao-embedding-large-text-250515'
+    }
+}
+```
+
+### 示例 4：使用 Doubao 标准版本
+
+```python
+config = {
+    # ... 其他配置 ...
+    'embed_config': {
+        'provider': 'doubao',
+        'model_name': 'doubao-embedding-text-240715'
+    }
+}
+```
+
+## 模型选择建议
+
+### 何时使用 Qwen
+
+- 需要中文语义理解能力强的模型
+- 对精度和速度有平衡要求
+- 一般性的文档处理和检索场景
+
+**推荐模型**：
+- **text-embedding-v3**: 适合大多数场景，平衡了精度和速度
+- **text-embedding-v4**: 适合对精度要求较高的场景
+
+### 何时使用 Doubao
+
+- 需要字节跳动生态的向量模型
+- 对特定场景有优化需求
+
+**推荐模型**：
+- **doubao-embedding-text-240715**: 适合一般场景
+- **doubao-embedding-large-text-250515**: 适合对精度要求较高的场景
+
+## 向量检索示例
+
+向量化后，可以使用向量进行相似度搜索：
+
+```python
+from pymilvus import MilvusClient
+
+# 连接 Milvus
+client = MilvusClient(uri='./vectors.db')
+
+# 将查询文本向量化（需要调用相同的 embed API）
+# 这里简化示例，实际需要调用 embed API
+query_vector = [0.1, 0.2, 0.3, ...]  # 1024 维向量
+
+# 检索相似文档
+results = client.search(
+    collection_name='documents',
+    data=[query_vector],
+    limit=5,
+    search_params={"metric_type": "COSINE", "params": {"nprobe": 10}},
+    output_fields=['text', 'metadata']
+)
+
+# 处理结果
+for result in results[0]:
+    print(f"相似度: {1 - result['distance']:.4f}")
+    print(f"文本: {result['entity']['text'][:100]}...")
+```
+
+## 注意事项
+
+1. **向量维度一致性**：确保向量数据库的 `dimension` 参数与模型维度一致（当前为 1024）
+2. **模型与 provider 匹配**：`model_name` 必须与 `provider` 匹配，否则会报错
+3. **查询向量化**：进行向量检索时，查询文本也需要使用相同的模型进行向量化
+4. **批量处理**：Pipeline 会自动批量处理所有元素的向量化，无需手动调用
+
+## 相关文档
+
+- [文档元素和元数据](/pipeline/elements-metadata) - 了解元素结构和 embeddings 字段
+- [解析模块](/pipeline/parse) - 了解如何解析文档
+- [分块模块](/pipeline/chunk) - 了解如何对元素进行分块
+- [快速启动](/pipeline/quickstart) - 了解如何使用 Pipeline 处理文档
+- [RAG 场景教程](/pipeline/rag-tutorial) - 了解如何构建 RAG 应用
+

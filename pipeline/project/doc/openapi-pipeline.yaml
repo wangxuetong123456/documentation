@@ -92,12 +92,14 @@ paths:
                   summary: 仅解析示例
                   value:
                     elements:
-                      - element_id: "elem_001"
-                        type: "text"
+                      - element_id: "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc"
+                        type: "NarrativeText"
                         metadata:
                           filename: "example.pdf"
                           filetype: "application/pdf"
                           file_size: 102400
+                          languages: ["zh"]
+                          is_continuation: false
                         text: "这是解析出的文本内容"
                     stats:
                       original_elements: 10
@@ -111,15 +113,18 @@ paths:
                   summary: 完整流水线示例
                   value:
                     elements:
-                      - element_id: "elem_001"
-                        type: "text"
+                      - element_id: "5f84a1db7c9f4ad65f84a1db7c9f4ad65f84a1db7c9f4ad65f84a1db7c9f4ad6"
+                        type: "CompositeElement"
                         metadata:
                           filename: "example.pdf"
                           filetype: "application/pdf"
                           file_size: 102400
-                          embedded: [0.1, 0.2, 0.3]
-                          orig_elements: ["elem_source_001"]
+                          orig_elements:
+                            - "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+                            - "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+                          detection_class_prob: 0.95
                         text: "这是处理后的文本块"
+                        embeddings: [0.1, 0.2, 0.3, 0.4]
                     stats:
                       original_elements: 10
                       chunked_elements: 15
@@ -234,6 +239,13 @@ components:
           type: string
           description: 元素的文本内容
           example: "这是文档中的一段文本"
+        embeddings:
+          type: array
+          description: 向量化后的嵌入向量（仅在执行 embed stage 后存在）
+          items:
+            type: number
+            format: float
+          example: [0.1, 0.2, 0.3, 0.4, 0.5]
     
     Metadata:
       type: object
@@ -261,19 +273,72 @@ components:
           format: int64
           description: 文件大小（字节）
           example: 102400
-        embedded:
+        file_directory:
+          type: string
+          description: 文件所在的目录或前缀
+          example: "/projects/demo/"
+        last_modified:
+          type: string
+          format: date-time
+          description: 文件最后修改时间
+          example: "2024-11-19T14:15:22Z"
+        coordinates:
           type: array
-          description: 向量化后的嵌入向量（仅在执行 embed stage 后存在）
+          description: |
+            元素在页面上的坐标。以长度为 8 的整型数组表示四边形，8 个数两两一组为一个点的横纵坐标，分别是左上、右上、右下、左下。
+            当输入是 PDF 时，此坐标是基于 72dpi 的；当输入是图片时，此坐标是原图里的坐标。单位：像素。
           items:
-            type: number
-            format: float
-          example: [0.1, 0.2, 0.3, 0.4, 0.5]
+            type: integer
+          minItems: 8
+          maxItems: 8
+          example: [217, 390, 1336, 390, 1336, 460, 217, 460]
+        category_depth:
+          type: integer
+          description: 元素在同类元素中的目录深度
+          example: 1
+        languages:
+          type: array
+          description: 元素的语言列表
+          items:
+            type: string
+          example: ["zh", "en"]
+        text_as_html:
+          type: string
+          description: 表格或富文本的 HTML 表示
+          example: "<table>...</table>"
+        image_base64:
+          type: string
+          description: 图片的 base64 编码
+        image_mine_type:
+          type: string
+          description: 图片的 MIME 类型
+          example: "image/png"
+        emphasized_text_contents:
+          type: array
+          description: 被强调（粗体/斜体）的文本内容
+          items:
+            type: string
+        emphasized_text_tags:
+          type: array
+          description: 与强调文本对应的样式标签
+          items:
+            type: string
+        is_continuation:
+          type: boolean
+          description: 是否与下一段落连续（仅 parse 阶段）
         orig_elements:
           type: array
           description: 原始元素 ID 列表（仅在 chunk 时设置 include_orig_elements 为 true 时存在）
           items:
             type: string
-          example: ["elem_001", "elem_002"]
+          example:
+            - "7d3d8091c9f646cf8edcb9bf92f797b1"
+            - "bb9d1d24cfb442dcb25bbaaf634e210d"
+        detection_class_prob:
+          type: number
+          format: float
+          description: 版面检测置信度
+          example: 0.95
     
     PipelineStats:
       type: object

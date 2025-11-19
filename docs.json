@@ -57,6 +57,10 @@
                 "pages": [
                   "pipeline/overview",
                   "pipeline/quickstart",
+                  "pipeline/elements-metadata",
+                  "pipeline/parse",
+                  "pipeline/chunk",
+                  "pipeline/embed",
                   "pipeline/rag-tutorial"
                 ]
               },

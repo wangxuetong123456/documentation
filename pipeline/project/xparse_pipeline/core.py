@@ -290,20 +290,25 @@ class MilvusDestination(Destination):
             # 转换数据格式
             insert_data = []
             for item in data:
-                metadata = item.get('metadata', {})
-                if 'embedded' in metadata and metadata['embedded']:
-                    # 从 metadata 中排除 embedded 字段
-                    metadata_without_embedded = {k: v for k, v in metadata.items() if k != 'embedded'}
+                metadata = item.get('metadata', {}) or {}
+                embeddings = item.get('embeddings')
+                
+                # 兼容旧字段：如果 embeddings 缺失而 metadata 中仍然包含 embedded，则兜底迁移
+                if embeddings is None and 'embedded' in metadata:
+                    embeddings = metadata.get('embedded')
+                
+                if embeddings:
+                    metadata_without_embeddings = {k: v for k, v in metadata.items() if k != 'embedded'}
                     
                     # 获取 element_id（主键），确保不为空
                     element_id = item.get('element_id') or item.get('id') or str(uuid.uuid4())
                     
                     insert_data.append({
-                        'embeddings': metadata['embedded'],
+                        'embeddings': embeddings,
                         'text': item.get('text', ''),
                         'element_id': element_id,
-                        'record_id': metadata.get('record_id', ''),
-                        'metadata': metadata_without_embedded,
+                        'record_id': metadata_without_embeddings.get('record_id', ''),
+                        'metadata': metadata_without_embeddings,
                         'created_at': datetime.now().isoformat()
                     })
             

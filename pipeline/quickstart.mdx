@@ -9,7 +9,7 @@ description: "5 分钟快速上手 xParse Pipeline，从安装到运行第一个
 
 ## 为什么使用 xParse Pipeline？
 
-在大模型和 RAG 应用开发中，文档处理是一个关键环节。传统方式需要分别调用解析、分块、向量化等多个接口，流程复杂且容易出错。xParse Pipeline 通过统一的 Pipeline API，一次性完成文档解析、智能分块和向量化全流程，让您专注于业务逻辑，而不是繁琐的数据处理。
+在大模型和 RAG 应用开发中，文档处理是关键环节。传统方式需要分别调用解析、分块、向量化等多个接口，流程复杂且容易出错。xParse Pipeline 通过统一的 Pipeline API，一次性完成文档解析、智能分块和向量化全流程，让您专注于业务逻辑，无需处理繁琐的数据转换。
 
 使用 xParse Pipeline，您可以：
 - ✅ **一键完成全流程**：通过单个 API 调用完成 parse → chunk → embed 全流程
@@ -21,11 +21,11 @@ description: "5 分钟快速上手 xParse Pipeline，从安装到运行第一个
 
 ## 如何使用 xParse Pipeline？
 
-您可以参考以下示例和步骤，快速验证并将 xParse Pipeline 接入到您的系统中。
+您可以参考以下示例和步骤，快速验证并将 xParse Pipeline 接入系统。
 
 ### 先决条件：获取 API Key
 
-使用 xParse Pipeline 处理文档时，您需要先获取 API Key。请先登录后前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取您的 `x-ti-app-id` 和 `x-ti-secret-code`。
+使用 xParse Pipeline 处理文档前，需要先获取 API Key。请登录后前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取 `x-ti-app-id` 和 `x-ti-secret-code`。
 
 ### 步骤 1：安装依赖
 
@@ -39,7 +39,7 @@ pip install --upgrade xparse-pipeline
 
 xParse Pipeline 支持两种创建方式：
 
-1. **通过配置创建**（推荐）：使用 JSON 配置，简单直观，易于管理（可以是独立文件）
+1. **通过配置创建**（推荐）：使用 JSON 配置，简单直观，易于管理
 2. **手动创建组件**：手动创建配置对象传入Pipline，更灵活
 
 ### 步骤 3：编写代码
@@ -514,14 +514,14 @@ if result:
   },
   "data": [
     {
-      "element_id": "f6d5beee53d4f3d90589472974abd7f75c54988c72375cd206f74089391c92b2",
+      "element_id": "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
       "type": "plaintext",
       "text": "文本内容...",
-      "metainfo": {
-        "embedded": [0.1, 0.2, 0.3, ...],
+      "metadata": {
         "record_id": "08f8e327d05f97e545d04c81d2ef8de1",
         ...
-      }
+      },
+      "embeddings": [0.1, 0.2, 0.3, ...]
     }
   ],
   "timestamp": "2024-01-01T12:00:00"
@@ -550,9 +550,13 @@ print(results)
 
 ## 下一步
 
+- **了解[文档元素和元数据](/pipeline/elements-metadata)**：了解 Pipeline 处理后的数据结构
+- **深入学习核心模块**：
+  - [文档解析（Parse）](/pipeline/parse) - 了解如何配置解析参数
+  - [文本分块（Chunk）](/pipeline/chunk) - 了解分块策略和参数配置
+  - [向量化（Embed）](/pipeline/embed) - 了解向量模型选择和配置
 - **阅读[RAG 场景教程](/pipeline/rag-tutorial)**：了解如何构建完整的 RAG 应用
 - **查看[API 文档](/api-reference/endpoint/pipeline)**：了解 Pipeline API 的详细参数和返回格式
-- **探索最佳实践**：学习分块策略选择、性能优化等技巧
 
 <Tip>
   如果您在使用过程中遇到问题，可以查看 [故障排除指南](#故障排除) 或联系技术支持。

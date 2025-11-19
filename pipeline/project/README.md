@@ -298,14 +298,14 @@ Parse 参数中有必填项`Provider`，表示文档解析服务的供应商，�
   "data": {
     "elements": [
       {
-        "element_id": "f6d5beee53d4f3d90589472974abd7f75c54988c72375cd206f74089391c92b2",
+        "element_id": "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
         "type": "plaintext",
         "text": "文本内容",
-        "metainfo": {
-          "embedded": [0.1, 0.2, 0.3, ...],
+        "metadata": {
           "record_id": "08f8e327d05f97e545d04c81d2ef8de1",
           ...
-        }
+        },
+        "embeddings": [0.1, 0.2, 0.3, ...]
       }
     ],
     "stats": {
@@ -623,12 +623,12 @@ class MyCustomDestination(Destination):
     "element_id": str,      # 唯一标识符
     "type": str,            # 元素类型: plaintext, table, image, etc.
     "text": str,            # 文本内容
-    "metainfo": {           # 元数据
+    "metadata": {           # 元数据
         "filename": str,
         "orig_elements": list, # chunk处理后添加
-        "embedded": list,      # 向量（embed 步骤后添加）
         # 其他字段
-    }
+    },
+    "embeddings": list       # 向量（embed 步骤后添加，可选）
 }
 ```
 

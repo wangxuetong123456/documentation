@@ -1,0 +1,438 @@
+---
+title: "文档解析 - Parse"
+description: "了解 xParse Pipeline 中的文档解析模块，将非结构化文档转换为结构化元素"
+---
+
+## 概念
+
+文档解析是将非结构化文件内容提取并转换为结构化[文档元素](/pipeline/elements-metadata)的过程。xParse Pipeline 的 parse 阶段封装了 [xparse 文档解析 API](/xparse/parse-quickstart)，参数和功能保持一致。
+
+与简单将文件视为纯文本不同，xParse Pipeline 通过解析保留了文件的语义结构，让您能够更灵活地控制后续处理，并充分考虑文件的结构特点。同时，通过将不同文件格式统一转换为 xParse Pipeline 的元素类型，无论源文件是什么格式，您都可以在下游处理中采用相同的方式。
+
+## 用途
+
+文档解析的主要用途：
+
+- **内容提取**：从 PDF、Word、图片等多种格式中提取文本和其他内容
+- **结构化转换**：将提取的内容转换为标准化的文档元素，便于后续处理
+- **语义保留**：保留文档的语义结构，如标题、段落、表格等
+- **格式统一**：将不同格式的文档统一转换为相同的元素结构
+
+## 参数说明
+
+### provider
+
+**类型**: `string`  
+**必填**: 是  
+**默认值**: `"textin"`  
+**可选值**: `textin` | `mineru` | `paddle`
+
+Parser 供应商选择：
+
+- **textin**: TextIn 自研解析引擎（推荐）
+- **mineru**: MinerU 解析引擎
+- **paddle**: PaddleOCR 解析引擎
+
+### pdf_pwd
+
+**类型**: `string`  
+**必填**: 否
+
+PDF 密码。当 PDF 为加密文档时，需要提供密码。
+
+<Warning>
+**安全提示**：对前端封装该接口参数时，需要自行对密码进行安全防护。
+</Warning>
+
+### page_start
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `1`  
+**最小值**: `1`
+
+起始页码。当上传的是 PDF 时，表示从第几页开始解析。取值范围从 1 开始，不传该参数时默认从首页开始。
+
+### page_count
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `1000`  
+**最小值**: `1`  
+**最大值**: `1000`
+
+解析页数。当上传的是 PDF 时，表示要进行解析的 PDF 页数。总页数不得超过 1000 页。
+
+### parse_mode
+
+**类型**: `string`  
+**必填**: 否  
+**默认值**: `"scan"`  
+**可选值**: `auto` | `scan`
+
+PDF 文档的解析模式。图片不用设置，均默认按 scan 模式处理。
+
+- **auto**: 综合文字识别和解析模式，对 PDF 电子档解析会直接提取 PDF 中的文字
+- **scan**: 仅按文字识别模式，将 PDF 当成图片处理
+
+### dpi
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `144`  
+**可选值**: `72` | `144` | `216`
+
+PDF 文档的坐标基准，与 `parse_mode` 参数联动：
+
+- 当 `parse_mode=auto` 时：默认动态，支持 72、144、216
+- 当 `parse_mode=scan` 时：默认 144，支持 72、144、216
+
+### apply_document_tree
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `1`  
+**可选值**: `0` | `1`
+
+Markdown 中是否生成标题层级。
+
+- **0**: 不生成标题（同时也不会返回 catalog 字段）
+- **1**: 生成标题
+
+### table_flavor
+
+**类型**: `string`  
+**必填**: 否  
+**默认值**: `"html"`  
+**可选值**: `md` | `html` | `none`
+
+Markdown 里的表格格式。
+
+- **md**: 按 Markdown 语法输出表格
+- **html**: 按 HTML 语法输出表格
+- **none**: 不进行表格识别，把表格图像当成普通文字段落来识别
+
+### get_image
+
+**类型**: `string`  
+**必填**: 否  
+**默认值**: `"none"`  
+**可选值**: `none` | `page` | `objects` | `both`
+
+获取 Markdown 里的图片。
+
+- **none**: 不返回任何图像
+- **page**: 返回每一页的整页图像（即 PDF 页的完整页图片）
+- **objects**: 返回页面内的子图像（即 PDF 页内的各个子图片）
+- **both**: 返回整页图像和图像对象
+
+### image_output_type
+
+**类型**: `string`  
+**必填**: 否  
+**默认值**: `"default"`  
+**可选值**: `base64str` | `default`
+
+指定返回的图片对象输出类型。
+
+- **base64str**: 指定所有图片对象为 base64 字符串，适用于没有云存储的用户，但是引擎返回结果体积会很大
+- **default**: 指定子图片对象为图片 URL，页图片对象为图片 ID
+
+### apply_image_analysis
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `0`  
+**可选值**: `0` | `1`
+
+图像分析参数。利用大模型对文档中的子图片进行分析，分析结果以 Markdown 格式输出，并替换掉子图片的文本识别内容。
+
+- **0**: 不进行图像分析
+- **1**: 进行图像分析
+
+### paratext_mode
+
+**类型**: `string`  
+**必填**: 否  
+**默认值**: `"annotation"`  
+**可选值**: `none` | `annotation` | `body`
+
+Markdown 中非正文文本内容展示模式。非正文内容包括页眉页脚、子图中的文本。
+
+- **none**: 不展示
+- **annotation**: 以注释格式插入到 Markdown 中（页眉页脚中的图片只保留文本，图片 base64 或 URL 不保留）
+- **body**: 以正文格式插入到 Markdown 中
+
+### formula_level
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `0`  
+**可选值**: `0` | `1` | `2`
+
+公式识别等级。开启公式识别后，会使用 LaTeX 表达式。
+
+- **0**: 行间公式和行内公式都识别
+- **1**: 仅识别行间公式，行内公式不识别
+- **2**: 不识别公式
+
+### underline_level
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `0`  
+**可选值**: `0` | `1` | `2`
+
+控制下划线识别范围。
+
+- **0**: 不识别
+- **1**: 仅识别无文字的下划线（仅 scan 模式可用）
+- **2**: 识别全部的下划线（仅 scan 模式可用）
+
+### apply_merge
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `1`  
+**可选值**: `0` | `1`
+
+是否进行段落合并和表格合并。
+
+- **0**: 不合并
+- **1**: 合并段落和表格
+
+### raw_ocr
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `0`  
+**可选值**: `0` | `1`
+
+是否返回全部文字识别结果（包含字符坐标信息），结果字段为 raw_ocr。与 page_details 参数联动，当 page_details 为 0 时不返回。
+
+- **0**: 不返回
+- **1**: 返回
+
+### char_details
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `0`  
+**可选值**: `0` | `1`
+
+是否返回结果中的 char_pos 字段（保存每个字符的位置信息）和 raw_ocr 中的 char_ 相关字段。
+
+- **0**: 不返回
+- **1**: 返回
+
+### catalog_details
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `0`  
+**可选值**: `0` | `1`
+
+是否返回结果中的 catalog 字段，保存目录相关信息。与 apply_document_tree 参数联动，当 apply_document_tree 为 0 时不返回。
+
+- **0**: 不返回
+- **1**: 返回
+
+### get_excel
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `0`  
+**可选值**: `0` | `1`
+
+是否返回 Excel 的 base64 结果，结果字段为 excel_base64。可以根据该字段进行后处理保存 Excel 文件。
+
+- **0**: 不返回
+- **1**: 返回
+
+### crop_dewarp
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `0`  
+**可选值**: `0` | `1`
+
+切边矫正。是否进行切边矫正预处理。
+
+- **0**: 不进行切边矫正
+- **1**: 进行切边矫正
+
+### remove_watermark
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `0`  
+**可选值**: `0` | `1`
+
+去水印。是否进行去水印预处理。
+
+- **0**: 不去水印
+- **1**: 去水印
+
+### apply_chart
+
+**类型**: `integer`  
+**必填**: 否  
+**默认值**: `0`  
+**可选值**: `0` | `1`
+
+图表识别。是否开启图表识别，开启图表识别会将识别到的图表以表格形式输出。
+
+- **0**: 不开启图表识别
+- **1**: 开启图表识别
+
+## 输出结果说明
+
+parse 阶段返回一个[文档元素](/pipeline/elements-metadata)列表。每个元素包含以下字段：
+
+- **element_id**: 元素的唯一标识符（文本+坐标+页码的 SHA-256）
+- **type**: 元素类型（如 `NarrativeText`、`Title`、`Table` 等）
+- **text**: 提取的文本内容
+- **metadata**: 元数据信息，常见字段包括：
+  - `filename` / `file_directory` / `last_modified`
+  - `filetype`
+  - `coordinates`（8位数组，表示四边形四个点）
+  - `parent_id` / `category_depth`
+  - `text_as_html`（针对表格）、`image_base64` / `image_mine_type`
+  - `languages`、`emphasized_text_contents`、`emphasized_text_tags`
+  - `orig_elements`（当启用 include）、`detection_class_prob`
+  - `is_continuation`（仅 parse 阶段，用于标注跨段连续性）
+
+## 返回结果示例
+
+```json
+{
+    "code": 200,
+    "message": "success",
+    "x_request_id": "81017abf0fdd3f63ca5c42872cd09a0b",
+    "data": {
+        "elements": [
+            {
+                "element_id": "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
+                "type": "NarrativeText",
+                "text": "xParse Pipeline 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。",
+                "metadata": {
+                    "filename": "example.pdf",
+                    "file_directory": "/projects/demo/",
+                    "filetype": "application/pdf",
+                    "last_modified": "2024-11-19T14:15:22",
+                    "coordinates": [217, 390, 1336, 390, 1336, 460, 217, 460],
+                    "parent_id": "56f24319ae258b735cac3ec2a271b1d9",
+                    "category_depth": 1,
+                    "languages": ["zh"],
+                    "emphasized_text_contents": ["AI 基础设施"],
+                    "emphasized_text_tags": ["bold"],
+                    "image_base64": null,
+                    "image_mine_type": null,
+                    "text_as_html": "<p>...</p>",
+                    "orig_elements": [
+                        "a0b1c2d3e4f50617a0b1c2d3e4f50617a0b1c2d3e4f50617a0b1c2d3e4f50617",
+                        "0f1e2d3c4b5a69780f1e2d3c4b5a69780f1e2d3c4b5a69780f1e2d3c4b5a6978"
+                    ],
+                    "is_continuation": false,
+                    "detection_class_prob": 0.98
+                }
+            }
+            // ... more elements
+        ]
+    }
+}
+```
+
+## 使用示例
+
+### 示例 1：基础解析配置
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    'source': {
+        'type': 'local',
+        'directory': './documents',
+        'pattern': '*.pdf'
+    },
+    'destination': {
+        'type': 'local',
+        'output_dir': './output'
+    },
+    'api_base_url': 'https://api.textin.com/api/xparse',
+    'api_headers': {
+        'x-ti-app-id': 'your-app-id',
+        'x-ti-secret-code': 'your-secret-code'
+    },
+    'parse_config': {
+        'provider': 'textin',
+        'parse_mode': 'auto',
+        'apply_document_tree': 1
+    }
+}
+
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+### 示例 2：解析加密 PDF
+
+```python
+config = {
+    # ... 其他配置 ...
+    'parse_config': {
+        'provider': 'textin',
+        'pdf_pwd': 'your-password',  # 提供 PDF 密码
+        'page_start': 1,
+        'page_count': 10
+    }
+}
+```
+
+### 示例 3：提取图片和表格
+
+```python
+config = {
+    # ... 其他配置 ...
+    'parse_config': {
+        'provider': 'textin',
+        'get_image': 'both',  # 获取整页图像和子图像
+        'table_flavor': 'html',  # 表格以 HTML 格式输出
+        'apply_chart': 1  # 开启图表识别
+    }
+}
+```
+
+### 示例 4：公式识别
+
+```python
+config = {
+    # ... 其他配置 ...
+    'parse_config': {
+        'provider': 'textin',
+        'formula_level': 0,  # 识别行间公式和行内公式
+        'apply_merge': 1
+    }
+}
+```
+
+### 示例 5：仅解析特定页面
+
+```python
+config = {
+    # ... 其他配置 ...
+    'parse_config': {
+        'provider': 'textin',
+        'page_start': 5,  # 从第 5 页开始
+        'page_count': 3  # 解析 3 页
+    }
+}
+```
+
+## 相关文档
+
+- [文档元素和元数据](/pipeline/elements-metadata) - 了解解析后的元素结构
+- [分块模块](/pipeline/chunk) - 了解如何对解析后的元素进行分块
+- [向量化模块](/pipeline/embed) - 了解如何对元素进行向量化
+
