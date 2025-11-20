@@ -58,6 +58,13 @@
                   "pipeline/overview",
                   "pipeline/quickstart",
                   "pipeline/elements-metadata",
+                  {
+                    "group": "连接器 - Connectors",
+                    "pages": [
+                       "pipeline/sources",
+                       "pipeline/destinations"
+                    ]
+                  },
                   "pipeline/parse",
                   "pipeline/chunk",
                   "pipeline/embed",
