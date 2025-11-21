@@ -1,31 +1,31 @@
 ---
 title: "快速启动"
-description: "5 分钟快速上手 xParse Pipeline，从安装到运行第一个文档处理流程"
+description: "5 分钟快速上手 xParse ETL，从安装到运行第一个文档处理流程"
 ---
 
 <Tip>
-  本教程基于 Python 示例分步讲解如何使用 xParse Pipeline。我们提供了完整的示例代码，可在本地一键运行，助您快速体验 Pipeline 的强大能力。
+  本教程基于 Python 示例分步讲解如何使用 xParse ETL。我们提供了完整的示例代码，可在本地一键运行，助您快速体验 Pipeline 的强大能力。
 </Tip>
 
-## 为什么使用 xParse Pipeline？
+## 为什么使用 xParse ETL？
 
-在大模型和 RAG 应用开发中，文档处理是关键环节。传统方式需要分别调用解析、分块、向量化等多个接口，流程复杂且容易出错。xParse Pipeline 通过统一的 Pipeline API，一次性完成文档解析、智能分块和向量化全流程，让您专注于业务逻辑，无需处理繁琐的数据转换。
+在大模型和 RAG 应用开发中，文档处理是关键环节。传统方式需要分别调用解析、分块、向量化等多个接口，流程复杂且容易出错。xParse ETL 通过统一的 Pipeline API，一次性完成文档解析、智能分块和向量化全流程，让您专注于业务逻辑，无需处理繁琐的数据转换。
 
-使用 xParse Pipeline，您可以：
+使用 xParse ETL，您可以：
 - ✅ **一键完成全流程**：通过单个 API 调用完成 parse → chunk → embed 全流程
 - ✅ **灵活配置处理策略**：根据文档类型选择合适的分块策略和向量模型
 - ✅ **无缝对接向量数据库**：处理结果直接存储到 Milvus/Zilliz，无需额外转换
 - ✅ **支持批量处理**：自动处理数据源中的所有文档，支持大规模文档处理
 
-如果您正在构建 RAG 应用、知识库系统或 Agent 应用，xParse Pipeline 会是您的得力助手。
+如果您正在构建 RAG 应用、知识库系统或 Agent 应用，xParse ETL 会是您的得力助手。
 
-## 如何使用 xParse Pipeline？
+## 如何使用 xParse ETL？
 
-您可以参考以下示例和步骤，快速验证并将 xParse Pipeline 接入系统。
+您可以参考以下示例和步骤，快速验证并将 xParse ETL 接入系统。
 
 ### 先决条件：获取 API Key
 
-使用 xParse Pipeline 处理文档前，需要先获取 API Key。请登录后前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取 `x-ti-app-id` 和 `x-ti-secret-code`。
+使用 xParse ETL 处理文档前，需要先获取 API Key。请登录后前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取 `x-ti-app-id` 和 `x-ti-secret-code`。
 
 ### 步骤 1：安装依赖
 
@@ -40,7 +40,7 @@ pip install --upgrade xparse-pipeline
 xParse Pipeline 支持两种创建方式：
 
 1. **通过配置创建**（推荐）：使用 JSON 配置，简单直观，易于管理
-2. **手动创建组件**：手动创建配置对象传入Pipline，更灵活
+2. **手动创建组件**：手动创建配置对象传入Pipeline，更灵活
 
 ### 步骤 3：编写代码
 
@@ -551,11 +551,11 @@ print(results)
 ## 下一步
 
 - **了解[文档元素和元数据](/pipeline/elements-metadata)**：了解 Pipeline 处理后的数据结构
-- **深入学习核心模块**：
+- **深入了解核心模块**：
   - [文档解析（Parse）](/pipeline/parse) - 了解如何配置解析参数
   - [文本分块（Chunk）](/pipeline/chunk) - 了解分块策略和参数配置
   - [向量化（Embed）](/pipeline/embed) - 了解向量模型选择和配置
-- **阅读[RAG 场景教程](/pipeline/rag-tutorial)**：了解如何构建完整的 RAG 应用
+- **阅读[如何使用 xParse ETL 快速构建 RAG 应用](/pipeline/rag-tutorial)**：了解如何使用 xParse ETL 快速构建完整的 RAG 应用
 - **查看[API 文档](/api-reference/endpoint/pipeline)**：了解 Pipeline API 的详细参数和返回格式
 
 <Tip>

@@ -1,6 +1,6 @@
 ---
 title: "文本分块 - Chunk"
-description: "了解 xParse Pipeline 中的文本分块模块，将文档元素组合成适合向量化的块"
+description: "了解 xParse ETL 中的文本分块模块，将文档元素组合成适合向量化的块"
 ---
 
 ## 概念
@@ -24,7 +24,7 @@ description: "了解 xParse Pipeline 中的文本分块模块，将文档元素�
 
 ## 分块策略
 
-xParse Pipeline 支持三种分块策略，每种策略适用于不同的场景：
+xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
 
 ### basic（基础分块）
 
@@ -44,7 +44,7 @@ xParse Pipeline 支持三种分块策略，每种策略适用于不同的场景�
 
 - 文本元素：每个块尽量贴近硬限制，不考虑句子边界  
   ![Basic chunking of text with a 200-character hard limit](/images/chunk/Chunk-By-Character-200-Paragraph.avif)
-- 表格元素：按行作为天然边界  
+- 表格元素：按行作为天然边界
   ![Basic chunking of a table with a 200-character hard limit](/images/chunk/Chunk-By-Character-200-Table.avif)
 
 **支持重叠（overlap）**：
@@ -162,7 +162,7 @@ xParse Pipeline 支持三种分块策略，每种策略适用于不同的场景�
 
 ## Chunk 后的数据结构
 
-更多细节可见 [Unstructured 官方文档](https://docs.unstructured.io/ui/chunking)，xParse Pipeline 在 chunk 阶段同样只输出以下几类元素：
+更多细节可见 [Unstructured 官方文档](https://docs.unstructured.io/ui/chunking)，xParse ETL 在 chunk 阶段同样只输出以下几类元素：
 
 | 元素类型 | 说明 |
 | --- | --- |

@@ -1,13 +1,13 @@
 ---
 title: "产品简介"
-description: "xParse Pipeline - 端到端文档处理 AI Infra"
+description: "xParse ETL - 端到端文档处理 AI Infra"
 ---
 
-xParse Pipeline 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。通过统一的 Pipeline API，一次性完成文档解析（Parse）、智能分块（Chunk）和向量化（Embed）全流程，让文档数据无缝流入向量数据库，为 RAG、Agentic Workflow 等 AI 应用提供强大的数据底座。
+xParse ETL 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。通过统一的 Pipeline API，一次性完成文档解析（Parse）、智能分块（Chunk）和向量化（Embed）全流程，让文档数据无缝流入向量数据库，为 RAG、Agentic Workflow 等 AI 应用提供强大的数据底座。
 
-xParse Pipeline 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、本地文件系统、FTP 等多种数据源读取文档，经过智能处理后，将向量数据存储到 Milvus/Zilliz 向量数据库或本地文件系统，实现从文档到向量数据库的完整自动化链路。
+xParse ETL 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、本地文件系统、FTP 等多种数据源读取文档，经过智能处理后，将向量数据存储到 Milvus/Zilliz 向量数据库或本地文件系统，实现从文档到向量数据库的完整自动化链路。
 
-### xParse Pipeline - 让文档处理像流水线一样简单
+### xParse ETL - 让文档处理像流水线一样简单
 
 提供端到端的文档处理 AI 基础设施，从非结构化文档到向量数据库，一键完成全流程处理，您只需关心业务，剩下的交给 Pipeline。
 
@@ -68,22 +68,22 @@ xParse Pipeline 持续与业界丰富的连接器生态集成。支持从 S3/Min
 
 ### 技术架构
 
-xParse Pipeline 采用模块化设计，核心组件包括：
+xParse ETL 采用模块化设计，核心组件包括：
 
 - **Source（数据源）**：抽象数据源接口，支持 S3Source、LocalSource、FtpSource 等实现
 - **Pipeline（处理管线）**：核心处理逻辑，调用统一 Pipeline API 完成文档处理
 - **Destination（目标存储）**：抽象目标存储接口，支持 MilvusDestination、LocalDestination 等实现
-- **配置类**：ParseConfig、ChunkConfig、EmbedConfig 等配置数据类，支持灵活的参数配置
+- **Config（配置类）**：ParseConfig、ChunkConfig、EmbedConfig 等配置数据类，支持灵活的参数配置
 
 ### 快速体验
 
-想要快速体验 xParse Pipeline 的能力？可以：
+想要快速体验 xParse ETL 的能力？可以：
 
 1. **查看[快速启动指南](/pipeline/quickstart)**：5 分钟完成安装和第一个 Pipeline 运行
 2. **了解[文档元素和元数据](/pipeline/elements-metadata)**：了解 Pipeline 处理后的数据结构
 3. **配置[数据源连接器](/pipeline/sources)**：了解如何从 S3、本地文件夹或 FTP 读取文档
 4. **配置[目的地连接器](/pipeline/destinations)**：了解如何将结果存储到 Milvus/Zilliz 或本地文件系统
-5. **阅读[RAG 场景教程](/pipeline/rag-tutorial)**：了解如何构建完整的 RAG 应用
+5. **阅读[RAG 场景教程](/pipeline/rag-tutorial)**：了解如何使用 xParse ETL 快速构建完整的 RAG 应用
 6. **参考[API 文档](/api-reference/endpoint/pipeline)**：查看详细的接口说明和参数配置
 
 更多详情见：[TextIn xParse 产品介绍](https://www.textin.com/market/detail/xparse)

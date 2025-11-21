@@ -1,13 +1,13 @@
 ---
 title: "文档解析 - Parse"
-description: "了解 xParse Pipeline 中的文档解析模块，将非结构化文档转换为结构化元素"
+description: "了解 xParse ETL 中的文档解析模块，将非结构化文档转换为结构化元素"
 ---
 
 ## 概念
 
-文档解析是将非结构化文件内容提取并转换为结构化[文档元素](/pipeline/elements-metadata)的过程。xParse Pipeline 的 parse 阶段封装了 [xparse 文档解析 API](/xparse/parse-quickstart)，参数和功能保持一致。
+文档解析是将非结构化文件内容提取并转换为结构化[文档元素](/pipeline/elements-metadata)的过程。xParse ETL 的 parse 阶段封装了 [xparse 文档解析 API](/xparse/parse-quickstart)，参数和功能保持一致。
 
-与简单将文件视为纯文本不同，xParse Pipeline 通过解析保留了文件的语义结构，让您能够更灵活地控制后续处理，并充分考虑文件的结构特点。同时，通过将不同文件格式统一转换为 xParse Pipeline 的元素类型，无论源文件是什么格式，您都可以在下游处理中采用相同的方式。
+与简单将文件视为纯文本不同，xParse ETL 通过解析保留了文件的语义结构，让您能够更灵活地控制后续处理，并充分考虑文件的结构特点。同时，通过将不同文件格式统一转换为 xParse ETL 的元素类型，无论源文件是什么格式，您都可以在下游处理中采用相同的方式。
 
 ## 用途
 
@@ -27,11 +27,11 @@ description: "了解 xParse Pipeline 中的文档解析模块，将非结构化�
 **默认值**: `"textin"`  
 **可选值**: `textin` | `mineru` | `paddle`
 
-Parser 供应商选择：
+Parser 解析引擎选择：
 
 - **textin**: TextIn 自研解析引擎（推荐）
-- **mineru**: MinerU 解析引擎
-- **paddle**: PaddleOCR 解析引擎
+- **mineru**: MinerU 解析引擎（Textin 托管）
+- **paddle**: PaddleOCR 解析引擎（Textin 托管）
 
 ### pdf_pwd
 
@@ -314,7 +314,7 @@ parse 阶段返回一个[文档元素](/pipeline/elements-metadata)列表。每�
             {
                 "element_id": "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
                 "type": "NarrativeText",
-                "text": "xParse Pipeline 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。",
+                "text": "xParse ETL 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。",
                 "metadata": {
                     "page_number": 1,
                     "parent_id": "56f24319ae258b735cac3ec2a271b1d9",

@@ -1,10 +1,10 @@
 ---
-title: "RAG 场景教程"
-description: "使用 xParse Pipeline 构建完整的 RAG 应用，包含企业知识库、法律文档检索等实际场景"
+title: "实战：构建多场景 RAG 应用"
+description: "使用 xParse ETL 构建完整的 RAG 应用，包含企业知识库、法律文档检索等实际场景"
 ---
 
 <Tip>
-  本教程将带您了解如何使用 xParse Pipeline 构建完整的 RAG（检索增强生成）应用。我们将通过三个实际场景，展示从文档处理到向量检索的完整流程。
+  本教程将带您了解如何使用 xParse ETL 构建完整的 RAG（检索增强生成）应用。我们将通过三个实际场景，展示从文档处理到向量检索的完整流程。
 </Tip>
 
 ## 什么是 RAG？
@@ -17,14 +17,14 @@ RAG 的核心流程包括：
 3. **检索查询**：根据用户问题检索相关文档片段
 4. **生成回答**：将检索到的内容作为上下文，让大模型生成答案
 
-xParse Pipeline 专注于解决第一步和第二步，为您提供端到端的文档处理能力。
+xParse ETL 专注于解决第一步和第二步，为您提供端到端的文档处理能力。
 
 ## RAG 完整流程
 
 ```
 文档文件 (PDF/Word/Excel...)
     ↓
-[xParse Pipeline]
+[xParse ETL]
     ├─ Parse: 文档解析
     ├─ Chunk: 智能分块
     └─ Embed: 向量化
@@ -600,7 +600,7 @@ if __name__ == '__main__':
 
 ### Milvus 使用说明
 
-Milvus 是一个开源的向量数据库，xParse Pipeline 会自动创建集合和索引：
+Milvus 是一个开源的向量数据库，xParse ETL 会自动创建集合和索引：
 
 ```python
 from pymilvus import MilvusClient

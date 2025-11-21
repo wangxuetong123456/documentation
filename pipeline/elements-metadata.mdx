@@ -1,9 +1,9 @@
 ---
 title: "文档元素和元数据"
-description: "了解 xParse Pipeline 中的文档元素结构和元数据字段"
+description: "了解 xParse ETL 中的文档元素结构和元数据字段"
 ---
 
-当 xParse Pipeline [解析](/pipeline/parse) 文件时，会生成一个**文档元素**列表（简称**元素**）。每个元素代表源文件的不同组成部分。
+当 xParse ETL [解析](/pipeline/parse) 文件时，会生成一个**文档元素**列表（简称**元素**）。每个元素代表源文件的不同组成部分。
 
 ## 元素示例
 
@@ -13,7 +13,7 @@ description: "了解 xParse Pipeline 中的文档元素结构和元数据字段"
 {
     "element_id": "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
     "type": "NarrativeText",
-    "text": "xParse Pipeline 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。",
+    "text": "xParse ETL 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。",
     "metadata": {
         "filename": "example.pdf",
         "file_directory": "/projects/demo/",
@@ -42,7 +42,7 @@ description: "了解 xParse Pipeline 中的文档元素结构和元数据字段"
 
 ## 元素类型
 
-与将文件简单视为纯文本不同，xParse Pipeline 会保留文件的语义结构。这样您就能更灵活地控制后续处理方式，并充分考虑文件的结构特点。同时，通过将不同文件格式的数据统一转换为 xParse Pipeline 的元素类型，无论源文件是什么格式，您都可以在下游处理中采用相同的方式处理。
+与将文件简单视为纯文本不同，xParse ETL 会保留文件的语义结构。这样您就能更灵活地控制后续处理方式，并充分考虑文件的结构特点。同时，通过将不同文件格式的数据统一转换为 xParse ETL 的元素类型，无论源文件是什么格式，您都可以在下游处理中采用相同的方式处理。
 
 例如，当您需要总结一个文件时，可能只关心正文内容，而不需要页眉和页脚。通过指定元素类型，您可以轻松过滤掉不需要的元素。
 
@@ -72,7 +72,7 @@ description: "了解 xParse Pipeline 中的文档元素结构和元数据字段"
 
 ## 元数据
 
-xParse Pipeline 会为每个元素记录丰富的元数据信息，这些信息存储在 `metadata` 字段中。
+xParse ETL 会为每个元素记录丰富的元数据信息，这些信息存储在 `metadata` 字段中。
 
 元素元数据使您能够执行以下操作：
 
@@ -142,7 +142,7 @@ xParse Pipeline 会为每个元素记录丰富的元数据信息，这些信息�
 
 #### orig_elements
 - 在设置 `include_orig_elements=true`（或系统默认启用）时，记录组成当前块的原始元素。
-- xParse Pipeline 默认输出 **原始元素 ID 列表**；当启用原文保留功能时，可配置输出 gzip+Base64 压缩串。
+- xParse ETL 默认输出 **原始元素 ID 列表**；当启用原文保留功能时，可配置输出 gzip+Base64 压缩串。
 
 #### is_continuation
 - 标记解析阶段的段落是否与下一段落连续（例如同一段落跨页）。
@@ -165,7 +165,7 @@ xParse Pipeline 会为每个元素记录丰富的元数据信息，这些信息�
 {
     "element_id": "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
     "type": "Title",
-    "text": "xParse Pipeline 简介",
+    "text": "xParse ETL 简介",
     "metadata": {
         "filename": "example.pdf",
         "file_directory": "/projects/demo/",

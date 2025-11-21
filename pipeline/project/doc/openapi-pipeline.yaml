@@ -400,7 +400,7 @@ components:
       description: |
         文档解析配置。支持 PDF、图片等多种文档格式的解析。
         
-        **支持的 Parser 供应商：**
+        **支持的 Parser 解析引擎：**
         - textin: TextIn 自研解析引擎
         - mineru: MinerU 解析引擎
         - paddle: PaddleOCR 解析引擎
@@ -409,7 +409,7 @@ components:
           type: string
           enum: [textin, mineru, paddle]
           description: |
-            Parser 供应商：
+            Parser 解析引擎：
             - textin: TextIn 自研解析引擎
             - mineru: MinerU 解析引擎
             - paddle: PaddleOCR 解析引擎

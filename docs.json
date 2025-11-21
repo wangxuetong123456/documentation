@@ -53,7 +53,7 @@
                 ]
               },
               {
-                "group": "文档处理流水线",
+                "group": "文档处理 ETL",
                 "pages": [
                   "pipeline/overview",
                   "pipeline/quickstart",

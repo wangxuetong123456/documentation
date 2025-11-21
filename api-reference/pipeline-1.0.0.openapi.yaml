@@ -94,10 +94,10 @@ paths:
 
                     Parse 参数中有必填项`Provider`，表示文档解析服务的供应商，目前可选项如下：
                     - textin: 合合信息提供的文档解析服务，在速度、准确性上均为行业领先
-                      - 支持的文档解析参数参考 [TextIn 文档解析官方API文档](https://docs.textin.com/api-reference/endpoint/parse)
+                      - 支持的文档解析参数参考 [Parse 参数说明](/pipeline/parse#参数说明)
                       - 接口调用将按照 `TextIn 通用文档解析` 服务的计费标准进行计费
-                    - mineru: 敬请期待
-                    - paddle: 敬请期待
+                    - mineru: 基于开源的最新[MinerU](https://github.com/opendatalab/MinerU)解析引擎
+                    - paddle: 基于开源的最新[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)解析引擎
 
                     2. **Chunk Stage** (`type: "chunk"`)
 
@@ -444,7 +444,7 @@ components:
       description: |
         文档解析配置。支持 PDF、图片等多种文档格式的解析。
         
-        **支持的 Parser 供应商：**
+        **支持的 Parser 解析引擎：**
         - textin: TextIn 自研解析引擎
         - mineru: MinerU 解析引擎
         - paddle: PaddleOCR 解析引擎
@@ -453,7 +453,7 @@ components:
           type: string
           enum: [textin, mineru, paddle]
           description: |
-            Parser 供应商：
+            Parser 解析引擎：
             - textin: TextIn 自研解析引擎
             - mineru: MinerU 解析引擎
             - paddle: PaddleOCR 解析引擎
