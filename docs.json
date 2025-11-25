@@ -88,7 +88,13 @@
                   "pipeline/parse",
                   "pipeline/chunk",
                   "pipeline/embed",
-                  "pipeline/rag-tutorial"
+                  "pipeline/rag-tutorial",
+                  {
+                    "group": "Blog",
+                    "pages": [
+                      "pipeline/blog/ai-agent-data-structure"
+                    ]
+                  }
                 ]
               },
               {
