@@ -11,17 +11,23 @@ description: "配置阿里云 OSS 对象存储数据源"
 
 1. 登录 [阿里云控制台](https://home.console.aliyun.com/)
 2. 进入 OSS 服务，创建存储桶（Bucket）
+![创建Bucket](/images/pipeline/oss-bucket-create.png)
 3. 获取访问密钥：
    - 进入"访问控制 RAM" → "用户" → 创建用户或使用现有用户
+   ![创建用户](/images/pipeline/oss-user-create.png)
    - 为用户创建 AccessKey，获取 `AccessKey ID` 和 `AccessKey Secret`
+   ![创建AccessKey](/images/pipeline/oss-create-accesskey.png)
    - 为用户授予 OSS 读取权限，至少包括：
      - `oss:HeadBucket`：检查存储桶是否存在
      - `oss:ListObjects`：列出存储桶中的对象
      - `oss:GetObject`：获取对象内容
+   ![创建权限策略](/images/pipeline/oss-user-create-auth.png)
+   ![授予权限](/images/pipeline/oss-user-authorize.png)
 4. 获取 OSS 端点：
    - 在存储桶概览页查看"Endpoint（地域节点）"
    - 格式：`https://s3.oss-{region}.aliyuncs.com`（S3 兼容端点）或 `https://oss-{region}.aliyuncs.com`
    - 例如：`https://s3.oss-cn-shanghai.aliyuncs.com` 或 `https://oss-cn-hangzhou.aliyuncs.com`
+   ![获取Endpoint](/images/pipeline/oss-get-endpoint.png)
 
 ### 配置示例
 
