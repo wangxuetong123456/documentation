@@ -1,0 +1,69 @@
+---
+title: "本地文件夹"
+description: "配置本地文件夹数据源，从本地文件系统读取文档"
+---
+
+## 本地文件夹
+
+本地文件夹数据源用于从本地文件系统读取文档。
+
+### 参数说明
+
+| 参数 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `type` | `string` | 是 | 固定为 `"local"` |
+| `directory` | `string` | 是 | 本地文件夹路径（绝对路径或相对路径） |
+| `pattern` | `string` | 否 | 文件匹配模式，支持通配符，默认为 `"*"` |
+
+### 文件匹配模式
+
+`pattern` 参数支持以下通配符：
+
+- `*`：匹配任意字符（不包括路径分隔符）
+- `**`：匹配任意字符（包括路径分隔符）
+- `?`：匹配单个字符
+
+**示例**：
+- `*.pdf`：匹配当前目录下所有 PDF 文件
+- `**/*.pdf`：递归匹配所有子目录下的 PDF 文件
+- `**/*.{pdf,docx}`：递归匹配所有 PDF 和 Word 文件
+- `documents/*.txt`：匹配 documents 目录下的所有文本文件
+
+### 配置示例
+
+```python
+'source': {
+    'type': 'local',
+    'directory': './documents',           # 相对路径
+    'pattern': '**/*.{pdf,docx}'          # 递归匹配所有 PDF 和 Word 文件
+}
+```
+
+或使用绝对路径：
+
+```python
+'source': {
+    'type': 'local',
+    'directory': '/home/user/documents',  # 绝对路径
+    'pattern': '*.pdf'                     # 只匹配 PDF 文件
+}
+```
+
+### 使用示例
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    'source': {
+        'type': 'local',
+        'directory': './documents',
+        'pattern': '**/*.{pdf,docx,txt}'  # 递归处理所有 PDF、Word 和文本文件
+    },
+    # ... 其他配置
+}
+
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+

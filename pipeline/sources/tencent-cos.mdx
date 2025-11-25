@@ -1,0 +1,65 @@
+---
+title: "腾讯云 COS"
+description: "配置腾讯云 COS 对象存储数据源"
+---
+
+## 腾讯云 COS
+
+腾讯云 COS（Cloud Object Storage）兼容 S3 协议，可以使用 S3 SDK 接入。
+
+### 如何获取鉴权参数
+
+1. 登录 [腾讯云控制台](https://console.cloud.tencent.com/)
+2. 进入 COS 服务，创建存储桶
+3. 获取访问密钥：
+   - 进入"访问管理" → "API 密钥管理"
+   - 创建或查看密钥，获取 `SecretId` 和 `SecretKey`
+   - 确保密钥具有 COS 读取权限，至少包括：
+     - `cos:HeadBucket`：检查存储桶是否存在
+     - `cos:GetBucket`：获取存储桶信息
+     - `cos:GetObject`：获取对象内容
+4. 获取 COS 端点：
+   - 在存储桶概览页查看"访问域名"
+   - 格式：`https://cos.{region}.myqcloud.com`
+   - 例如：`https://cos.ap-shanghai.myqcloud.com`
+
+### 配置示例
+
+```python
+'source': {
+    'type': 's3',
+    'endpoint': 'https://cos.ap-shanghai.myqcloud.com',
+    'access_key': 'your-secret-id',
+    'secret_key': 'your-secret-key',
+    'bucket': 'your-bucket-name',
+    'prefix': 'documents/',  # 可选
+    'region': 'ap-shanghai'
+}
+```
+
+### 使用示例
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    'source': {
+        'type': 's3',
+        'endpoint': 'https://cos.ap-shanghai.myqcloud.com',
+        'access_key': 'your-secret-id',
+        'secret_key': 'your-secret-key',
+        'bucket': 'my-documents',
+        'prefix': 'pdfs/',
+        'region': 'ap-shanghai'
+    },
+    # ... 其他配置
+}
+
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+### 参考文档
+
+- [腾讯云 COS S3 兼容性说明](https://cloud.tencent.com/document/product/436/37421)
+

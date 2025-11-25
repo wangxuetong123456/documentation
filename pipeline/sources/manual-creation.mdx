@@ -1,0 +1,100 @@
+---
+title: "手动创建数据源"
+description: "了解如何通过代码手动创建数据源对象，而非使用配置文件"
+---
+
+## 手动创建数据源
+
+除了使用配置方式，您也可以手动创建数据源对象，这在需要动态配置或程序化创建数据源时非常有用。
+
+### 导入数据源类
+
+```python
+from xparse_pipeline import S3Source, LocalSource, FtpSource, SmbSource
+```
+
+### 创建 S3 数据源
+
+```python
+# 创建 S3 数据源
+s3_source = S3Source(
+    endpoint='https://oss-cn-hangzhou.aliyuncs.com',
+    access_key='your-access-key',
+    secret_key='your-secret-key',
+    bucket='my-bucket',
+    prefix='documents/',
+    region='cn-hangzhou'
+)
+```
+
+### 创建本地数据源
+
+```python
+# 创建本地数据源
+local_source = LocalSource(
+    directory='./documents',
+    pattern='*.pdf'
+)
+```
+
+### 创建 FTP 数据源
+
+```python
+# 创建 FTP 数据源
+ftp_source = FtpSource(
+    host='ftp.example.com',
+    port=21,
+    username='myuser',
+    password='mypassword'
+)
+```
+
+### 创建 SMB 数据源
+
+```python
+# 创建 SMB 数据源
+smb_source = SmbSource(
+    host='fileserver.company.com',
+    share_name='documents',
+    username='myuser',
+    password='mypassword',
+    domain='COMPANY'  # 可选
+)
+```
+
+### 使用手动创建的数据源
+
+创建数据源对象后，您可以在 Pipeline 配置中使用它：
+
+```python
+from xparse_pipeline import create_pipeline_from_config, S3Source
+
+# 手动创建数据源
+source = S3Source(
+    endpoint='https://oss-cn-hangzhou.aliyuncs.com',
+    access_key='your-access-key',
+    secret_key='your-secret-key',
+    bucket='my-bucket',
+    prefix='documents/',
+    region='cn-hangzhou'
+)
+
+# 在配置中使用
+config = {
+    'source': source,  # 直接使用对象
+    # ... 其他配置
+}
+
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+### 优势
+
+手动创建数据源的优势包括：
+
+- **动态配置**：可以根据运行时条件动态创建数据源
+- **代码复用**：可以在多个 Pipeline 中复用同一个数据源对象
+- **类型检查**：IDE 可以提供更好的类型提示和检查
+- **灵活控制**：可以更灵活地控制数据源的创建过程
+

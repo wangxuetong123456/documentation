@@ -1,0 +1,76 @@
+---
+title: "SMB 网络共享"
+description: "配置 SMB/CIFS 网络共享数据源，访问企业文件服务器"
+---
+
+## SMB 网络共享
+
+SMB（Server Message Block）数据源用于从 SMB/CIFS 网络共享读取文档，常用于企业内网文件共享场景。
+
+### 参数说明
+
+| 参数 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `type` | `string` | 是 | 固定为 `"smb"` |
+| `host` | `string` | 是 | SMB 服务器地址（IP 或域名） |
+| `share_name` | `string` | 是 | 共享名称（Share Name） |
+| `username` | `string` | 是 | SMB 用户名 |
+| `password` | `string` | 是 | SMB 密码 |
+| `domain` | `string` | 否 | 域名（Domain），用于 Windows 域环境，默认为空 |
+
+### 如何获取鉴权参数
+
+SMB 连接需要以下信息：
+
+1. **SMB 服务器地址**：由 SMB 服务提供商提供，通常是 IP 地址或域名
+2. **共享名称**：在 SMB 服务器上配置的共享文件夹名称
+3. **用户名和密码**：由 SMB 服务管理员提供
+4. **域名**（可选）：如果 SMB 服务器在 Windows 域环境中，需要提供域名
+
+**常见 SMB 服务**：
+- Windows 文件共享：在 Windows 服务器上配置共享文件夹
+- Samba 服务器：Linux/Unix 系统上的 SMB 服务
+- NAS 设备：网络附加存储设备通常支持 SMB 协议
+- 企业文件服务器：联系 IT 部门获取访问凭证
+
+### 配置示例
+
+```python
+'source': {
+    'type': 'smb',
+    'host': '192.168.1.100',
+    'share_name': 'documents',
+    'username': 'your-username',
+    'password': 'your-password',
+    'domain': 'your-domain'  # 可选，Windows 域环境需要
+}
+```
+
+### 使用示例
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    'source': {
+        'type': 'smb',
+        'host': 'fileserver.company.com',
+        'share_name': 'documents',
+        'username': 'myuser',
+        'password': 'mypassword',
+        'domain': 'COMPANY'  # 可选
+    },
+    # ... 其他配置
+}
+
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+### 注意事项
+
+1. **网络连接**：确保能够访问 SMB 服务器的网络端口（通常是 445 或 139）
+2. **权限**：确保提供的用户名和密码具有访问共享文件夹的权限
+3. **防火墙**：确保 SMB 服务器的端口未被防火墙阻止
+4. **安全性**：SMB 协议有多种版本，建议使用 SMB 3.0 或更高版本以获得更好的安全性
+

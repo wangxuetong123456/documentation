@@ -1,0 +1,97 @@
+---
+title: "本地文件系统"
+description: "配置本地文件系统目的地，将处理结果保存为 JSON 文件"
+---
+
+## 本地文件系统
+
+本地文件系统目的地将处理结果保存为 JSON 文件，便于查看和调试。
+
+### 参数说明
+
+| 参数 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `type` | `string` | 是 | 固定为 `"local"` |
+| `output_dir` | `string` | 是 | 输出目录路径（绝对路径或相对路径） |
+
+### 输出文件格式
+
+每个处理后的文件会生成一个对应的 JSON 文件，文件名格式为：`{原文件名}_result.json`
+
+JSON 文件包含以下内容：
+
+```json
+{
+    "file_name": "example.pdf",
+    "elements": [
+        {
+            "element_id": "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
+            "type": "NarrativeText",
+            "text": "文档内容...",
+            "metadata": {
+                "filename": "example.pdf",
+                "filetype": "application/pdf",
+                ...
+            },
+            "embeddings": [0.1, 0.2, 0.3, ...]
+        }
+    ],
+    "statistics": {
+        "total_elements": 100,
+        "chunked_elements": 50,
+        "embedded_elements": 50
+    }
+}
+```
+
+### 配置示例
+
+使用相对路径：
+
+```python
+'destination': {
+    'type': 'local',
+    'output_dir': './output'  # 输出目录
+}
+```
+
+或使用绝对路径：
+
+```python
+'destination': {
+    'type': 'local',
+    'output_dir': '/home/user/pipeline_output'
+}
+```
+
+### 使用示例
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    'source': {
+        # ... 数据源配置
+    },
+    'destination': {
+        'type': 'local',
+        'output_dir': './output'
+    },
+    # ... 其他配置
+}
+
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+运行后，处理结果会保存到 `./output` 目录下，每个文件对应一个 JSON 结果文件。
+
+### 适用场景
+
+本地文件系统目的地适合以下场景：
+
+- 开发测试阶段
+- 需要查看和调试处理结果
+- 数据量较小
+- 不需要向量检索功能
+

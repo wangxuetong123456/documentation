@@ -59,10 +59,30 @@
                   "pipeline/quickstart",
                   "pipeline/elements-metadata",
                   {
-                    "group": "连接器 - Connectors",
+                    "group": "数据源 - Sources",
                     "pages": [
-                       "pipeline/sources",
-                       "pipeline/destinations"
+                       "pipeline/sources/overview",
+                       "pipeline/sources/s3",
+                       "pipeline/sources/minio",
+                       "pipeline/sources/aws-s3",
+                       "pipeline/sources/aliyun-oss",
+                       "pipeline/sources/tencent-cos",
+                       "pipeline/sources/volcengine-tos",
+                       "pipeline/sources/huawei-obs",
+                       "pipeline/sources/ftp",
+                       "pipeline/sources/smb",
+                       "pipeline/sources/local",
+                       "pipeline/sources/manual-creation"
+                    ]
+                  },
+                  {
+                    "group": "目的地 - Destinations",
+                    "pages": [
+                       "pipeline/destinations/overview",
+                       "pipeline/destinations/milvus-local",
+                       "pipeline/destinations/zilliz",
+                       "pipeline/destinations/local",
+                       "pipeline/destinations/manual-creation"
                     ]
                   },
                   "pipeline/parse",

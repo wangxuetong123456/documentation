@@ -1,0 +1,40 @@
+---
+title: "概览"
+description: "了解 xParse ETL 支持的数据源类别、功能范围以及如何手动创建 Source 对象"
+---
+
+## 概念
+
+数据源连接器（Sources）用于从不同存储系统中读取文档文件。xParse ETL 支持多种数据源类型，包括 S3 兼容的对象存储服务、FTP 远程文件服务、SMB 网络共享以及本地文件系统。
+
+通过配置不同的数据源连接器，您可以灵活地从各种存储系统中读取文档，无需修改处理逻辑。
+
+## 支持的数据源
+
+xParse ETL 目前支持以下数据源类型（点击可查看详细配置指南）：
+
+### S3 兼容服务
+
+- [S3 兼容服务概览](/pipeline/sources/s3)：了解 S3 兼容服务的通用配置
+- [MinIO](/pipeline/sources/minio)：高性能对象存储服务
+- [AWS S3](/pipeline/sources/aws-s3)：亚马逊云对象存储
+- [阿里云 OSS](/pipeline/sources/aliyun-oss)：阿里云对象存储服务
+- [腾讯云 COS](/pipeline/sources/tencent-cos)：腾讯云对象存储
+- [火山引擎 TOS](/pipeline/sources/volcengine-tos)：火山引擎对象存储
+- [华为云 OBS](/pipeline/sources/huawei-obs)：华为云对象存储服务
+
+### 其他数据源
+
+- [FTP 远程文件服务](/pipeline/sources/ftp)：从 FTP/FTPS 服务器读取文档
+- [SMB 网络共享](/pipeline/sources/smb)：从 SMB/CIFS 网络共享读取文档
+- [本地文件夹](/pipeline/sources/local)：从本地文件系统读取文档
+
+## 手动创建数据源
+
+了解如何通过代码手动创建数据源对象，请查看 [手动创建数据源](/pipeline/sources/manual-creation) 文档。
+
+## 相关文档
+
+- [目的地连接器](/pipeline/destinations) - 了解如何配置目标存储
+- [快速启动](/pipeline/quickstart) - 了解如何使用 Pipeline 处理文档
+- [解析模块](/pipeline/parse) - 了解文档解析配置

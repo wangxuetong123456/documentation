@@ -1,0 +1,83 @@
+---
+title: "手动创建目的地"
+description: "了解如何通过代码手动创建目的地对象，而非使用配置文件"
+---
+
+## 手动创建目的地
+
+除了使用配置方式，您也可以手动创建目的地对象，这在需要动态配置或程序化创建目的地时非常有用。
+
+### 导入目的地类
+
+```python
+from xparse_pipeline import MilvusDestination, LocalDestination
+```
+
+### 创建 Milvus 目的地
+
+```python
+# 创建本地 Milvus 目的地
+milvus_dest = MilvusDestination(
+    db_path='./milvus_pipeline.db',
+    collection_name='documents',
+    dimension=1024
+)
+```
+
+### 创建 Zilliz 目的地
+
+```python
+# 创建 Zilliz 目的地
+zilliz_dest = MilvusDestination(
+    db_path='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
+    collection_name='documents',
+    dimension=1024,
+    api_key='your-api-key'
+)
+```
+
+### 创建本地文件系统目的地
+
+```python
+# 创建本地文件系统目的地
+local_dest = LocalDestination(
+    output_dir='./output'
+)
+```
+
+### 使用手动创建的目的地
+
+创建目的地对象后，您可以在 Pipeline 配置中使用它：
+
+```python
+from xparse_pipeline import create_pipeline_from_config, MilvusDestination
+
+# 手动创建目的地
+destination = MilvusDestination(
+    db_path='./milvus_pipeline.db',
+    collection_name='documents',
+    dimension=1024
+)
+
+# 在配置中使用
+config = {
+    'source': {
+        # ... 数据源配置
+    },
+    'destination': destination,  # 直接使用对象
+    # ... 其他配置
+}
+
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+
+### 优势
+
+手动创建目的地的优势包括：
+
+- **动态配置**：可以根据运行时条件动态创建目的地
+- **代码复用**：可以在多个 Pipeline 中复用同一个目的地对象
+- **类型检查**：IDE 可以提供更好的类型提示和检查
+- **灵活控制**：可以更灵活地控制目的地的创建过程
+

@@ -1,0 +1,60 @@
+---
+title: "MinIO"
+description: "配置 MinIO 对象存储数据源"
+---
+
+## MinIO
+
+MinIO 是一个高性能的对象存储服务，完全兼容 S3 协议。
+
+### 如何获取鉴权参数
+
+1. 部署 MinIO 服务器或使用 MinIO 云服务
+2. 获取访问凭证：
+   - 在 MinIO 控制台创建访问密钥（Access Key）和密钥（Secret Key）
+   - 或使用 MinIO 客户端工具创建用户和访问密钥
+3. 确保访问凭证具有以下权限：
+   - `s3:ListBucket`：列出存储桶中的对象
+   - `s3:GetObject`：获取对象内容
+
+### 端点 URL 格式
+
+- 格式：`https://your-minio-endpoint`
+- 例如：`https://minio.example.com` 或 `https://192.168.1.100:9000`
+
+### 配置示例
+
+```python
+'source': {
+    'type': 's3',
+    'endpoint': 'https://your-minio-endpoint',
+    'access_key': 'your-access-key',
+    'secret_key': 'your-secret-key',
+    'bucket': 'your-bucket-name',
+    'prefix': '',  # 可选
+    'region': 'us-east-1'  # MinIO 通常使用 us-east-1
+}
+```
+
+### 使用示例
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+config = {
+    'source': {
+        'type': 's3',
+        'endpoint': 'https://minio.example.com',
+        'access_key': 'your-access-key',
+        'secret_key': 'your-secret-key',
+        'bucket': 'my-documents',
+        'prefix': 'pdfs/',
+        'region': 'us-east-1'
+    },
+    # ... 其他配置
+}
+
+pipeline = create_pipeline_from_config(config)
+pipeline.run()
+```
+

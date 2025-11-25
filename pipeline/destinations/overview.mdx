@@ -1,0 +1,46 @@
+---
+title: "概览"
+description: "了解 xParse ETL 支持的目的地类别、功能范围以及如何选择合适的目的地"
+---
+
+## 概念
+
+目的地连接器（Destinations）用于将处理后的文档元素存储到不同的目标系统中。xParse ETL 支持向量数据库和本地文件系统两种存储方式。
+
+通过配置不同的目的地连接器，您可以将处理后的文档元素和向量数据存储到适合您业务场景的系统中。
+
+## 支持的目的地
+
+xParse ETL 目前支持以下目的地类型（点击可查看详细配置指南）：
+
+### 向量数据库
+
+- [本地 Milvus](/pipeline/destinations/milvus-local)：配置本地 Milvus 向量数据库
+- [Zilliz Cloud](/pipeline/destinations/zilliz)：配置 Zilliz Cloud 云服务
+
+### 其他目的地
+
+- [本地文件系统](/pipeline/destinations/local)：将处理结果保存为 JSON 文件
+
+## 选择合适的目的地
+
+### 何时使用 Milvus/Zilliz
+
+- 需要向量检索功能
+- 构建 RAG 应用或知识库系统
+- 需要高效的语义搜索能力
+- 数据量较大，需要分布式存储
+
+### 何时使用本地文件系统
+
+- 开发测试阶段
+- 需要查看和调试处理结果
+- 数据量较小
+- 不需要向量检索功能
+
+## 相关文档
+
+- [数据源连接器](/pipeline/sources) - 了解如何配置数据源
+- [快速启动](/pipeline/quickstart) - 了解如何使用 Pipeline 处理文档
+- [向量化模块](/pipeline/embed) - 了解向量化配置
+
