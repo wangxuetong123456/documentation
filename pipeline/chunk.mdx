@@ -33,12 +33,12 @@ xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
 **工作原理**：
 
 - 元素在追加到当前块前会检查：
-  1. 若追加后超过硬限制（Scenario 1），直接将该元素放到下一个块。
-  2. 若超过软限制但仍在硬限制内（Scenario 2/3），新元素会成为下一个块的起始元素。
+  1. 若追加后超过硬限制（情形 1），直接将该元素放到下一个块。
+  2. 若超过软限制但仍在硬限制内（情形 2/3），新元素会成为下一个块的起始元素。
 - 对于超出 `max_characters` 的单个元素，会在空格或换行处分裂成多个块，避免截断词语。
 - 表格元素始终视为独立块；如表格过大，会按行拆分成多个 `TableChunk`。
 
-![Chunking with hard and soft limits](/images/chunk/Chunking_Soft_Hard_Limits.avif)
+![Chunking with hard and soft limits](/images/chunk/chunk_soft_hard_limits.svg)
 
 **视觉示例（200 字符硬限制）**：
 
