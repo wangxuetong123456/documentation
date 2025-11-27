@@ -5,56 +5,76 @@ description: "配置 MinIO 对象存储数据源"
 
 ## MinIO
 
-MinIO 是一个高性能的对象存储服务，完全兼容 S3 协议。
+MinIO 兼容 S3 协议，可以使用 S3 SDK 接入。
 
 ### 如何获取鉴权参数
 
-1. 部署 MinIO 服务器或使用 MinIO 云服务
-2. 获取访问凭证：
-   - 在 MinIO 控制台创建访问密钥（Access Key）和密钥（Secret Key）
-   - 或使用 MinIO 客户端工具创建用户和访问密钥
-3. 确保访问凭证具有以下权限：
-   - `s3:ListBucket`：列出存储桶中的对象
-   - `s3:GetObject`：获取对象内容
-
-### 端点 URL 格式
-
-- 格式：`https://your-minio-endpoint`
-- 例如：`https://minio.example.com` 或 `https://192.168.1.100:9000`
+1. 登录 MinIO控制台
+2. 在左边栏选择 `Bucket` 选项，点击右上角的 `Create Bucket` 按钮创建存储桶
+![创建Bucket](/images/pipeline/minio-bucket-create.png)
+3. 获取访问密钥：
+   - 在左边栏选择 `Policies` 选项，创建权限策略
+   ![创建权限策略](/images/pipeline/minio-user-create-auth.png)
+   
+   策略详情如下：
+       ```json
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "s3:ListBucket",
+                        "s3:GetObject"
+                    ],
+                    "Resource": [
+                        "arn:aws:s3:::*"
+                    ]
+                }
+            ]
+        }
+    ```
+   - 在左边栏选择 `Identity` - `Users` 选项，创建子用户
+   ![创建用户](/images/pipeline/minio-user-create.png)
+   - 在用户详情中的`Policies`选项卡中为用户授予上面新建的策略
+   ![授予权限](/images/pipeline/minio-user-authorize.png)
+   - 为用户创建 AccessKey，获取 `AccessKey ID` 和 `AccessKey Secret`
+   ![创建AccessKey](/images/pipeline/minio-create-accesskey.png)
+4. 获取 MinIO 端点：
+   请自行获取`MinIO`服务对应端点
 
 ### 配置示例
 
 ```python
-'source': {
-    'type': 's3',
-    'endpoint': 'https://your-minio-endpoint',
-    'access_key': 'your-access-key',
-    'secret_key': 'your-secret-key',
-    'bucket': 'your-bucket-name',
-    'prefix': '',  # 可选
-    'region': 'us-east-1'  # MinIO 通常使用 us-east-1
-}
+source = S3Source(
+    endpoint='https://your-minio-endpoint', # 自行设置服务端点
+    access_key='your-access-key-id',
+    secret_key='your-secret-access-key',
+    bucket='your-bucket-name',
+    prefix='',
+    region='us-east-1' # 固定此值即可
+)
 ```
 
 ### 使用示例
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import S3Source
 
-config = {
-    'source': {
-        'type': 's3',
-        'endpoint': 'https://minio.example.com',
-        'access_key': 'your-access-key',
-        'secret_key': 'your-secret-key',
-        'bucket': 'my-documents',
-        'prefix': 'pdfs/',
-        'region': 'us-east-1'
-    },
-    # ... 其他配置
-}
+source = S3Source(
+    endpoint='https://your-minio-endpoint', # 自行设置服务端点
+    access_key='your-access-key-id',
+    secret_key='your-secret-access-key',
+    bucket='your-bucket-name',
+    prefix='',
+    region='us-east-1'
+)
 
-pipeline = create_pipeline_from_config(config)
+# ... 其他配置
+
+pipeline = Pipeline(
+    source=source,
+    # ...其他配置
+)
 pipeline.run()
 ```
-
