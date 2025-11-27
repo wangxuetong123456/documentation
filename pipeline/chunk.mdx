@@ -40,12 +40,12 @@ xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
 
 ![Chunking with hard and soft limits](/images/chunk/chunk_soft_hard_limits.svg)
 
-**视觉示例（200 字符硬限制）**：
+{/* **视觉示例（200 字符硬限制）**：
 
 - 文本元素：每个块尽量贴近硬限制，不考虑句子边界  
   ![Basic chunking of text with a 200-character hard limit](/images/chunk/Chunk-By-Character-200-Paragraph.avif)
 - 表格元素：按行作为天然边界
-  ![Basic chunking of a table with a 200-character hard limit](/images/chunk/Chunk-By-Character-200-Table.avif)
+  ![Basic chunking of a table with a 200-character hard limit](/images/chunk/Chunk-By-Character-200-Table.avif) */}
 
 **支持重叠（overlap）**：
 
@@ -54,7 +54,7 @@ xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
 - 重叠计入块长度，仍需满足 `max_characters`。
 
 ![Chunking overlap](/images/chunk/Chunking_Overlap_All.avif)
-![Basic chunking overlap 25](/images/chunk/Chunk-By-Character-200-Overlap-25.avif)
+{/* ![Basic chunking overlap 25](/images/chunk/Chunk-By-Character-200-Overlap-25.avif) */}
 
 **适用场景**：
 - 一般文档处理
@@ -79,7 +79,7 @@ xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
 ![Chunking by title](/images/chunk/Chunking_By_Title.avif)
 ![Many titles lead to many chunks](/images/chunk/Chunking_By_Title_Segmentation.avif)
 ![Combine text under n characters](/images/chunk/Chunking_Combine_Text.avif)
-![Chunk by title 200 characters](/images/chunk/Chunk-By-Title-200-Paragraph.avif)
+{/* ![Chunk by title 200 characters](/images/chunk/Chunk-By-Title-200-Paragraph.avif) */}
 
 **适用场景**：
 - 结构化文档（如技术文档、产品手册）
@@ -93,7 +93,7 @@ xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
 
 ### by_page（按页面分块）
 
-**描述**：按页面边界分块，确保单个块只包含同一页的内容。即使块尚未达到 `max_characters`，但只要遇到新的 `PageBreak`，就会立即结束当前块并在下一页开启新块。
+**描述**：按页面边界分块，确保单个块只包含同一页的内容。即使块尚未达到 `max_characters`，但只要遇到新的页面，就会立即结束当前块并在下一页开启新块。
 
 **工作原理**：
 
@@ -101,7 +101,7 @@ xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
 - 块大小仍受 `max_characters` 限制；如单页内容过长，会在当页内按硬/软限制继续拆分。
 - 适合需要保留页码、页脚或注释信息的场景。
 
-![Chunking by page 200 characters](/images/chunk/Chunk-By-Page-200.avif)
+{/* ![Chunking by page 200 characters](/images/chunk/Chunk-By-Page-200.avif) */}
 
 **适用场景**：
 - PDF 文档处理
@@ -162,7 +162,7 @@ xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
 
 ## Chunk 后的数据结构
 
-更多细节可见 [Unstructured 官方文档](https://docs.unstructured.io/ui/chunking)，xParse ETL 在 chunk 阶段同样只输出以下几类元素：
+xParse ETL 在 chunk 阶段同样只输出以下几类元素：
 
 | 元素类型 | 说明 |
 | --- | --- |
@@ -177,7 +177,7 @@ xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
 当启用 **Include original elements** 时，Pipeline 会在 chunk 结果的 `metadata.orig_elements` 中记录原始元素：
 
 - 默认输出：原始元素 ID 列表，便于快速回溯。
-- 高级模式：若按 gzip+Base64 方案配置，`orig_elements` 会是一串压缩后的 JSON，需按"Base64 → gzip → UTF-8"顺序解码才能获取原文（用于对齐 Unstructured 生态或保留图片/表格的原始元信息）。
+- 高级模式：若按 gzip+Base64 方案配置，`orig_elements` 会是一串压缩后的 JSON，需按"Base64 → gzip → UTF-8"顺序解码才能获取原文（用于保留图片/表格的原始元信息）。
 
 ### is_continuation
 
