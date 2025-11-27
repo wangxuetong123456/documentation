@@ -72,6 +72,8 @@
               {
                 "group": "实战教程",
                 "pages": [
+                  "pipeline/tutorial/overview",
+                  "pipeline/tutorial/agent-tutorial",
                   "pipeline/tutorial/rag-tutorial"
                 ]
               },
