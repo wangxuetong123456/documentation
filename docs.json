@@ -59,6 +59,7 @@
                       "pipeline/destinations/overview",
                       "pipeline/destinations/milvus-local",
                       "pipeline/destinations/zilliz",
+                      "pipeline/destinations/s3",
                       "pipeline/destinations/local",
                       "pipeline/destinations/manual-creation"
                     ]
