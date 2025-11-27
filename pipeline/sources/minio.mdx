@@ -9,11 +9,10 @@ MinIO 兼容 S3 协议，可以使用 S3 SDK 接入。
 
 ### 如何获取鉴权参数
 
-1. 登录 MinIO控制台
+1. 登录 MinIO 控制台
 2. 在左边栏选择 `Bucket` 选项，点击右上角的 `Create Bucket` 按钮创建存储桶
 ![创建Bucket](/images/pipeline/minio-bucket-create.png)
-3. 获取访问密钥：
-   - 在左边栏选择 `Policies` 选项，创建权限策略
+3. 在左边栏选择 `Policies` 选项，创建权限策略
    ![创建权限策略](/images/pipeline/minio-user-create-auth.png)
    
    策略详情如下：
@@ -34,13 +33,14 @@ MinIO 兼容 S3 协议，可以使用 S3 SDK 接入。
             ]
         }
     ```
+4. 获取访问密钥：
    - 在左边栏选择 `Identity` - `Users` 选项，创建子用户
    ![创建用户](/images/pipeline/minio-user-create.png)
    - 在用户详情中的`Policies`选项卡中为用户授予上面新建的策略
    ![授予权限](/images/pipeline/minio-user-authorize.png)
    - 为用户创建 AccessKey，获取 `AccessKey ID` 和 `AccessKey Secret`
    ![创建AccessKey](/images/pipeline/minio-create-accesskey.png)
-4. 获取 MinIO 端点：
+5. 获取 MinIO 端点：
    请自行获取`MinIO`服务对应端点
 
 ### 配置示例

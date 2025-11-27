@@ -5,58 +5,77 @@ description: "配置 AWS S3 对象存储数据源"
 
 ## AWS S3
 
-AWS S3（Amazon Simple Storage Service）是亚马逊云提供的对象存储服务。
+AWS S3 可以使用 S3 SDK 接入。
 
 ### 如何获取鉴权参数
 
-1. 登录 [AWS 控制台](https://console.aws.amazon.com/)
-2. 进入 IAM 服务，创建用户或使用现有用户
-3. 为用户创建访问密钥（Access Key）：
-   - 在用户详情页，选择"安全凭证"标签
-   - 点击"创建访问密钥"
-   - 保存 `Access Key ID` 和 `Secret Access Key`
-4. 确保用户具有对应存储桶的读取权限，至少包括：
-   - `s3:ListBucket`：列出存储桶中的对象
-   - `s3:GetObject`：获取对象内容
-
-### 端点 URL 格式
-
-- 标准端点：`https://s3.{region}.amazonaws.com`
-- 例如：`https://s3.us-east-1.amazonaws.com`
+1. 登录 [国内版 AWS 控制台](https://console.amazonaws.cn/) 或 [全球版 AWS 控制台](https://console.aws.amazon.com/)
+2. 进入 `S3` 服务，创建存储桶
+![创建Bucket](/images/pipeline/s3-bucket-create.png)
+3. 进入 `IAM` 服务，创建策略
+   - 在左边栏选择 `策略` 选项，创建权限策略
+   ![创建权限策略](/images/pipeline/s3-user-create-auth.png)
+   策略详情如下：
+    ```json
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:ListBucket",
+                    "s3:GetObject"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::*"
+                ]
+            }
+        ]
+    }
+    ```
+4. 进入 `IAM` 服务，获取访问密钥：
+   - 在左边栏选择 `用户` 选项，创建子用户
+   ![创建用户](/images/pipeline/s3-user-create.png)
+   - 在用户详情中的`权限`选项卡中为用户授予上面新建的策略
+   ![授予权限-1](/images/pipeline/s3-user-authorize-1.png)
+   ![授予权限-2](/images/pipeline/s3-user-authorize-2.png)
+   - 为用户创建 AccessKey，获取 `AccessKey ID` 和 `AccessKey Secret`
+   ![创建AccessKey](/images/pipeline/s3-create-accesskey.png)
+4. 获取 AWS S3 端点：
+   访问端点形如`https://s3.us-east-1.amazonaws.com`，请将其中的`us-east-1`配置为您实际的可用区。
 
 ### 配置示例
 
 ```python
-'source': {
-    'type': 's3',
-    'endpoint': 'https://s3.us-east-1.amazonaws.com',
-    'access_key': 'your-access-key-id',
-    'secret_key': 'your-secret-access-key',
-    'bucket': 'your-bucket-name',
-    'prefix': 'documents/',  # 可选
-    'region': 'us-east-1'
-}
+source = S3Source(
+    endpoint='https://s3.us-east-1.amazonaws.com', # 按实际配置
+    access_key='your-access-key-id',
+    secret_key='your-secret-access-key',
+    bucket='your-bucket-name',
+    prefix='',
+    region='us-east-1' # 按实际配置
+)
 ```
 
 ### 使用示例
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import S3Source
 
-config = {
-    'source': {
-        'type': 's3',
-        'endpoint': 'https://s3.us-east-1.amazonaws.com',
-        'access_key': 'your-access-key-id',
-        'secret_key': 'your-secret-access-key',
-        'bucket': 'my-documents',
-        'prefix': 'pdfs/',
-        'region': 'us-east-1'
-    },
-    # ... 其他配置
-}
+source = S3Source(
+    endpoint='https://s3.us-east-1.amazonaws.com',
+    access_key='your-access-key-id',
+    secret_key='your-secret-access-key',
+    bucket='your-bucket-name',
+    prefix='',
+    region='us-east-1'
+)
 
-pipeline = create_pipeline_from_config(config)
+# ... 其他配置
+
+pipeline = Pipeline(
+    source=source,
+    # ...其他配置
+)
 pipeline.run()
 ```
-
