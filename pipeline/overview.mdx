@@ -1,11 +1,11 @@
 ---
 title: "产品简介"
-description: "xParse ETL - 面向RAG和Agent的新一代文档处理 AI Infra"
+description: "xParse ETL - 面向Agent和RAG的新一代文档处理 AI Infra"
 ---
 
 xParse ETL 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。通过统一的 Pipeline API，一次性完成文档解析（Parse）、智能分块（Chunk）和向量化（Embed）全流程，让文档数据无缝流入向量数据库，为 RAG、Agentic Workflow 等 AI 应用提供强大的数据底座。
 
-xParse ETL 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、本地文件系统、FTP 等多种数据源读取文档，经过智能处理后，将向量数据存储到 Milvus/Zilliz 向量数据库或本地文件系统，实现从文档到向量数据库的完整自动化链路。
+xParse ETL 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、FTP、SMB、本地文件系统等多种数据源读取文档，经过智能处理后，将向量数据存储到 Milvus/Zilliz 向量数据库或本地文件系统，实现从文档到向量数据库的完整自动化链路。
 
 ### xParse ETL - 让文档处理像流水线一样简单
 
@@ -19,7 +19,7 @@ xParse ETL 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、
   <Card title="快速启动" icon="sparkles" href="/pipeline/quickstart">
     5 分钟快速上手，从安装到运行第一个 Pipeline
   </Card>
-  <Card title="RAG 场景教程" icon="sparkles" href="/pipeline/rag-tutorial">
+  <Card title="RAG 场景教程" icon="sparkles" href="/pipeline/tutorial/rag-tutorial">
     完整 RAG 应用构建指南，包含企业知识库、法律文档检索等场景
   </Card>
   <Card title="API 参考" icon="sparkles" href="/api-reference/endpoint/pipeline">
@@ -34,7 +34,9 @@ xParse ETL 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、
 
 - **统一 Pipeline API，一键完成全流程**：通过 `/api/xparse/pipeline` 接口，一次性完成文档解析、智能分块和向量化，无需多次调用，大幅简化开发流程，提升处理效率。
 
-- **灵活的数据源支持**：支持兼容 S3 协议的对象存储（如 MinIO）、本地文件系统和 FTP 协议文件系统，轻松对接各种数据存储场景，满足企业级部署需求。
+- **多种解析引擎支持**：支持 TextIn自研解析引擎（推荐）、MinerU、PaddleOCR等多种行业内先进的解析引擎，可根据文档类型和解析需求灵活选择最适合的解析方案。
+
+- **灵活的数据源支持**：支持兼容 S3 协议的对象存储（如 MinIO）、SMB 网络共享、FTP 协议文件系统和本地文件系统，轻松对接各种数据存储场景，满足企业级部署需求。
 
 - **灵活的向量存储方案**：支持 Milvus/Zilliz 向量数据库和本地文件系统输出，可根据业务需求选择云端或本地部署，灵活适配不同规模的应用场景。
 
@@ -50,6 +52,10 @@ xParse ETL 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、
 
 ### 适用场景
 
+#### Agent 应用数据准备
+
+为 AI Agent 应用准备结构化数据，将文档内容转化为向量表示，支持 Agent 进行知识检索和推理。
+
 #### RAG（检索增强生成）应用
 
 将企业文档、技术资料、法律文件等非结构化文档处理成向量数据，构建智能问答系统，让大模型能够基于企业知识库进行准确回答。
@@ -57,10 +63,6 @@ xParse ETL 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、
 #### 企业知识库构建
 
 批量处理企业内部文档（如产品手册、技术文档、培训材料等），构建统一的知识库，支持语义检索和智能问答。
-
-#### Agent 应用数据准备
-
-为 AI Agent 应用准备结构化数据，将文档内容转化为向量表示，支持 Agent 进行知识检索和推理。
 
 #### 文档智能检索系统
 
@@ -83,7 +85,7 @@ xParse ETL 采用模块化设计，核心组件包括：
 2. **了解[文档元素和元数据](/pipeline/elements-metadata)**：了解 Pipeline 处理后的数据结构
 3. **配置[数据源连接器](/pipeline/sources)**：了解如何从 S3、本地文件夹或 FTP 读取文档
 4. **配置[目的地连接器](/pipeline/destinations)**：了解如何将结果存储到 Milvus/Zilliz 或本地文件系统
-5. **阅读[RAG 场景教程](/pipeline/rag-tutorial)**：了解如何使用 xParse ETL 快速构建完整的 RAG 应用
+5. **阅读[RAG 场景教程](/pipeline/tutorial/rag-tutorial)**：了解如何使用 xParse ETL 快速构建完整的 RAG 应用
 6. **参考[API 文档](/api-reference/endpoint/pipeline)**：查看详细的接口说明和参数配置
 
 更多详情见：[TextIn xParse 产品介绍](https://www.textin.com/market/detail/xparse)
