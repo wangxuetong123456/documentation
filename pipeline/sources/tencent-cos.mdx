@@ -11,6 +11,7 @@ description: "配置腾讯云 COS 对象存储数据源"
 
 1. 登录 [腾讯云控制台](https://console.cloud.tencent.com/)
 2. 进入 COS 服务，创建存储桶
+   ![创建存储桶](/images/pipeline/cos-bucket-create.png)
 3. 获取访问密钥：
    - 进入"访问管理" → "API 密钥管理"
    - 创建或查看密钥，获取 `SecretId` 和 `SecretKey`
@@ -18,10 +19,12 @@ description: "配置腾讯云 COS 对象存储数据源"
      - `cos:HeadBucket`：检查存储桶是否存在
      - `cos:GetBucket`：获取存储桶信息
      - `cos:GetObject`：获取对象内容
+   ![获取密钥](/images/pipeline/cos-create-accesskey.png)
 4. 获取 COS 端点：
    - 在存储桶概览页查看"访问域名"
    - 格式：`https://cos.{region}.myqcloud.com`
    - 例如：`https://cos.ap-shanghai.myqcloud.com`
+   ![获取端点](/images/pipeline/cos-get-endpoint.png)
 
 ### 配置示例
 

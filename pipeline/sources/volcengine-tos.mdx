@@ -11,6 +11,7 @@ description: "配置火山引擎 TOS 对象存储数据源"
 
 1. 登录 [火山引擎控制台](https://console.volcengine.com/)
 2. 进入对象存储（TOS）服务，创建存储桶
+ ![创建存储桶](/images/pipeline/tos-bucket-create.png)
 3. 获取访问密钥：
    - 进入"访问控制" → "密钥管理"
    - 创建访问密钥，获取 `Access Key ID` 和 `Secret Access Key`
@@ -18,10 +19,12 @@ description: "配置火山引擎 TOS 对象存储数据源"
      - `tos:HeadBucket`：检查存储桶是否存在
      - `tos:ListBucket`：列出存储桶中的对象
      - `tos:GetObject`：获取对象内容
+   ![获取密钥](/images/pipeline/tos-create-accesskey.png)
 4. 获取 TOS 端点：
    - 在存储桶概览页查看"Endpoint"
    - 格式：`https://tos-s3-{region}.volces.com`
    - 例如：`https://tos-s3-cn-shanghai.volces.com`
+   ![获取端点](/images/pipeline/tos-get-endpoint.png)
 
 ### 配置示例
 
