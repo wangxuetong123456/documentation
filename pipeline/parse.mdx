@@ -349,86 +349,130 @@ parse 阶段返回一个[文档元素](/pipeline/elements-metadata)列表。每�
 ### 示例 1：基础解析配置
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import (
+    Pipeline,
+    LocalSource,
+    LocalDestination,
+    ParseConfig
+)
 
-config = {
-    'source': {
-        'type': 'local',
-        'directory': './documents',
-        'pattern': '*.pdf'
-    },
-    'destination': {
-        'type': 'local',
-        'output_dir': './output'
-    },
-    'api_base_url': 'https://api.textin.com/api/xparse',
-    'api_headers': {
+# 创建数据源
+source = LocalSource(
+    directory='./documents',
+    pattern='*.pdf'
+)
+
+# 创建目标存储
+destination = LocalDestination(
+    output_dir='./output'
+)
+
+# 创建解析配置
+parse_config = ParseConfig(
+    provider='textin',
+    parse_mode='auto',
+    apply_document_tree=1
+)
+
+# 创建 Pipeline
+pipeline = Pipeline(
+    source=source,
+    destination=destination,
+    api_base_url='https://api.textin.com/api/xparse',
+    api_headers={
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
-    'parse_config': {
-        'provider': 'textin',
-        'parse_mode': 'auto',
-        'apply_document_tree': 1
-    }
-}
+    parse_config=parse_config
+)
 
-pipeline = create_pipeline_from_config(config)
 pipeline.run()
 ```
 
 ### 示例 2：解析加密 PDF
 
 ```python
-config = {
-    # ... 其他配置 ...
-    'parse_config': {
-        'provider': 'textin',
-        'pdf_pwd': 'your-password',  # 提供 PDF 密码
-        'page_start': 1,
-        'page_count': 10
-    }
-}
+from xparse_pipeline import ParseConfig
+
+# 创建解析配置，包含 PDF 密码
+parse_config = ParseConfig(
+    provider='textin',
+    pdf_pwd='your-password',  # 提供 PDF 密码
+    page_start=1,
+    page_count=10
+)
+
+# 在 Pipeline 中使用
+# pipeline = Pipeline(
+#     source=source,
+#     destination=destination,
+#     parse_config=parse_config,
+#     # ... 其他配置
+# )
 ```
 
 ### 示例 3：提取图片和表格
 
 ```python
-config = {
-    # ... 其他配置 ...
-    'parse_config': {
-        'provider': 'textin',
-        'get_image': 'both',  # 获取整页图像和子图像
-        'table_flavor': 'html',  # 表格以 HTML 格式输出
-        'apply_chart': 1  # 开启图表识别
-    }
-}
+from xparse_pipeline import ParseConfig
+
+# 创建解析配置，开启图片和表格提取
+parse_config = ParseConfig(
+    provider='textin',
+    get_image='both',  # 获取整页图像和子图像
+    table_flavor='html',  # 表格以 HTML 格式输出
+    apply_chart=1  # 开启图表识别
+)
+
+# 在 Pipeline 中使用
+# pipeline = Pipeline(
+#     source=source,
+#     destination=destination,
+#     parse_config=parse_config,
+#     # ... 其他配置
+# )
 ```
 
 ### 示例 4：公式识别
 
 ```python
-config = {
-    # ... 其他配置 ...
-    'parse_config': {
-        'provider': 'textin',
-        'formula_level': 0,  # 识别行间公式和行内公式
-        'apply_merge': 1
-    }
-}
+from xparse_pipeline import ParseConfig
+
+# 创建解析配置，开启公式识别
+parse_config = ParseConfig(
+    provider='textin',
+    formula_level=0,  # 识别行间公式和行内公式
+    apply_merge=1
+)
+
+# 在 Pipeline 中使用
+# pipeline = Pipeline(
+#     source=source,
+#     destination=destination,
+#     parse_config=parse_config,
+#     # ... 其他配置
+# )
 ```
 
 ### 示例 5：仅解析特定页面
 
 ```python
-config = {
-    # ... 其他配置 ...
-    'parse_config': {
-        'provider': 'textin',
-        'page_start': 5,  # 从第 5 页开始
-        'page_count': 3  # 解析 3 页
-    }
-}
+from xparse_pipeline import ParseConfig
+
+# 创建解析配置，指定解析页面范围
+parse_config = ParseConfig(
+    provider='textin',
+    page_start=5,  # 从第 5 页开始
+    page_count=3  # 解析 3 页
+)
+
+# 在 Pipeline 中使用
+# pipeline = Pipeline(
+#     source=source,
+#     destination=destination,
+#     parse_config=parse_config,
+#     # ... 其他配置
+# )
 ```
 
 ## 相关文档

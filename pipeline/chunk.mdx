@@ -238,75 +238,117 @@ xParse ETL 在 chunk 阶段同样只输出以下几类元素：
 ### 示例 1：基础分块
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import (
+    Pipeline,
+    LocalSource,
+    LocalDestination,
+    ParseConfig,
+    ChunkConfig,
+    EmbedConfig
+)
 
-config = {
-    'source': {
-        'type': 'local',
-        'directory': './documents',
-        'pattern': '*.pdf'
-    },
-    'destination': {
-        'type': 'local',
-        'output_dir': './output'
-    },
-    'api_base_url': 'https://api.textin.com/api/xparse',
-    'api_headers': {
+# 创建数据源
+source = LocalSource(
+    directory='./documents',
+    pattern='*.pdf'
+)
+
+# 创建目标存储
+destination = LocalDestination(
+    output_dir='./output'
+)
+
+# 创建配置对象
+parse_config = ParseConfig(provider='textin')
+chunk_config = ChunkConfig(
+    strategy='basic',
+    max_characters=1024,
+    overlap=0
+)
+embed_config = EmbedConfig(provider='qwen', model_name='text-embedding-v3')
+
+# 创建 Pipeline
+pipeline = Pipeline(
+    source=source,
+    destination=destination,
+    api_base_url='https://api.textin.com/api/xparse',
+    api_headers={
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
-    'chunk_config': {
-        'strategy': 'basic',
-        'max_characters': 1024,
-        'overlap': 0
-    }
-}
+    parse_config=parse_config,
+    chunk_config=chunk_config,
+    embed_config=embed_config
+)
 
-pipeline = create_pipeline_from_config(config)
 pipeline.run()
 ```
 
 ### 示例 2：按标题分块（保持章节完整性）
 
 ```python
-config = {
-    # ... 其他配置 ...
-    'chunk_config': {
-        'strategy': 'by_title',
-        'include_orig_elements': True,  # 保留原始元素 ID
-        'new_after_n_chars': 512,
-        'max_characters': 1536,
-        'overlap': 100  # 章节间重叠 100 字符
-    }
-}
+from xparse_pipeline import ChunkConfig
+
+# 创建分块配置，按标题分块
+chunk_config = ChunkConfig(
+    strategy='by_title',
+    include_orig_elements=True,  # 保留原始元素 ID
+    new_after_n_chars=512,
+    max_characters=1536,
+    overlap=100  # 章节间重叠 100 字符
+)
+
+# 在 Pipeline 中使用
+# pipeline = Pipeline(
+#     source=source,
+#     destination=destination,
+#     chunk_config=chunk_config,
+#     # ... 其他配置
+# )
 ```
 
 ### 示例 3：按页面分块（保持页面完整性）
 
 ```python
-config = {
-    # ... 其他配置 ...
-    'chunk_config': {
-        'strategy': 'by_page',
-        'include_orig_elements': True,
-        'max_characters': 2048,  # PDF 页面可能较长
-        'overlap': 150  # 页面间重叠，保持上下文
-    }
-}
+from xparse_pipeline import ChunkConfig
+
+# 创建分块配置，按页面分块
+chunk_config = ChunkConfig(
+    strategy='by_page',
+    include_orig_elements=True,
+    max_characters=2048,  # PDF 页面可能较长
+    overlap=150  # 页面间重叠，保持上下文
+)
+
+# 在 Pipeline 中使用
+# pipeline = Pipeline(
+#     source=source,
+#     destination=destination,
+#     chunk_config=chunk_config,
+#     # ... 其他配置
+# )
 ```
 
 ### 示例 4：带重叠的分块
 
 ```python
-config = {
-    # ... 其他配置 ...
-    'chunk_config': {
-        'strategy': 'basic',
-        'max_characters': 1024,
-        'overlap': 50,  # 块之间重叠 50 字符
-        'new_after_n_chars': 512
-    }
-}
+from xparse_pipeline import ChunkConfig
+
+# 创建分块配置，启用重叠
+chunk_config = ChunkConfig(
+    strategy='basic',
+    max_characters=1024,
+    overlap=50,  # 块之间重叠 50 字符
+    new_after_n_chars=512
+)
+
+# 在 Pipeline 中使用
+# pipeline = Pipeline(
+#     source=source,
+#     destination=destination,
+#     chunk_config=chunk_config,
+#     # ... 其他配置
+# )
 ```
 
 ## 分块策略选择建议

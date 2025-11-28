@@ -39,69 +39,14 @@ pip install --upgrade xparse-pipeline
 
 xParse Pipeline 支持两种创建方式：
 
-1. **通过配置创建**（推荐）：使用 JSON 配置，简单直观，易于管理
-2. **手动创建组件**：手动创建配置对象传入Pipeline，更灵活
+1. **手动创建组件**（推荐）：手动创建配置对象传入Pipeline，提供更好的类型检查、代码复用和灵活控制
+2. **通过配置创建**：使用 JSON 配置，简单直观，适合快速原型开发
 
 ### 步骤 3：编写代码
 
-#### 方式 1：通过配置创建（推荐）
+#### 方式 1：手动按模块创建组件（推荐）
 
-这是最简单的方式，适合快速上手：
-
-```python
-from xparse_pipeline import create_pipeline_from_config
-
-# 完整的配置示例
-config = {
-    # 数据源配置：本地文件系统
-    'source': {
-        'type': 'local',
-        'directory': './documents',  # 文档目录
-        'pattern': '*.pdf'           # 文件匹配模式：*.pdf, *.docx, **/*.txt
-    },
-    
-    # 目标存储配置：本地文件系统（用于测试）
-    'destination': {
-        'type': 'local',
-        'output_dir': './output'     # 输出目录
-    },
-    
-    # API 配置
-    'api_base_url': 'https://api.textin.com/api/xparse',
-    'api_headers': {
-        'x-ti-app-id': 'your-app-id',        # 替换为您的 app-id
-        'x-ti-secret-code': 'your-secret-code'  # 替换为您的 secret-code
-    },
-    
-    # Parse 配置（可选，使用默认值）
-    'parse_config': {
-        'provider': 'textin'  # 当前支持 textin 文档解析
-    },
-    
-    # Chunk 配置（可选）
-    'chunk_config': {
-        'strategy': 'basic',              # 分块策略: 'basic' | 'by_title' | 'by_page'
-        'include_orig_elements': False,   # 是否包含原始元素
-        'new_after_n_chars': 512,         # 多少字符后创建新块
-        'max_characters': 1024,           # 最大字符数
-        'overlap': 0                      # 重叠字符数
-    },
-    
-    # Embed 配置（可选）
-    'embed_config': {
-        'provider': 'qwen',                    # 向量化供应商: 'qwen' | 'doubao'
-        'model_name': 'text-embedding-v3'      # 模型名称
-    }
-}
-
-# 使用配置创建并运行 pipeline
-pipeline = create_pipeline_from_config(config)
-pipeline.run()
-```
-
-#### 方式 2：手动创建组件
-
-如果您需要更精细的控制，可以手动创建各个组件：
+更完善灵活的创建逻辑，适合大多数场景：
 
 ```python
 from xparse_pipeline import (
@@ -157,6 +102,61 @@ pipeline = Pipeline(
 )
 
 # 运行 Pipeline
+pipeline.run()
+```
+
+#### 方式 2：通过Json格式配置创建
+
+这是最简单的方式，适合快速上手：
+
+```python
+from xparse_pipeline import create_pipeline_from_config
+
+# 完整的配置示例
+config = {
+    # 数据源配置：本地文件系统
+    'source': {
+        'type': 'local',
+        'directory': './documents',  # 文档目录
+        'pattern': '*.pdf'           # 文件匹配模式：*.pdf, *.docx, **/*.txt
+    },
+    
+    # 目标存储配置：本地文件系统（用于测试）
+    'destination': {
+        'type': 'local',
+        'output_dir': './output'     # 输出目录
+    },
+    
+    # API 配置
+    'api_base_url': 'https://api.textin.com/api/xparse',
+    'api_headers': {
+        'x-ti-app-id': 'your-app-id',        # 替换为您的 app-id
+        'x-ti-secret-code': 'your-secret-code'  # 替换为您的 secret-code
+    },
+    
+    # Parse 配置（可选，使用默认值）
+    'parse_config': {
+        'provider': 'textin'  # 当前支持 textin 文档解析
+    },
+    
+    # Chunk 配置（可选）
+    'chunk_config': {
+        'strategy': 'basic',              # 分块策略: 'basic' | 'by_title' | 'by_page'
+        'include_orig_elements': False,   # 是否包含原始元素
+        'new_after_n_chars': 512,         # 多少字符后创建新块
+        'max_characters': 1024,           # 最大字符数
+        'overlap': 0                      # 重叠字符数
+    },
+    
+    # Embed 配置（可选）
+    'embed_config': {
+        'provider': 'qwen',                    # 向量化供应商: 'qwen' | 'doubao'
+        'model_name': 'text-embedding-v3'      # 模型名称
+    }
+}
+
+# 使用配置创建并运行 pipeline
+pipeline = create_pipeline_from_config(config)
 pipeline.run()
 ```
 
@@ -325,34 +325,50 @@ destination = LocalDestination(
 最简单的测试场景，适合快速验证功能：
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import (
+    Pipeline,
+    LocalSource,
+    LocalDestination,
+    ParseConfig,
+    ChunkConfig,
+    EmbedConfig
+)
 
-config = {
-    'source': {
-        'type': 'local',
-        'directory': './test_files',
-        'pattern': '*.pdf'
-    },
-    'destination': {
-        'type': 'local',
-        'output_dir': './test_output'
-    },
-    'api_base_url': 'https://api.textin.com/api/xparse',
-    'api_headers': {
+# 创建数据源
+source = LocalSource(
+    directory='./test_files',
+    pattern='*.pdf'
+)
+
+# 创建目标存储
+destination = LocalDestination(
+    output_dir='./test_output'
+)
+
+# 创建配置对象
+chunk_config = ChunkConfig(
+    strategy='basic',
+    max_characters=1024
+)
+
+embed_config = EmbedConfig(
+    provider='qwen',
+    model_name='text-embedding-v3'
+)
+
+# 创建 Pipeline
+pipeline = Pipeline(
+    source=source,
+    destination=destination,
+    api_base_url='https://api.textin.com/api/xparse',
+    api_headers={
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
-    'chunk_config': {
-        'strategy': 'basic',
-        'max_characters': 1024
-    },
-    'embed_config': {
-        'provider': 'qwen',
-        'model_name': 'text-embedding-v3'
-    }
-}
+    chunk_config=chunk_config,
+    embed_config=embed_config
+)
 
-pipeline = create_pipeline_from_config(config)
 pipeline.run()
 ```
 
@@ -361,43 +377,63 @@ pipeline.run()
 典型的生产环境配置，从 S3 读取文档，存储到 Milvus 向量数据库：
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import (
+    Pipeline,
+    S3Source,
+    MilvusDestination,
+    ChunkConfig,
+    EmbedConfig
+)
 
-config = {
-    'source': {
-        'type': 's3',
-        'endpoint': 'https://your-minio.com',
-        'access_key': 'your-access-key',
-        'secret_key': 'your-secret-key',
-        'bucket': 'documents',
-        'prefix': 'pdfs/',
-        'region': 'us-east-1'
-    },
-    'destination': {
-        'type': 'milvus',
-        'db_path': './vectors.db',
-        'collection_name': 'documents',
-        'dimension': 1024
-    },
-    'api_base_url': 'https://api.textin.com/api/xparse',
-    'api_headers': {
+# 创建数据源
+source = S3Source(
+    endpoint='https://your-minio.com',
+    access_key='your-access-key',
+    secret_key='your-secret-key',
+    bucket='documents',
+    prefix='pdfs/',
+    region='us-east-1'
+)
+
+# 创建目标存储
+destination = MilvusDestination(
+    db_path='./vectors.db',
+    collection_name='documents',
+    dimension=1024
+)
+
+# 创建配置对象
+chunk_config = ChunkConfig(
+    strategy='by_title',           # 按标题分块
+    include_orig_elements=False,
+    new_after_n_chars=512,
+    max_characters=1024,
+    overlap=50                    # 块之间重叠 50 字符
+)
+
+parse_config = ParseConfig(
+    provider='textin'
+)
+
+embed_config = EmbedConfig(
+    provider='qwen',
+    model_name='text-embedding-v3'
+)
+
+# 创建 Pipeline
+pipeline = Pipeline(
+    source=source,
+    destination=destination,
+    api_base_url='https://api.textin.com/api/xparse',
+    api_headers={
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
-    'chunk_config': {
-        'strategy': 'by_title',           # 按标题分块
-        'include_orig_elements': False,
-        'new_after_n_chars': 512,
-        'max_characters': 1024,
-        'overlap': 50                    # 块之间重叠 50 字符
-    },
-    'embed_config': {
-        'provider': 'qwen',
-        'model_name': 'text-embedding-v3'
-    }
-}
+    parse_config=parse_config,
+    chunk_config=chunk_config,
+    embed_config=embed_config
+)
 
-pipeline = create_pipeline_from_config(config)
 pipeline.run()
 ```
 
@@ -406,44 +442,62 @@ pipeline.run()
 根据文档类型选择合适的分块策略：
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import (
+    Pipeline,
+    LocalSource,
+    LocalDestination,
+    ParseConfig,
+    ChunkConfig,
+    EmbedConfig
+)
+
+# 创建共享的数据源和目标存储
+source = LocalSource(directory='./documents', pattern='*.pdf')
+destination = LocalDestination(output_dir='./output')
+
+parse_config = ParseConfig(
+    provider='textin',
+)
 
 # 配置 1：按页面分块（适合 PDF 文档）
-config_by_page = {
-    'source': {...},
-    'destination': {...},
-    'api_base_url': 'https://api.textin.com/api/xparse',
-    'api_headers': {...},
-    'chunk_config': {
-        'strategy': 'by_page',         # 按页面分块
-        'max_characters': 2048,        # 增大块大小
-        'overlap': 100                 # 页面间重叠 100 字符
-    },
-    'embed_config': {
-        'provider': 'qwen',
-        'model_name': 'text-embedding-v4'  # 使用更高精度的模型
-    }
-}
+chunk_config_by_page = ChunkConfig(
+    strategy='by_page',         # 按页面分块
+    max_characters=2048,        # 增大块大小
+    overlap=100                 # 页面间重叠 100 字符
+)
+
+embed_config_v4 = EmbedConfig(
+    provider='qwen',
+    model_name='text-embedding-v4'  # 使用更高精度的模型
+)
 
 # 配置 2：按标题分块（适合结构化文档）
-config_by_title = {
-    'source': {...},
-    'destination': {...},
-    'api_base_url': 'https://api.textin.com/api/xparse',
-    'api_headers': {...},
-    'chunk_config': {
-        'strategy': 'by_title',        # 按标题分块
-        'include_orig_elements': True,  # 保留原始元素信息
-        'max_characters': 1536
-    },
-    'embed_config': {
-        'provider': 'qwen',
-        'model_name': 'text-embedding-v3'
-    }
-}
+chunk_config_by_title = ChunkConfig(
+    strategy='by_title',        # 按标题分块
+    include_orig_elements=True,  # 保留原始元素信息
+    max_characters=1536
+)
+
+embed_config_v3 = EmbedConfig(
+    provider='qwen',
+    model_name='text-embedding-v3'
+)
 
 # 根据文档类型选择配置
-pipeline = create_pipeline_from_config(config_by_page)
+# 示例：使用按页面分块的配置
+pipeline = Pipeline(
+    source=source,
+    destination=destination,
+    api_base_url='https://api.textin.com/api/xparse',
+    api_headers={
+        'x-ti-app-id': 'your-app-id',
+        'x-ti-secret-code': 'your-secret-code'
+    },
+    parse_config=parse_config,
+    chunk_config=chunk_config_by_page,
+    embed_config=embed_config_v4
+)
+
 pipeline.run()
 ```
 
@@ -452,11 +506,15 @@ pipeline.run()
 如果您需要处理单个文件并获取详细的统计信息：
 
 ```python
-from xparse_pipeline import LocalSource, LocalDestination, Pipeline, ChunkConfig, EmbedConfig
+from xparse_pipeline import LocalSource, LocalDestination, Pipeline, ParseConfig, ChunkConfig, EmbedConfig
 
 # 创建 pipeline
 source = LocalSource(directory='./docs', pattern='*.pdf')
 destination = LocalDestination(output_dir='./output')
+
+parse_config = ParseConfig(
+    provider='textin'
+)
 
 chunk_config = ChunkConfig(
     strategy='by_page',
@@ -477,6 +535,7 @@ pipeline = Pipeline(
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
+    parse_config=parse_config,
     chunk_config=chunk_config,
     embed_config=embed_config
 )
