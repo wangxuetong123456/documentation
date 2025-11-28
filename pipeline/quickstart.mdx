@@ -29,10 +29,10 @@ description: "5 分钟快速上手 xParse ETL，从安装到运行第一个文�
 
 ### 步骤 1：安装依赖
 
-使用 pip 安装 xparse-pipeline 包：
+使用 pip 安装 xparse-client 包：
 
 ```bash
-pip install --upgrade xparse-pipeline
+pip install --upgrade xparse-client
 ```
 
 ### 步骤 2：选择创建方式
@@ -49,7 +49,7 @@ xParse Pipeline 支持两种创建方式：
 更完善灵活的创建逻辑，适合大多数场景：
 
 ```python
-from xparse_pipeline import (
+from xparse_client import (
     Pipeline, 
     LocalSource, 
     LocalDestination,
@@ -110,7 +110,7 @@ pipeline.run()
 这是最简单的方式，适合快速上手：
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_client import create_pipeline_from_config
 
 # 完整的配置示例
 config = {
@@ -206,7 +206,7 @@ Pipeline 初始化完成
 #### S3/MinIO 数据源
 
 ```python
-from xparse_pipeline import S3Source
+from xparse_client import S3Source
 
 source = S3Source(
     endpoint='https://your-minio-server.com',  # MinIO 服务器地址
@@ -221,7 +221,7 @@ source = S3Source(
 #### 本地文件系统数据源
 
 ```python
-from xparse_pipeline import LocalSource
+from xparse_client import LocalSource
 
 source = LocalSource(
     directory='./input',                      # 文档目录
@@ -232,7 +232,7 @@ source = LocalSource(
 #### FTP 数据源
 
 ```python
-from xparse_pipeline import FtpSource
+from xparse_client import FtpSource
 
 source = FtpSource(
     host='127.0.0.1',                        # FTP 服务器地址
@@ -247,7 +247,7 @@ source = FtpSource(
 #### Milvus 向量数据库
 
 ```python
-from xparse_pipeline import MilvusDestination
+from xparse_client import MilvusDestination
 
 destination = MilvusDestination(
     db_path='./milvus_pipeline.db',          # 本地数据库文件路径
@@ -259,7 +259,7 @@ destination = MilvusDestination(
 #### Zilliz 向量数据库（云端）
 
 ```python
-from xparse_pipeline import MilvusDestination
+from xparse_client import MilvusDestination
 
 destination = MilvusDestination(
     db_path='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',  # Zilliz 连接地址
@@ -272,7 +272,7 @@ destination = MilvusDestination(
 #### 本地文件系统
 
 ```python
-from xparse_pipeline import LocalDestination
+from xparse_client import LocalDestination
 
 destination = LocalDestination(
     output_dir='./output'                     # 输出目录
@@ -325,7 +325,7 @@ destination = LocalDestination(
 最简单的测试场景，适合快速验证功能：
 
 ```python
-from xparse_pipeline import (
+from xparse_client import (
     Pipeline,
     LocalSource,
     LocalDestination,
@@ -377,7 +377,7 @@ pipeline.run()
 典型的生产环境配置，从 S3 读取文档，存储到 Milvus 向量数据库：
 
 ```python
-from xparse_pipeline import (
+from xparse_client import (
     Pipeline,
     S3Source,
     MilvusDestination,
@@ -442,7 +442,7 @@ pipeline.run()
 根据文档类型选择合适的分块策略：
 
 ```python
-from xparse_pipeline import (
+from xparse_client import (
     Pipeline,
     LocalSource,
     LocalDestination,
@@ -506,7 +506,7 @@ pipeline.run()
 如果您需要处理单个文件并获取详细的统计信息：
 
 ```python
-from xparse_pipeline import LocalSource, LocalDestination, Pipeline, ParseConfig, ChunkConfig, EmbedConfig
+from xparse_client import LocalSource, LocalDestination, Pipeline, ParseConfig, ChunkConfig, EmbedConfig
 
 # 创建 pipeline
 source = LocalSource(directory='./docs', pattern='*.pdf')

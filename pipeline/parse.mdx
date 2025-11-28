@@ -349,7 +349,7 @@ parse 阶段返回一个[文档元素](/pipeline/elements-metadata)列表。每�
 ### 示例 1：基础解析配置
 
 ```python
-from xparse_pipeline import (
+from xparse_client import (
     Pipeline,
     LocalSource,
     LocalDestination,
@@ -392,7 +392,7 @@ pipeline.run()
 ### 示例 2：解析加密 PDF
 
 ```python
-from xparse_pipeline import ParseConfig
+from xparse_client import ParseConfig
 
 # 创建解析配置，包含 PDF 密码
 parse_config = ParseConfig(
@@ -414,7 +414,7 @@ parse_config = ParseConfig(
 ### 示例 3：提取图片和表格
 
 ```python
-from xparse_pipeline import ParseConfig
+from xparse_client import ParseConfig
 
 # 创建解析配置，开启图片和表格提取
 parse_config = ParseConfig(
@@ -436,7 +436,7 @@ parse_config = ParseConfig(
 ### 示例 4：公式识别
 
 ```python
-from xparse_pipeline import ParseConfig
+from xparse_client import ParseConfig
 
 # 创建解析配置，开启公式识别
 parse_config = ParseConfig(
@@ -457,7 +457,7 @@ parse_config = ParseConfig(
 ### 示例 5：仅解析特定页面
 
 ```python
-from xparse_pipeline import ParseConfig
+from xparse_client import ParseConfig
 
 # 创建解析配置，指定解析页面范围
 parse_config = ParseConfig(

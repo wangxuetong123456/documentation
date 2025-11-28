@@ -61,7 +61,7 @@ xParse ETL 专注于解决第一步和第二步，为您提供端到端的文档
 针对结构化文档，我们使用 `by_title` 分块策略，保持章节完整性：
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_client import create_pipeline_from_config
 
 config = {
     # 数据源：本地文档目录
@@ -116,7 +116,7 @@ pipeline.run()
 企业知识库构建示例
 """
 
-from xparse_pipeline import create_pipeline_from_config
+from xparse_client import create_pipeline_from_config
 from pymilvus import MilvusClient
 import json
 
@@ -219,7 +219,7 @@ if __name__ == '__main__':
 针对 PDF 文档，我们使用 `by_page` 分块策略，保持页面完整性：
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_client import create_pipeline_from_config
 
 config = {
     # 数据源：S3 存储的法律文档
@@ -278,7 +278,7 @@ pipeline.run()
 法律文档检索系统示例
 """
 
-from xparse_pipeline import create_pipeline_from_config
+from xparse_client import create_pipeline_from_config
 from pymilvus import MilvusClient
 from typing import List, Dict
 
@@ -403,7 +403,7 @@ if __name__ == '__main__':
 针对技术文档，我们使用 `basic` 分块策略，简单高效：
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_client import create_pipeline_from_config
 
 config = {
     # 数据源：本地技术文档
@@ -458,7 +458,7 @@ pipeline.run()
 技术文档问答系统示例（集成大模型）
 """
 
-from xparse_pipeline import create_pipeline_from_config
+from xparse_client import create_pipeline_from_config
 from pymilvus import MilvusClient
 import requests
 import json

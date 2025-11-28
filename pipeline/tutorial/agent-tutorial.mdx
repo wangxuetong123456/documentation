@@ -19,7 +19,7 @@ description: "结合 xParse ETL 与 LangChain Agent，实现一体化的文档�
 
 - **资料来源**：FAQ、产品手册、工单复盘存放在 `s3://support-kb/faqs/`、`s3://support-kb/manuals/`。
 - **Pipeline 关注点**：使用 `by_title` 策略保持章节语义，Milvus 集合命名为 `support_docs`，chunk 元数据需包含 `product_version` 便于 Agent 回复时引用。
-- **Agent 行为**：当客服输入“有客户反馈 3.2.1 版本连接失败怎么处理？”时，Agent 先调用 `vector_search`；若检索不到最新版本，则触发 `run_xparse_pipeline` 解析 `faqs/3.2.1/` 目录，之后再次检索并返回引用。
+- **Agent 行为**：当客服输入“有客户反馈 3.2.1 版本连接失败怎么处理？”时，Agent 先调用 `vector_search`；若检索不到最新版本，则触发 `run_xparse_client` 解析 `faqs/3.2.1/` 目录，之后再次检索并返回引用。
 
 ### 营销 Agent（Campaign Planner）
 
@@ -31,7 +31,7 @@ description: "结合 xParse ETL 与 LangChain Agent，实现一体化的文档�
 
 - **资料来源**：课程 PPT、试题库、实验指导书，通常来自校园网盘或本地 NAS。
 - **Pipeline 关注点**：开启 `include_orig_elements=True` 以保留表格/公式；若需要双语教学，可在 chunk metadata 写入 `language`。
-- **Agent 行为**：学习者提问“请解释热力学第二定律并给出实验例子”，Agent 检索目标课程章节，再根据 `language` 字段决定回复语言或是否需要调用 `run_xparse_pipeline` 同步最新课件。
+- **Agent 行为**：学习者提问“请解释热力学第二定律并给出实验例子”，Agent 检索目标课程章节，再根据 `language` 字段决定回复语言或是否需要调用 `run_xparse_client` 同步最新课件。
 
 为了方便在代码中切换不同场景，可以维护一份配置映射：
 
@@ -66,7 +66,7 @@ def get_pipeline_config(scene: str = "support"):
 外部触发（Webhook / Chat UI）
         ↓
 [LangChain Agent]
-        ├─ Tool A：run_xparse_pipeline
+        ├─ Tool A：run_xparse_client
         ├─ Tool B：vector_search (Milvus/Zilliz)
         └─ Tool C：business_api（可选）
         ↓
@@ -95,7 +95,7 @@ export MILVUS_URI=./agent_vectors.db
 ## Step 1：配置 xParse Pipeline
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_client import create_pipeline_from_config
 
 PIPELINE_CONFIG = {
     "source": {
@@ -168,7 +168,7 @@ def search_tool_fn(query: str) -> str:
 
 tools = [
     Tool(
-        name="run_xparse_pipeline",
+        name="run_xparse_client",
         description="当需要获取/更新最新文档时使用，输入应是要解析的文档说明或目录。",
         func=pipeline_tool_fn
     ),

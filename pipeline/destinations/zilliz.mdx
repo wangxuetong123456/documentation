@@ -47,7 +47,7 @@ Zilliz Cloud 是 Milvus 的云服务版本，提供托管的向量数据库服�
 使用 API Key：
 
 ```python
-from xparse_pipeline import MilvusDestination
+from xparse_client import MilvusDestination
 
 destination = MilvusDestination(
     db_path='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',  # Zilliz Cloud 连接地址
@@ -60,7 +60,7 @@ destination = MilvusDestination(
 或使用 token：
 
 ```python
-from xparse_pipeline import MilvusDestination
+from xparse_client import MilvusDestination
 
 destination = MilvusDestination(
     db_path='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
@@ -73,7 +73,7 @@ destination = MilvusDestination(
 ### 使用示例
 
 ```python
-from xparse_pipeline import MilvusDestination, Pipeline
+from xparse_client import MilvusDestination, Pipeline
 
 destination = MilvusDestination(
     db_path='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',

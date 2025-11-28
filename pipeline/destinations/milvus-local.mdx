@@ -27,7 +27,7 @@ description: "配置本地 Milvus 向量数据库，适合单机部署和开发�
 ### 配置示例
 
 ```python
-from xparse_pipeline import MilvusDestination
+from xparse_client import MilvusDestination
 
 destination = MilvusDestination(
     db_path='./milvus_pipeline.db',      # 本地数据库文件路径
@@ -39,7 +39,7 @@ destination = MilvusDestination(
 ### 使用示例
 
 ```python
-from xparse_pipeline import MilvusDestination, Pipeline
+from xparse_client import MilvusDestination, Pipeline
 
 destination = MilvusDestination(
     db_path='./milvus_pipeline.db',

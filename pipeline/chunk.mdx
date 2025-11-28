@@ -238,7 +238,7 @@ xParse ETL 在 chunk 阶段同样只输出以下几类元素：
 ### 示例 1：基础分块
 
 ```python
-from xparse_pipeline import (
+from xparse_client import (
     Pipeline,
     LocalSource,
     LocalDestination,
@@ -287,7 +287,7 @@ pipeline.run()
 ### 示例 2：按标题分块（保持章节完整性）
 
 ```python
-from xparse_pipeline import ChunkConfig
+from xparse_client import ChunkConfig
 
 # 创建分块配置，按标题分块
 chunk_config = ChunkConfig(
@@ -310,7 +310,7 @@ chunk_config = ChunkConfig(
 ### 示例 3：按页面分块（保持页面完整性）
 
 ```python
-from xparse_pipeline import ChunkConfig
+from xparse_client import ChunkConfig
 
 # 创建分块配置，按页面分块
 chunk_config = ChunkConfig(
@@ -332,7 +332,7 @@ chunk_config = ChunkConfig(
 ### 示例 4：带重叠的分块
 
 ```python
-from xparse_pipeline import ChunkConfig
+from xparse_client import ChunkConfig
 
 # 创建分块配置，启用重叠
 chunk_config = ChunkConfig(

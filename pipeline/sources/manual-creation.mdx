@@ -10,7 +10,7 @@ description: "了解如何通过代码手动创建数据源对象，而非使用
 ### 导入数据源类
 
 ```python
-from xparse_pipeline import S3Source, LocalSource, FtpSource, SmbSource
+from xparse_client import S3Source, LocalSource, FtpSource, SmbSource
 ```
 
 ### 创建 S3 数据源
@@ -67,7 +67,7 @@ smb_source = SmbSource(
 创建数据源对象后，您可以在 Pipeline 配置中使用它：
 
 ```python
-from xparse_pipeline import Pipeline, S3Source
+from xparse_client import Pipeline, S3Source
 
 # 手动创建数据源
 source = S3Source(

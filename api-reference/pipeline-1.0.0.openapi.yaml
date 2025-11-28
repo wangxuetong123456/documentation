@@ -115,7 +115,7 @@ paths:
 
                     3. **Embed Stage** (`type: "embed"`)
 
-                    `xparse-pipeline`当前支持的文本向量化模型如下：
+                    `xparse-client`当前支持的文本向量化模型如下：
                     - `qwen` 供应商，即通义千问:
                       - `text-embedding-v3`
                       - `text-embedding-v4`

@@ -10,7 +10,7 @@ description: "了解如何通过代码手动创建目的地对象，而非使用
 ### 导入目的地类
 
 ```python
-from xparse_pipeline import MilvusDestination, LocalDestination
+from xparse_client import MilvusDestination, LocalDestination
 ```
 
 ### 创建 Milvus 目的地
@@ -50,7 +50,7 @@ local_dest = LocalDestination(
 创建目的地对象后，您可以在 Pipeline 配置中使用它：
 
 ```python
-from xparse_pipeline import create_pipeline_from_config, MilvusDestination
+from xparse_client import create_pipeline_from_config, MilvusDestination
 
 # 手动创建目的地
 destination = MilvusDestination(
