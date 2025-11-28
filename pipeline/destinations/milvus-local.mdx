@@ -27,33 +27,33 @@ description: "配置本地 Milvus 向量数据库，适合单机部署和开发�
 ### 配置示例
 
 ```python
-'destination': {
-    'type': 'milvus',
-    'db_path': './milvus_pipeline.db',      # 本地数据库文件路径
-    'collection_name': 'my_collection',      # 集合名称
-    'dimension': 1024                        # 向量维度，必须与 embed 模型一致
-}
+from xparse_pipeline import MilvusDestination
+
+destination = MilvusDestination(
+    db_path='./milvus_pipeline.db',      # 本地数据库文件路径
+    collection_name='my_collection',      # 集合名称
+    dimension=1024                        # 向量维度，必须与 embed 模型一致
+)
 ```
 
 ### 使用示例
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import MilvusDestination, Pipeline
 
-config = {
-    'source': {
-        # ... 数据源配置
-    },
-    'destination': {
-        'type': 'milvus',
-        'db_path': './milvus_pipeline.db',
-        'collection_name': 'documents',
-        'dimension': 1024
-    },
-    # ... 其他配置
-}
+destination = MilvusDestination(
+    db_path='./milvus_pipeline.db',
+    collection_name='documents',
+    dimension=1024
+)
 
-pipeline = create_pipeline_from_config(config)
+# ... 其他配置
+
+pipeline = Pipeline(
+    source=source,
+    destination=destination,
+    # ...其他配置
+)
 pipeline.run()
 ```
 

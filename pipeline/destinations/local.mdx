@@ -49,38 +49,39 @@ JSON 文件包含以下内容：
 使用相对路径：
 
 ```python
-'destination': {
-    'type': 'local',
-    'output_dir': './output'  # 输出目录
-}
+from xparse_pipeline import LocalDestination
+
+destination = LocalDestination(
+    output_dir='./output'  # 输出目录
+)
 ```
 
 或使用绝对路径：
 
 ```python
-'destination': {
-    'type': 'local',
-    'output_dir': '/home/user/pipeline_output'
-}
+from xparse_pipeline import LocalDestination
+
+destination = LocalDestination(
+    output_dir='/home/user/pipeline_output'
+)
 ```
 
 ### 使用示例
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import LocalDestination, Pipeline
 
-config = {
-    'source': {
-        # ... 数据源配置
-    },
-    'destination': {
-        'type': 'local',
-        'output_dir': './output'
-    },
-    # ... 其他配置
-}
+destination = LocalDestination(
+    output_dir='./output'
+)
 
-pipeline = create_pipeline_from_config(config)
+# ... 其他配置
+
+pipeline = Pipeline(
+    source=source,
+    destination=destination,
+    # ...其他配置
+)
 pipeline.run()
 ```
 

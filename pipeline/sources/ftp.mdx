@@ -33,32 +33,32 @@ FTP 连接需要以下信息：
 ### 配置示例
 
 ```python
-'source': {
-    'type': 'ftp',
-    'host': 'ftp.example.com',
-    'port': 21,
-    'username': 'your-username',
-    'password': 'your-password'
-}
+source = FtpSource(
+    host='ftp.example.com',
+    port=21,
+    username='your-username',
+    password='your-password'
+)
 ```
 
 ### 使用示例
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import FtpSource, Pipeline
 
-config = {
-    'source': {
-        'type': 'ftp',
-        'host': 'ftp.example.com',
-        'port': 21,
-        'username': 'myuser',
-        'password': 'mypassword'
-    },
-    # ... 其他配置
-}
+source = FtpSource(
+    host='ftp.example.com',
+    port=21,
+    username='myuser',
+    password='mypassword'
+)
 
-pipeline = create_pipeline_from_config(config)
+# ... 其他配置
+
+pipeline = Pipeline(
+    source=source,
+    # ...其他配置
+)
 pipeline.run()
 ```
 

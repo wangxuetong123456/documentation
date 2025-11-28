@@ -206,37 +206,40 @@ Pipeline 初始化完成
 #### S3/MinIO 数据源
 
 ```python
-'source': {
-    'type': 's3',
-    'endpoint': 'https://your-minio-server.com',  # MinIO 服务器地址
-    'access_key': 'your-access-key',              # 访问密钥
-    'secret_key': 'your-secret-key',              # 秘密密钥
-    'bucket': 'your-bucket',                      # 存储桶名称
-    'prefix': '',                                 # 可选，文件夹前缀
-    'region': 'us-east-1'                        # 区域
-}
+from xparse_pipeline import S3Source
+
+source = S3Source(
+    endpoint='https://your-minio-server.com',  # MinIO 服务器地址
+    access_key='your-access-key',              # 访问密钥
+    secret_key='your-secret-key',              # 秘密密钥
+    bucket='your-bucket',                      # 存储桶名称
+    prefix='',                                 # 可选，文件夹前缀
+    region='us-east-1'                        # 区域
+)
 ```
 
 #### 本地文件系统数据源
 
 ```python
-'source': {
-    'type': 'local',
-    'directory': './input',                      # 文档目录
-    'pattern': '*.pdf'                           # 文件匹配模式: *.pdf, *.docx, **/*.txt
-}
+from xparse_pipeline import LocalSource
+
+source = LocalSource(
+    directory='./input',                      # 文档目录
+    pattern='*.pdf'                           # 文件匹配模式: *.pdf, *.docx, **/*.txt
+)
 ```
 
 #### FTP 数据源
 
 ```python
-'source': {
-    'type': 'ftp',
-    'host': '127.0.0.1',                        # FTP 服务器地址
-    'port': 21,                                  # FTP 端口
-    'username': 'your-username',                  # 用户名
-    'password': 'your-password'                   # 密码
-}
+from xparse_pipeline import FtpSource
+
+source = FtpSource(
+    host='127.0.0.1',                        # FTP 服务器地址
+    port=21,                                  # FTP 端口
+    username='your-username',                  # 用户名
+    password='your-password'                   # 密码
+)
 ```
 
 ### Destination（目标存储）配置
@@ -244,33 +247,36 @@ Pipeline 初始化完成
 #### Milvus 向量数据库
 
 ```python
-'destination': {
-    'type': 'milvus',
-    'db_path': './milvus_pipeline.db',          # 本地数据库文件路径
-    'collection_name': 'my_collection',         # 集合名称
-    'dimension': 1024                            # 向量维度，需与 embed API 返回一致
-}
+from xparse_pipeline import MilvusDestination
+
+destination = MilvusDestination(
+    db_path='./milvus_pipeline.db',          # 本地数据库文件路径
+    collection_name='my_collection',         # 集合名称
+    dimension=1024                            # 向量维度，需与 embed API 返回一致
+)
 ```
 
 #### Zilliz 向量数据库（云端）
 
 ```python
-'destination': {
-    'type': 'zilliz',
-    'db_path': 'https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',  # Zilliz 连接地址
-    'collection_name': 'my_collection',          # 集合名称
-    'dimension': 1024,                           # 向量维度
-    'api_key': 'your-api-key'                    # Zilliz Cloud API Key
-}
+from xparse_pipeline import MilvusDestination
+
+destination = MilvusDestination(
+    db_path='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',  # Zilliz 连接地址
+    collection_name='my_collection',          # 集合名称
+    dimension=1024,                           # 向量维度
+    api_key='your-api-key'                    # Zilliz Cloud API Key
+)
 ```
 
 #### 本地文件系统
 
 ```python
-'destination': {
-    'type': 'local',
-    'output_dir': './output'                     # 输出目录
-}
+from xparse_pipeline import LocalDestination
+
+destination = LocalDestination(
+    output_dir='./output'                     # 输出目录
+)
 ```
 
 ### Chunk（分块）配置

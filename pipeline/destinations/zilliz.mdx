@@ -47,47 +47,48 @@ Zilliz Cloud 是 Milvus 的云服务版本，提供托管的向量数据库服�
 使用 API Key：
 
 ```python
-'destination': {
-    'type': 'zilliz',
-    'db_path': 'https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',  # Zilliz Cloud 连接地址
-    'collection_name': 'my_collection',      # 集合名称
-    'dimension': 1024,                      # 向量维度
-    'api_key': 'your-zilliz-api-key'        # Zilliz Cloud API Key
-}
+from xparse_pipeline import MilvusDestination
+
+destination = MilvusDestination(
+    db_path='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',  # Zilliz Cloud 连接地址
+    collection_name='my_collection',      # 集合名称
+    dimension=1024,                      # 向量维度
+    api_key='your-zilliz-api-key'        # Zilliz Cloud API Key
+)
 ```
 
 或使用 token：
 
 ```python
-'destination': {
-    'type': 'zilliz',
-    'db_path': 'https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
-    'collection_name': 'my_collection',
-    'dimension': 1024,
-    'token': 'your-zilliz-token'            # 使用 token 替代 api_key
-}
+from xparse_pipeline import MilvusDestination
+
+destination = MilvusDestination(
+    db_path='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
+    collection_name='my_collection',
+    dimension=1024,
+    token='your-zilliz-token'            # 使用 token 替代 api_key
+)
 ```
 
 ### 使用示例
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import MilvusDestination, Pipeline
 
-config = {
-    'source': {
-        # ... 数据源配置
-    },
-    'destination': {
-        'type': 'zilliz',
-        'db_path': 'https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
-        'collection_name': 'documents',
-        'dimension': 1024,
-        'api_key': 'your-zilliz-api-key'
-    },
-    # ... 其他配置
-}
+destination = MilvusDestination(
+    db_path='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
+    collection_name='documents',
+    dimension=1024,
+    api_key='your-zilliz-api-key'
+)
 
-pipeline = create_pipeline_from_config(config)
+# ... 其他配置
+
+pipeline = Pipeline(
+    source=source,
+    destination=destination,
+    # ...其他配置
+)
 pipeline.run()
 ```
 

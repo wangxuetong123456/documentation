@@ -36,34 +36,34 @@ SMB 连接需要以下信息：
 ### 配置示例
 
 ```python
-'source': {
-    'type': 'smb',
-    'host': '192.168.1.100',
-    'share_name': 'documents',
-    'username': 'your-username',
-    'password': 'your-password',
-    'domain': 'your-domain'  # 可选，Windows 域环境需要
-}
+source = SmbSource(
+    host='192.168.1.100',
+    share_name='documents',
+    username='your-username',
+    password='your-password',
+    domain='your-domain'  # 可选，Windows 域环境需要
+)
 ```
 
 ### 使用示例
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import SmbSource, Pipeline
 
-config = {
-    'source': {
-        'type': 'smb',
-        'host': 'fileserver.company.com',
-        'share_name': 'documents',
-        'username': 'myuser',
-        'password': 'mypassword',
-        'domain': 'COMPANY'  # 可选
-    },
-    # ... 其他配置
-}
+source = SmbSource(
+    host='fileserver.company.com',
+    share_name='documents',
+    username='myuser',
+    password='mypassword',
+    domain='COMPANY'  # 可选
+)
 
-pipeline = create_pipeline_from_config(config)
+# ... 其他配置
+
+pipeline = Pipeline(
+    source=source,
+    # ...其他配置
+)
 pipeline.run()
 ```
 

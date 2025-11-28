@@ -32,38 +32,37 @@ description: "配置本地文件夹数据源，从本地文件系统读取文档
 ### 配置示例
 
 ```python
-'source': {
-    'type': 'local',
-    'directory': './documents',           # 相对路径
-    'pattern': '**/*.{pdf,docx}'          # 递归匹配所有 PDF 和 Word 文件
-}
+source = LocalSource(
+    directory='./documents',           # 相对路径
+    pattern='**/*.{pdf,docx}'          # 递归匹配所有 PDF 和 Word 文件
+)
 ```
 
 或使用绝对路径：
 
 ```python
-'source': {
-    'type': 'local',
-    'directory': '/home/user/documents',  # 绝对路径
-    'pattern': '*.pdf'                     # 只匹配 PDF 文件
-}
+source = LocalSource(
+    directory='/home/user/documents',  # 绝对路径
+    pattern='*.pdf'                     # 只匹配 PDF 文件
+)
 ```
 
 ### 使用示例
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import LocalSource, Pipeline
 
-config = {
-    'source': {
-        'type': 'local',
-        'directory': './documents',
-        'pattern': '**/*.{pdf,docx,txt}'  # 递归处理所有 PDF、Word 和文本文件
-    },
-    # ... 其他配置
-}
+source = LocalSource(
+    directory='./documents',
+    pattern='**/*.{pdf,docx,txt}'  # 递归处理所有 PDF、Word 和文本文件
+)
 
-pipeline = create_pipeline_from_config(config)
+# ... 其他配置
+
+pipeline = Pipeline(
+    source=source,
+    # ...其他配置
+)
 pipeline.run()
 ```
 

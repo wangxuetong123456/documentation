@@ -22,15 +22,14 @@ S3 兼容服务使用 AWS S3 SDK 接入，支持所有兼容 S3 协议的对象�
 ### 通用配置示例
 
 ```python
-'source': {
-    'type': 's3',
-    'endpoint': 'https://your-s3-endpoint.com',
-    'access_key': 'your-access-key-id',
-    'secret_key': 'your-secret-access-key',
-    'bucket': 'your-bucket-name',
-    'prefix': 'documents/',  # 可选，指定文件夹前缀
-    'region': 'us-east-1'    # 可选，默认为 us-east-1
-}
+source = S3Source(
+    endpoint='https://your-s3-endpoint.com',
+    access_key='your-access-key-id',
+    secret_key='your-secret-access-key',
+    bucket='your-bucket-name',
+    prefix='documents/',  # 可选，指定文件夹前缀
+    region='us-east-1'    # 可选，默认为 us-east-1
+)
 ```
 
 ### 支持的服务
@@ -47,21 +46,22 @@ xParse ETL 支持以下 S3 兼容服务，点击查看具体配置指南：
 ### 使用示例
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import S3Source, Pipeline
 
-config = {
-    'source': {
-        'type': 's3',
-        'endpoint': 'https://oss-cn-hangzhou.aliyuncs.com',  # 阿里云 OSS 端点
-        'access_key': 'your-access-key-id',
-        'secret_key': 'your-secret-access-key',
-        'bucket': 'my-documents',
-        'prefix': 'pdfs/',  # 只处理 pdfs/ 文件夹下的文件
-        'region': 'cn-hangzhou'
-    },
-    # ... 其他配置
-}
+source = S3Source(
+    endpoint='https://oss-cn-hangzhou.aliyuncs.com',  # 阿里云 OSS 端点
+    access_key='your-access-key-id',
+    secret_key='your-secret-access-key',
+    bucket='my-documents',
+    prefix='pdfs/',  # 只处理 pdfs/ 文件夹下的文件
+    region='cn-hangzhou'
+)
 
-pipeline = create_pipeline_from_config(config)
+# ... 其他配置
+
+pipeline = Pipeline(
+    source=source,
+    # ...其他配置
+)
 pipeline.run()
 ```

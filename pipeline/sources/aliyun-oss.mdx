@@ -32,36 +32,36 @@ description: "配置阿里云 OSS 对象存储数据源"
 ### 配置示例
 
 ```python
-'source': {
-    'type': 's3',
-    'endpoint': 'https://s3.oss-cn-shanghai.aliyuncs.com',  # 使用 S3 兼容端点
-    'access_key': 'your-access-key-id',
-    'secret_key': 'your-secret-access-key',
-    'bucket': 'your-bucket-name',
-    'prefix': 'documents/',  # 可选
-    'region': 'cn-shanghai'
-}
+source = S3Source(
+    endpoint='https://s3.oss-cn-shanghai.aliyuncs.com',  # 使用 S3 兼容端点
+    access_key='your-access-key-id',
+    secret_key='your-secret-access-key',
+    bucket='your-bucket-name',
+    prefix='documents/',  # 可选
+    region='cn-shanghai'
+)
 ```
 
 ### 使用示例
 
 ```python
-from xparse_pipeline import create_pipeline_from_config
+from xparse_pipeline import S3Source, Pipeline
 
-config = {
-    'source': {
-        'type': 's3',
-        'endpoint': 'https://s3.oss-cn-shanghai.aliyuncs.com',
-        'access_key': 'your-access-key-id',
-        'secret_key': 'your-secret-access-key',
-        'bucket': 'my-documents',
-        'prefix': 'pdfs/',
-        'region': 'cn-shanghai'
-    },
-    # ... 其他配置
-}
+source = S3Source(
+    endpoint='https://s3.oss-cn-shanghai.aliyuncs.com',
+    access_key='your-access-key-id',
+    secret_key='your-secret-access-key',
+    bucket='my-documents',
+    prefix='pdfs/',
+    region='cn-shanghai'
+)
 
-pipeline = create_pipeline_from_config(config)
+# ... 其他配置
+
+pipeline = Pipeline(
+    source=source,
+    # ...其他配置
+)
 pipeline.run()
 ```
 

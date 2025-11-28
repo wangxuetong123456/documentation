@@ -67,7 +67,7 @@ smb_source = SmbSource(
 创建数据源对象后，您可以在 Pipeline 配置中使用它：
 
 ```python
-from xparse_pipeline import create_pipeline_from_config, S3Source
+from xparse_pipeline import Pipeline, S3Source
 
 # 手动创建数据源
 source = S3Source(
@@ -79,13 +79,12 @@ source = S3Source(
     region='cn-hangzhou'
 )
 
-# 在配置中使用
-config = {
-    'source': source,  # 直接使用对象
-    # ... 其他配置
-}
+# ...其他配置
 
-pipeline = create_pipeline_from_config(config)
+pipeline = Pipeline(
+    source=source,
+    # ...其他配置
+)
 pipeline.run()
 ```
 
