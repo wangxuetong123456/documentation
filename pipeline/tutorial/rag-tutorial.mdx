@@ -86,20 +86,32 @@ config = {
         'x-ti-secret-code': 'your-secret-code'
     },
     
-    # 分块配置：按标题分块，保持章节完整性
-    'chunk_config': {
-        'strategy': 'by_title',           # 按标题分块
-        'include_orig_elements': False,
-        'new_after_n_chars': 512,         # 512 字符后考虑新块
-        'max_characters': 1536,           # 最大 1536 字符
-        'overlap': 100                    # 章节间重叠 100 字符
-    },
-    
-    # 向量化配置：使用高精度模型
-    'embed_config': {
-        'provider': 'qwen',
-        'model_name': 'text-embedding-v4'  # 使用 v4 模型提高精度
-    }
+    # Stages 配置：定义处理流程
+    'stages': [
+        {
+            'type': 'parse',
+            'config': {
+                'provider': 'textin'
+            }
+        },
+        {
+            'type': 'chunk',
+            'config': {
+                'strategy': 'by_title',           # 按标题分块
+                'include_orig_elements': False,
+                'new_after_n_chars': 512,         # 512 字符后考虑新块
+                'max_characters': 1536,           # 最大 1536 字符
+                'overlap': 100                    # 章节间重叠 100 字符
+            }
+        },
+        {
+            'type': 'embed',
+            'config': {
+                'provider': 'qwen',
+                'model_name': 'text-embedding-v4'  # 使用 v4 模型提高精度
+            }
+        }
+    ]
 }
 
 # 运行 Pipeline
@@ -144,15 +156,27 @@ def build_knowledge_base():
             'x-ti-app-id': 'your-app-id',
             'x-ti-secret-code': 'your-secret-code'
         },
-        'chunk_config': {
-            'strategy': 'by_title',
-            'max_characters': 1536,
-            'overlap': 100
-        },
-        'embed_config': {
-            'provider': 'qwen',
-            'model_name': 'text-embedding-v4'
-        }
+        'stages': [
+            {
+                'type': 'parse',
+                'config': {'provider': 'textin'}
+            },
+            {
+                'type': 'chunk',
+                'config': {
+                    'strategy': 'by_title',
+                    'max_characters': 1536,
+                    'overlap': 100
+                }
+            },
+            {
+                'type': 'embed',
+                'config': {
+                    'provider': 'qwen',
+                    'model_name': 'text-embedding-v4'
+                }
+            }
+        ]
     }
     
     # 运行 Pipeline
@@ -249,19 +273,31 @@ config = {
         'x-ti-secret-code': 'your-secret-code'
     },
     
-    # 分块配置：按页面分块
-    'chunk_config': {
-        'strategy': 'by_page',           # 按页面分块
-        'include_orig_elements': True,    # 保留原始元素，便于追溯
-        'max_characters': 2048,          # PDF 页面可能较长
-        'overlap': 150                   # 页面间重叠，保持上下文
-    },
-    
-    # 向量化配置
-    'embed_config': {
-        'provider': 'qwen',
-        'model_name': 'text-embedding-v4'
-    }
+    # Stages 配置：定义处理流程
+    'stages': [
+        {
+            'type': 'parse',
+            'config': {
+                'provider': 'textin'
+            }
+        },
+        {
+            'type': 'chunk',
+            'config': {
+                'strategy': 'by_page',           # 按页面分块
+                'include_orig_elements': True,    # 保留原始元素，便于追溯
+                'max_characters': 2048,          # PDF 页面可能较长
+                'overlap': 150                   # 页面间重叠，保持上下文
+            }
+        },
+        {
+            'type': 'embed',
+            'config': {
+                'provider': 'qwen',
+                'model_name': 'text-embedding-v4'
+            }
+        }
+    ]
 }
 
 # 运行 Pipeline
@@ -310,16 +346,28 @@ def build_legal_document_index():
             'x-ti-app-id': 'your-app-id',
             'x-ti-secret-code': 'your-secret-code'
         },
-        'chunk_config': {
-            'strategy': 'by_page',
-            'include_orig_elements': True,
-            'max_characters': 2048,
-            'overlap': 150
-        },
-        'embed_config': {
-            'provider': 'qwen',
-            'model_name': 'text-embedding-v4'
-        }
+        'stages': [
+            {
+                'type': 'parse',
+                'config': {'provider': 'textin'}
+            },
+            {
+                'type': 'chunk',
+                'config': {
+                    'strategy': 'by_page',
+                    'include_orig_elements': True,
+                    'max_characters': 2048,
+                    'overlap': 150
+                }
+            },
+            {
+                'type': 'embed',
+                'config': {
+                    'provider': 'qwen',
+                    'model_name': 'text-embedding-v4'
+                }
+            }
+        ]
     }
     
     pipeline = create_pipeline_from_config(config)
@@ -428,20 +476,32 @@ config = {
         'x-ti-secret-code': 'your-secret-code'
     },
     
-    # 分块配置：基础分块
-    'chunk_config': {
-        'strategy': 'basic',              # 基础分块
-        'include_orig_elements': False,
-        'new_after_n_chars': 512,
-        'max_characters': 1024,
-        'overlap': 50                    # 适度的重叠
-    },
-    
-    # 向量化配置：使用标准模型
-    'embed_config': {
-        'provider': 'qwen',
-        'model_name': 'text-embedding-v3'  # 标准模型，速度快
-    }
+    # Stages 配置：定义处理流程
+    'stages': [
+        {
+            'type': 'parse',
+            'config': {
+                'provider': 'textin'
+            }
+        },
+        {
+            'type': 'chunk',
+            'config': {
+                'strategy': 'basic',              # 基础分块
+                'include_orig_elements': False,
+                'new_after_n_chars': 512,
+                'max_characters': 1024,
+                'overlap': 50                    # 适度的重叠
+            }
+        },
+        {
+            'type': 'embed',
+            'config': {
+                'provider': 'qwen',
+                'model_name': 'text-embedding-v3'  # 标准模型，速度快
+            }
+        }
+    ]
 }
 
 # 运行 Pipeline

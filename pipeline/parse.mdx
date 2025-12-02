@@ -353,6 +353,7 @@ from xparse_client import (
     Pipeline,
     LocalSource,
     LocalDestination,
+    Stage,
     ParseConfig
 )
 
@@ -383,7 +384,12 @@ pipeline = Pipeline(
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
-    parse_config=parse_config
+    stages=[
+        Stage(
+            type='parse',
+            config=parse_config
+        )
+    ]
 )
 
 pipeline.run()
@@ -406,7 +412,9 @@ parse_config = ParseConfig(
 # pipeline = Pipeline(
 #     source=source,
 #     destination=destination,
-#     parse_config=parse_config,
+#     stages=[
+#         Stage(type='parse', config=parse_config)
+#     ],
 #     # ... 其他配置
 # )
 ```
@@ -428,7 +436,9 @@ parse_config = ParseConfig(
 # pipeline = Pipeline(
 #     source=source,
 #     destination=destination,
-#     parse_config=parse_config,
+#     stages=[
+#         Stage(type='parse', config=parse_config)
+#     ],
 #     # ... 其他配置
 # )
 ```
@@ -449,7 +459,9 @@ parse_config = ParseConfig(
 # pipeline = Pipeline(
 #     source=source,
 #     destination=destination,
-#     parse_config=parse_config,
+#     stages=[
+#         Stage(type='parse', config=parse_config)
+#     ],
 #     # ... 其他配置
 # )
 ```
@@ -470,7 +482,9 @@ parse_config = ParseConfig(
 # pipeline = Pipeline(
 #     source=source,
 #     destination=destination,
-#     parse_config=parse_config,
+#     stages=[
+#         Stage(type='parse', config=parse_config)
+#     ],
 #     # ... 其他配置
 # )
 ```

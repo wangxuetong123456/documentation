@@ -242,6 +242,7 @@ from xparse_client import (
     Pipeline,
     LocalSource,
     LocalDestination,
+    Stage,
     ParseConfig,
     ChunkConfig,
     EmbedConfig
@@ -276,9 +277,20 @@ pipeline = Pipeline(
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
-    parse_config=parse_config,
-    chunk_config=chunk_config,
-    embed_config=embed_config
+    stages=[
+        Stage(
+            type='parse',
+            config=parse_config
+        ),
+        Stage(
+            type='chunk',
+            config=chunk_config
+        ),
+        Stage(
+            type='embed',
+            config=embed_config
+        )
+    ]
 )
 
 pipeline.run()
@@ -302,7 +314,10 @@ chunk_config = ChunkConfig(
 # pipeline = Pipeline(
 #     source=source,
 #     destination=destination,
-#     chunk_config=chunk_config,
+#     stages=[
+#         Stage(type='parse', config=parse_config),  # parse 是必需的
+#         Stage(type='chunk', config=chunk_config)
+#     ],
 #     # ... 其他配置
 # )
 ```
@@ -324,7 +339,10 @@ chunk_config = ChunkConfig(
 # pipeline = Pipeline(
 #     source=source,
 #     destination=destination,
-#     chunk_config=chunk_config,
+#     stages=[
+#         Stage(type='parse', config=parse_config),  # parse 是必需的
+#         Stage(type='chunk', config=chunk_config)
+#     ],
 #     # ... 其他配置
 # )
 ```
@@ -346,7 +364,10 @@ chunk_config = ChunkConfig(
 # pipeline = Pipeline(
 #     source=source,
 #     destination=destination,
-#     chunk_config=chunk_config,
+#     stages=[
+#         Stage(type='parse', config=parse_config),  # parse 是必需的
+#         Stage(type='chunk', config=chunk_config)
+#     ],
 #     # ... 其他配置
 # )
 ```

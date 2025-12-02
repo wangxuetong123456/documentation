@@ -40,8 +40,8 @@ from copy import deepcopy
 
 SCENARIO_CONFIGS = {
     "support": {"source": {"prefix": "faqs/"}, "destination": {"collection_name": "support_docs"}},
-    "marketing": {"chunk_config": {"strategy": "semantic", "max_characters": 1200}},
-    "education": {"chunk_config": {"include_orig_elements": True}, "destination": {"collection_name": "course_docs"}}
+    "marketing": {"stages": [{"type": "chunk", "config": {"strategy": "semantic", "max_characters": 1200}}]},
+    "education": {"stages": [{"type": "chunk", "config": {"include_orig_elements": True}}], "destination": {"collection_name": "course_docs"}}
 }
 
 def merge_dict(target, patch):
@@ -117,16 +117,30 @@ PIPELINE_CONFIG = {
         "x-ti-app-id": os.getenv("XTI_APP_ID"),
         "x-ti-secret-code": os.getenv("XTI_SECRET_CODE")
     },
-    "chunk_config": {
-        "strategy": "by_title",
-        "new_after_n_chars": 480,
-        "max_characters": 1500,
-        "overlap": 80
-    },
-    "embed_config": {
-        "provider": "qwen",
-        "model_name": "text-embedding-v4"
-    }
+    "stages": [
+        {
+            "type": "parse",
+            "config": {
+                "provider": "textin"
+            }
+        },
+        {
+            "type": "chunk",
+            "config": {
+                "strategy": "by_title",
+                "new_after_n_chars": 480,
+                "max_characters": 1500,
+                "overlap": 80
+            }
+        },
+        {
+            "type": "embed",
+            "config": {
+                "provider": "qwen",
+                "model_name": "text-embedding-v4"
+            }
+        }
+    ]
 }
 
 def run_pipeline(job_name: str) -> dict:

@@ -53,6 +53,7 @@ from xparse_client import (
     Pipeline, 
     LocalSource, 
     LocalDestination,
+    Stage,
     ParseConfig, 
     ChunkConfig, 
     EmbedConfig
@@ -96,9 +97,20 @@ pipeline = Pipeline(
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
-    parse_config=parse_config,
-    chunk_config=chunk_config,
-    embed_config=embed_config
+    stages=[
+        Stage(
+            type='parse',
+            config=parse_config
+        ),
+        Stage(
+            type='chunk',
+            config=chunk_config
+        ),
+        Stage(
+            type='embed',
+            config=embed_config
+        )
+    ]
 )
 
 # 运行 Pipeline
@@ -134,25 +146,32 @@ config = {
         'x-ti-secret-code': 'your-secret-code'  # 替换为您的 secret-code
     },
     
-    # Parse 配置（可选，使用默认值）
-    'parse_config': {
-        'provider': 'textin'  # 当前支持 textin 文档解析
-    },
-    
-    # Chunk 配置（可选）
-    'chunk_config': {
-        'strategy': 'basic',              # 分块策略: 'basic' | 'by_title' | 'by_page'
-        'include_orig_elements': False,   # 是否包含原始元素
-        'new_after_n_chars': 512,         # 多少字符后创建新块
-        'max_characters': 1024,           # 最大字符数
-        'overlap': 0                      # 重叠字符数
-    },
-    
-    # Embed 配置（可选）
-    'embed_config': {
-        'provider': 'qwen',                    # 向量化供应商: 'qwen' | 'doubao'
-        'model_name': 'text-embedding-v3'      # 模型名称
-    }
+    # Stages 配置：定义处理流程
+    'stages': [
+        {
+            'type': 'parse',
+            'config': {
+                'provider': 'textin'  # 当前支持 textin 文档解析
+            }
+        },
+        {
+            'type': 'chunk',
+            'config': {
+                'strategy': 'basic',              # 分块策略: 'basic' | 'by_title' | 'by_page'
+                'include_orig_elements': False,   # 是否包含原始元素
+                'new_after_n_chars': 512,         # 多少字符后创建新块
+                'max_characters': 1024,           # 最大字符数
+                'overlap': 0                      # 重叠字符数
+            }
+        },
+        {
+            'type': 'embed',
+            'config': {
+                'provider': 'qwen',                    # 向量化供应商: 'qwen' | 'doubao'
+                'model_name': 'text-embedding-v3'      # 模型名称
+            }
+        }
+    ]
 }
 
 # 使用配置创建并运行 pipeline
@@ -329,6 +348,7 @@ from xparse_client import (
     Pipeline,
     LocalSource,
     LocalDestination,
+    Stage,
     ParseConfig,
     ChunkConfig,
     EmbedConfig
@@ -346,6 +366,7 @@ destination = LocalDestination(
 )
 
 # 创建配置对象
+parse_config = ParseConfig(provider='textin')
 chunk_config = ChunkConfig(
     strategy='basic',
     max_characters=1024
@@ -365,8 +386,20 @@ pipeline = Pipeline(
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
-    chunk_config=chunk_config,
-    embed_config=embed_config
+    stages=[
+        Stage(
+            type='parse',
+            config=parse_config
+        ),
+        Stage(
+            type='chunk',
+            config=chunk_config
+        ),
+        Stage(
+            type='embed',
+            config=embed_config
+        )
+    ]
 )
 
 pipeline.run()
@@ -381,6 +414,8 @@ from xparse_client import (
     Pipeline,
     S3Source,
     MilvusDestination,
+    Stage,
+    ParseConfig,
     ChunkConfig,
     EmbedConfig
 )
@@ -429,9 +464,20 @@ pipeline = Pipeline(
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
-    parse_config=parse_config,
-    chunk_config=chunk_config,
-    embed_config=embed_config
+    stages=[
+        Stage(
+            type='parse',
+            config=parse_config
+        ),
+        Stage(
+            type='chunk',
+            config=chunk_config
+        ),
+        Stage(
+            type='embed',
+            config=embed_config
+        )
+    ]
 )
 
 pipeline.run()
@@ -446,6 +492,7 @@ from xparse_client import (
     Pipeline,
     LocalSource,
     LocalDestination,
+    Stage,
     ParseConfig,
     ChunkConfig,
     EmbedConfig
@@ -493,9 +540,20 @@ pipeline = Pipeline(
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
-    parse_config=parse_config,
-    chunk_config=chunk_config_by_page,
-    embed_config=embed_config_v4
+    stages=[
+        Stage(
+            type='parse',
+            config=parse_config
+        ),
+        Stage(
+            type='chunk',
+            config=chunk_config_by_page
+        ),
+        Stage(
+            type='embed',
+            config=embed_config_v4
+        )
+    ]
 )
 
 pipeline.run()
@@ -506,7 +564,7 @@ pipeline.run()
 如果您需要处理单个文件并获取详细的统计信息：
 
 ```python
-from xparse_client import LocalSource, LocalDestination, Pipeline, ParseConfig, ChunkConfig, EmbedConfig
+from xparse_client import LocalSource, LocalDestination, Pipeline, Stage, ParseConfig, ChunkConfig, EmbedConfig
 
 # 创建 pipeline
 source = LocalSource(directory='./docs', pattern='*.pdf')
@@ -535,9 +593,20 @@ pipeline = Pipeline(
         'x-ti-app-id': 'your-app-id',
         'x-ti-secret-code': 'your-secret-code'
     },
-    parse_config=parse_config,
-    chunk_config=chunk_config,
-    embed_config=embed_config
+    stages=[
+        Stage(
+            type='parse',
+            config=parse_config
+        ),
+        Stage(
+            type='chunk',
+            config=chunk_config
+        ),
+        Stage(
+            type='embed',
+            config=embed_config
+        )
+    ]
 )
 
 # 处理单个文件并获取统计信息
@@ -551,8 +620,12 @@ if result:
     print(f"分块后: {stats.chunked_elements}")
     print(f"向量化: {stats.embedded_elements}")
     print(f"使用配置:")
-    print(f"  - 分块策略: {stats.chunk_config.strategy}")
-    print(f"  - 向量模型: {stats.embed_config.model_name}")
+    # 从 stats.stages 中获取配置信息
+    for stage in stats.stages:
+        if stage['type'] == 'chunk':
+            print(f"  - 分块策略: {stage['config'].get('strategy', 'N/A')}")
+        elif stage['type'] == 'embed':
+            print(f"  - 向量模型: {stage['config'].get('model_name', 'N/A')}")
     
     # 写入目的地
     metadata = {'file_name': file_path}
