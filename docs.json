@@ -49,8 +49,7 @@
                       "pipeline/sources/huawei-obs",
                       "pipeline/sources/ftp",
                       "pipeline/sources/smb",
-                      "pipeline/sources/local",
-                      "pipeline/sources/manual-creation"
+                      "pipeline/sources/local"
                     ]
                   },
                   {
@@ -60,8 +59,7 @@
                       "pipeline/destinations/milvus-local",
                       "pipeline/destinations/zilliz",
                       "pipeline/destinations/s3",
-                      "pipeline/destinations/local",
-                      "pipeline/destinations/manual-creation"
+                      "pipeline/destinations/local"
                     ]
                   },
                   "pipeline/parse",
