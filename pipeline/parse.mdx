@@ -1,13 +1,13 @@
 ---
 title: "文档解析 - Parse"
-description: "了解 xParse ETL 中的文档解析模块，将非结构化文档转换为结构化元素"
+description: "了解 xParse 中的文档解析模块，将非结构化文档转换为结构化元素"
 ---
 
 ## 概念
 
 文档解析是将非结构化文件内容提取并转换为结构化[文档元素](/pipeline/elements-metadata)的过程。
 
-与简单将文件视为纯文本不同，xParse ETL 通过解析保留了文件的语义结构，让您能够在后续处理流程中进行更灵活的控制，并能充分考虑文件的结构特点。同时，通过将不同文件格式统一转换为 xParse ETL 的元素类型，无论源文件是什么格式，您都可以在下游采用相同的方式处理。
+与简单将文件视为纯文本不同，xParse 通过解析保留了文件的语义结构，让您能够在后续处理流程中进行更灵活的控制，并能充分考虑文件的结构特点。同时，通过将不同文件格式统一转换为 xParse 的元素类型，无论源文件是什么格式，您都可以在下游采用相同的方式处理。
 
 ## 用途
 
@@ -22,21 +22,24 @@ description: "了解 xParse ETL 中的文档解析模块，将非结构化文档
 
 ### provider
 
-**类型**: `string`  
-**必填**: 是  
-**默认值**: `"textin"`  
-**可选值**: `textin` | `mineru` | `paddle`
+**类型**: `string` <br />
+**必填**: 是 <br />
+**默认值**: `textin` <br />
+**可选值**: `textin` | `textin-lite` | `mineru` | `paddle` 
 
 Parser 解析引擎选择：
 
-- **textin**: TextIn 自研解析引擎（推荐）
-- **mineru**: MinerU 解析引擎（Textin 托管）
-- **paddle**: PaddleOCR 解析引擎（Textin 托管）
+- **textin**: TextIn 自研高性能解析引擎，适合大多数场景（推荐）
+- **textin-lite**: TextIn 全文识别解析引擎，适合纯文本、电子档 pdf 等场景，速度更快，价格更低
+- **mineru**: MinerU 解析引擎，在学术论文等场景表现优异
+- **paddle**: PaddleOCR 解析引擎，在多语言和复杂文档场景（如PPT）表现优异
+
+更多先进引擎正在陆续支持中，敬请期待。
 
 ### pdf_pwd
 
-**类型**: `string`  
-**必填**: 否
+**类型**: `string` <br />
+**必填**: 否 
 
 PDF 密码。当 PDF 为加密文档时，需要提供密码。
 
@@ -44,89 +47,55 @@ PDF 密码。当 PDF 为加密文档时，需要提供密码。
 **安全提示**：对前端封装该接口参数时，需要自行对密码进行安全防护。
 </Warning>
 
-### page_start
+### page_ranges
 
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `1`  
-**最小值**: `1`
+**类型**： `string` <br /> 
+**必填**: 否 
 
-起始页码。当上传的是 PDF 时，表示从第几页开始解析。取值范围从 1 开始，不传该参数时默认从首页开始。
+指定解析页码范围，格式为逗号分隔的字符串。
 
-### page_count
+- **15**: 只解析第 15 页
+- **20-25**: 解析第 20 页到第 25 页
+- **1,3,5-7**: 解析第 1、3、5、6、7 页
 
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `1000`  
-**最小值**: `1`  
-**最大值**: `1000`
+### crop_dewarp
 
-解析页数。当上传的是 PDF 时，表示要进行解析的 PDF 页数。总页数不得超过 1000 页。
+**类型**: `integer` <br /> 
+**必填**: 否 <br />
+**默认值**: `0` <br />
+**可选值**: `0` | `1` <br />
 
-### parse_mode
+是否进行切边矫正预处理，默认为0，不进行切边矫正。
 
-**类型**: `string`  
-**必填**: 否  
-**默认值**: `"scan"`  
-**可选值**: `auto` | `scan`
+- **0**: 不进行切边矫正
+- **1**: 进行切边矫正
 
-PDF 文档的解析模式。图片不用设置，均默认按 scan 模式处理。
+### remove_watermark
 
-- **auto**: 综合文字识别和解析模式，对 PDF 电子档解析会直接提取 PDF 中的文字
-- **scan**: 仅按文字识别模式，将 PDF 当成图片处理
+**类型**: `integer` <br />
+**必填**: 否 <br />
+**默认值**: `0` <br />
+**可选值**: `0` | `1` 
 
-### dpi
+是否进行去水印预处理，默认为0，不去水印。
 
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `144`  
-**可选值**: `72` | `144` | `216`
+- **0**: 不去水印
+- **1**: 去水印
 
-PDF 文档的坐标基准，与 `parse_mode` 参数联动：
+### Textin 引擎特定参数（provider = textin 时）
 
-- 当 `parse_mode=auto` 时：默认动态，支持 72、144、216
-- 当 `parse_mode=scan` 时：默认 144，支持 72、144、216
+#### parse_mode
 
-### apply_document_tree
+**类型**: `string` <br />
+**必填**: 否 <br />
+**默认值**: `scan` <br />
+**可选值**: `auto` | `scan` 
 
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `1`  
-**可选值**: `0` | `1`
+pdf文档的解析模式，默认为scan模式。图片不用设置，均默认按scan模式处理。
+- auto: 综合文字识别和解析模式：对pdf电子档解析，会直接提取pdf中的文字
+- scan: 仅按文字识别模式：将pdf当成图片处理
 
-Markdown 中是否生成标题层级。
-
-- **0**: 不生成标题（同时也不会返回 catalog 字段）
-- **1**: 生成标题
-
-### table_flavor
-
-**类型**: `string`  
-**必填**: 否  
-**默认值**: `"html"`  
-**可选值**: `md` | `html` | `none`
-
-Markdown 里的表格格式。
-
-- **md**: 按 Markdown 语法输出表格
-- **html**: 按 HTML 语法输出表格
-- **none**: 不进行表格识别，把表格图像当成普通文字段落来识别
-
-### get_image
-
-**类型**: `string`  
-**必填**: 否  
-**默认值**: `"none"`  
-**可选值**: `none` | `page` | `objects` | `both`
-
-获取 Markdown 里的图片。
-
-- **none**: 不返回任何图像
-- **page**: 返回每一页的整页图像（即 PDF 页的完整页图片）
-- **objects**: 返回页面内的子图像（即 PDF 页内的各个子图片）
-- **both**: 返回整页图像和图像对象
-
-### image_output_type
+{/* #### image_output_type
 
 **类型**: `string`  
 **必填**: 否  
@@ -136,52 +105,14 @@ Markdown 里的表格格式。
 指定返回的图片对象输出类型。
 
 - **base64str**: 指定所有图片对象为 base64 字符串，适用于没有云存储的用户，但是引擎返回结果体积会很大
-- **default**: 指定子图片对象为图片 URL，页图片对象为图片 ID
+- **default**: 指定子图片对象为图片 URL，页图片对象为图片 ID */}
 
-### apply_image_analysis
+#### underline_level
 
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `0`  
-**可选值**: `0` | `1`
-
-图像分析参数。利用大模型对文档中的子图片进行分析，分析结果以 Markdown 格式输出，并替换掉子图片的文本识别内容。
-
-- **0**: 不进行图像分析
-- **1**: 进行图像分析
-
-### paratext_mode
-
-**类型**: `string`  
-**必填**: 否  
-**默认值**: `"annotation"`  
-**可选值**: `none` | `annotation` | `body`
-
-Markdown 中非正文文本内容展示模式。非正文内容包括页眉页脚、子图中的文本。
-
-- **none**: 不展示
-- **annotation**: 以注释格式插入到 Markdown 中（页眉页脚中的图片只保留文本，图片 base64 或 URL 不保留）
-- **body**: 以正文格式插入到 Markdown 中
-
-### formula_level
-
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `0`  
-**可选值**: `0` | `1` | `2`
-
-公式识别等级。开启公式识别后，会使用 LaTeX 表达式。
-
-- **0**: 行间公式和行内公式都识别
-- **1**: 仅识别行间公式，行内公式不识别
-- **2**: 不识别公式
-
-### underline_level
-
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `0`  
-**可选值**: `0` | `1` | `2`
+**类型**: `integer` <br />
+**必填**: 否 <br />
+**默认值**: `0` <br />
+**可选值**: `0` | `1` | `2` 
 
 控制下划线识别范围。
 
@@ -189,118 +120,42 @@ Markdown 中非正文文本内容展示模式。非正文内容包括页眉页�
 - **1**: 仅识别无文字的下划线（仅 scan 模式可用）
 - **2**: 识别全部的下划线（仅 scan 模式可用）
 
-### apply_merge
+#### apply_chart
 
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `1`  
-**可选值**: `0` | `1`
-
-是否进行段落合并和表格合并。
-
-- **0**: 不合并
-- **1**: 合并段落和表格
-
-### raw_ocr
-
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `0`  
-**可选值**: `0` | `1`
-
-是否返回全部文字识别结果（包含字符坐标信息），结果字段为 raw_ocr。与 page_details 参数联动，当 page_details 为 0 时不返回。
-
-- **0**: 不返回
-- **1**: 返回
-
-### char_details
-
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `0`  
-**可选值**: `0` | `1`
-
-是否返回结果中的 char_pos 字段（保存每个字符的位置信息）和 raw_ocr 中的 char_ 相关字段。
-
-- **0**: 不返回
-- **1**: 返回
-
-### catalog_details
-
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `0`  
-**可选值**: `0` | `1`
-
-是否返回结果中的 catalog 字段，保存目录相关信息。与 apply_document_tree 参数联动，当 apply_document_tree 为 0 时不返回。
-
-- **0**: 不返回
-- **1**: 返回
-
-### get_excel
-
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `0`  
-**可选值**: `0` | `1`
-
-是否返回 Excel 的 base64 结果，结果字段为 excel_base64。可以根据该字段进行后处理保存 Excel 文件。
-
-- **0**: 不返回
-- **1**: 返回
-
-### crop_dewarp
-
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `0`  
-**可选值**: `0` | `1`
-
-切边矫正。是否进行切边矫正预处理。
-
-- **0**: 不进行切边矫正
-- **1**: 进行切边矫正
-
-### remove_watermark
-
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `0`  
-**可选值**: `0` | `1`
-
-去水印。是否进行去水印预处理。
-
-- **0**: 不去水印
-- **1**: 去水印
-
-### apply_chart
-
-**类型**: `integer`  
-**必填**: 否  
-**默认值**: `0`  
-**可选值**: `0` | `1`
+**类型**: `integer` <br />
+**必填**: 否 <br />
+**默认值**: `0` <br />
+**可选值**: `0` | `1` 
 
 图表识别。是否开启图表识别，开启图表识别会将识别到的图表以表格形式输出。
 
 - **0**: 不开启图表识别
 - **1**: 开启图表识别
 
+### MinerU 引擎特定参数（provider = mineru 时）
+
+xParse 支持 MinerU vlm 模型，除了上述通用参数，xParse 会将用户提交的其余参数透传给 MinerU 引擎，具体参数请参考[MinerU API 文档](https://mineru.net/apiManage/docs)。
+
+### Paddle 引擎特定参数（provider = paddle 时）
+
+xParse 支持 PaddleOCR-VL 模型，除了上述通用参数，xParse 会将用户提交的其余参数透传给 PaddleOCR 引擎，具体参数请参考[PaddleOCR API 文档](https://ai.baidu.com/ai-doc/AISTUDIO/2mh4okm66)。
+
 ## 输出结果说明
 
 parse 阶段返回一个[文档元素](/pipeline/elements-metadata)列表。每个元素包含以下字段：
 
-- **element_id**: 元素的唯一标识符（文本+坐标+页码的 SHA-256）
+- **element_id**: 元素的唯一标识符（文本+坐标+页码+文件名的 SHA-256）
 - **type**: 元素类型（如 `NarrativeText`、`Title`、`Table` 等）
 - **text**: 提取的文本内容
 - **metadata**: 元数据信息，常见字段包括：
-  - `filename` / `file_directory` / `last_modified`
-  - `filetype`
+  - `filename` / `file_directory` / `filetype`
+  - `last_modified`
+  - `page_number` / `page_width` / `page_height`
   - `coordinates`（8位数组，表示四边形四个点）
   - `parent_id` / `category_depth`
-  - `text_as_html`（针对表格）、`image_base64` / `image_mine_type`
-  - `languages`、`emphasized_text_contents`、`emphasized_text_tags`
-  - `orig_elements`（当启用 include）、`detection_class_prob`
-  - `is_continuation`（仅 parse 阶段，用于标注跨段连续性）
+  - `image_base64` / `image_mine_type`
+  - `text_as_html`（针对表格）
+  - `data_source` （数据源详细信息）
 
 ## 返回结果示例
 
@@ -314,35 +169,36 @@ parse 阶段返回一个[文档元素](/pipeline/elements-metadata)列表。每�
             {
                 "element_id": "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
                 "type": "NarrativeText",
-                "text": "xParse ETL 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。",
+                "text": "xParse 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。",
                 "metadata": {
                     "page_number": 1,
-                    "parent_id": "56f24319ae258b735cac3ec2a271b1d9",
+                    "page_width": 1191,
+                    "page_height": 1684,
+                    "parent_id": "23a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
                     "category_depth": 1,
                     "coordinates": [217, 390, 1336, 390, 1336, 460, 217, 460],
-                    "languages": ["zh"],
-                    "emphasized_text_contents": ["AI 基础设施"],
-                    "emphasized_text_tags": ["bold"],
-                    "image_base64": null,
-                    "image_mine_type": null,
                     "text_as_html": "<p>...</p>",
-                    "orig_elements": [
-                        "a0b1c2d3e4f50617a0b1c2d3e4f50617a0b1c2d3e4f50617a0b1c2d3e4f50617",
-                        "0f1e2d3c4b5a69780f1e2d3c4b5a69780f1e2d3c4b5a69780f1e2d3c4b5a6978"
-                    ],
-                    "is_continuation": false,
-                    "detection_class_prob": 0.98,
                     "filename": "example.pdf",
                     "file_directory": "/projects/demo/",
                     "filetype": "application/pdf",
                     "last_modified": "2024-11-19T14:15:22",
+                    "data_source": {
+                        "record_locator": {
+                            "protocol": "file",
+                            "remote_file_path": "/projects/demo/example.pdf"
+                        },
+                        "url": "file:///projects/demo/example.pdf",
+                        "version": "1758624866230967485",
+                    }
                 }
-            }
+            },
             // ... more elements
         ]
-    }
+    },
 }
 ```
+
+更多返回结果示例请参考[文档元素和元数据](/pipeline/elements-metadata)。
 
 ## 使用示例
 

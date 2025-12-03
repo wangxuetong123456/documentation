@@ -1,15 +1,15 @@
 ---
 title: "产品简介"
-description: "xParse ETL - 面向Agent和RAG的新一代文档处理 AI Infra"
+description: "xParse - 面向Agent和RAG的新一代文档处理 AI Infra"
 ---
 
-xParse ETL 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。通过统一的 Pipeline API，一次性完成文档解析（Parse）、智能分块（Chunk）和向量化（Embed）全流程，让文档数据无缝流入向量数据库，为 RAG、Agentic Workflow 等 AI 应用提供强大的数据底座。
+xParse 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。通过统一的 Pipeline API，一次性完成文档解析（Parse）、智能分块（Chunk）和向量化（Embed）全流程，让文档数据无缝流入向量数据库，为 RAG、Agentic Workflow 等 AI 应用提供强大的数据底座。
 
-xParse ETL 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、FTP、SMB、本地文件系统等多种数据源读取文档，经过智能处理后，将向量数据存储到 Milvus/Zilliz 向量数据库或本地文件系统，实现从文档到向量数据库的完整自动化链路。
+xParse 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、FTP、SMB、本地文件系统等多种数据源读取文档，经过智能处理后，将向量数据存储到 Milvus/Zilliz 等向量数据库本地文件系统，实现从文档到向量数据库的完整自动化链路。
 
-### xParse ETL - 让文档处理像流水线一样简单
+### xParse - 让文档处理像流水线一样简单
 
-提供端到端的文档处理 AI 基础设施，从非结构化文档到向量数据库，一键完成全流程处理，您只需关心业务，剩下的交给 xParse ETL。
+提供端到端的文档处理 AI 基础设施，从非结构化文档到向量数据库，一键完成全流程处理，您只需关心业务，剩下的交给 xParse。
 
 ![Pipeline 架构图](/images/pipeline/pipeline-arc.png)
 
@@ -36,7 +36,7 @@ xParse ETL 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、
 
 - **统一 Pipeline API，一键完成全流程**：通过 `/api/xparse/pipeline` 接口，一次性完成文档解析、智能分块和向量化，无需多次调用，大幅简化开发流程，提升处理效率。
 
-- **多种解析引擎支持**：支持 TextIn自研解析引擎（推荐）、MinerU、PaddleOCR等多种行业内先进的解析引擎，可根据文档类型和解析需求灵活选择最适合的解析方案。
+- **多种解析引擎支持**：支持 TextIn自研高性能解析引擎（推荐）、MinerU、PaddleOCR等多种行业内先进的解析引擎，可根据文档类型和解析需求灵活选择最适合的解析方案。
 
 - **灵活的数据源支持**：支持兼容 S3 协议的对象存储（如 MinIO）、SMB 网络共享、FTP 协议文件系统和本地文件系统，轻松对接各种数据存储场景，满足企业级部署需求。
 
@@ -72,22 +72,22 @@ xParse ETL 持续与业界丰富的连接器生态集成。支持从 S3/MinIO、
 
 ### 技术架构
 
-xParse ETL 采用模块化设计，核心组件包括：
+xParse 采用模块化设计，核心组件包括：
 
-- **Source（数据源）**：抽象数据源接口，支持 S3Source、LocalSource、FtpSource 等实现
+- **Source（数据源）**：抽象数据源接口，支持 S3Source、FtpSource、SMBSource、LocalSource 等实现
 - **Pipeline（处理管线）**：核心处理逻辑，调用统一 Pipeline API 完成文档处理
-- **Destination（目标存储）**：抽象目标存储接口，支持 MilvusDestination、LocalDestination 等实现
+- **Destination（目标存储）**：抽象目标存储接口，支持 MilvusDestination、S3Destination、LocalDestination 等实现
 - **Config（配置类）**：ParseConfig、ChunkConfig、EmbedConfig 等配置数据类，支持灵活的参数配置
 
 ### 快速体验
 
-想要快速体验 xParse ETL 的能力？可以：
+想要快速体验 xParse 的能力？可以：
 
 1. **查看[快速启动指南](/pipeline/quickstart)**：5 分钟完成安装和第一个 Pipeline 运行
 2. **了解[文档元素和元数据](/pipeline/elements-metadata)**：了解 Pipeline 处理后的数据结构
 3. **配置[数据源连接器](/pipeline/sources)**：了解如何从 S3、本地文件夹或 FTP 读取文档
-4. **配置[目的地连接器](/pipeline/destinations)**：了解如何将结果存储到 Milvus/Zilliz 或本地文件系统
-5. **阅读[Agent/RAG 实战教程](/pipeline/tutorial/overview)**：了解如何使用 xParse ETL 构建完整的 RAG 应用与 LangChain Agent
+4. **配置[目的地连接器](/pipeline/destinations)**：了解如何将结果存储到 Milvus/Zilliz、S3 或本地文件系统
+5. **阅读[Agent/RAG 实战教程](/pipeline/tutorial/overview)**：了解如何使用 xParse 构建完整的 Agent 与 RAG 应用
 6. **参考[API 文档](/api-reference/endpoint/pipeline)**：查看详细的接口说明和参数配置
 
 更多详情见：[TextIn xParse 产品介绍](https://www.textin.com/market/detail/xparse)

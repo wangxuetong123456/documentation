@@ -1,6 +1,6 @@
 ---
 title: "文本分块 - Chunk"
-description: "了解 xParse ETL 中的文本分块模块，将文档元素组合成适合向量化的块"
+description: "了解 xParse 中的文本分块模块，将文档元素组合成适合向量化的块"
 ---
 
 ## 概念
@@ -24,7 +24,7 @@ description: "了解 xParse ETL 中的文本分块模块，将文档元素组合
 
 ## 分块策略
 
-xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
+xParse 支持三种分块策略，每种策略适用于不同的场景：
 
 ### basic（基础分块）
 
@@ -130,9 +130,7 @@ xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
 **必填**: 否  
 **默认值**: `false`
 
-是否在 metadata 中包含原始元素 ID。设置为 `true` 时，分块后的元素会在 `metadata.orig_elements` 字段中记录组成该块的所有原始元素的 ID 列表。
-
-这有助于追踪分块前的原始元素，方便了解块的来源。
+是否在 metadata 中包含原始元素信息。设置为 `true` 时，分块后的元素会在 `metadata.orig_elements` 字段中记录组成该块的所有原始元素的信息。
 
 ### new_after_n_chars
 
@@ -162,7 +160,7 @@ xParse ETL 支持三种分块策略，每种策略适用于不同的场景：
 
 ## Chunk 后的数据结构
 
-xParse ETL 在 chunk 阶段同样只输出以下几类元素：
+xParse 在 chunk 阶段同样只输出以下几类元素：
 
 | 元素类型 | 说明 |
 | --- | --- |
@@ -170,18 +168,20 @@ xParse ETL 在 chunk 阶段同样只输出以下几类元素：
 | `Table` | 当表格大小低于 `max_characters` 时保持原样 |
 | `TableChunk` | 当表格过大时按行拆分成多个 `TableChunk` |
 
-> ℹ️ `Image` 元素不会在 chunk 结果中保留。但如果使用高分辨率解析并启用 `include_orig_elements`，可在 `orig_elements` 内找到对应图片的 `image_base64` 信息。
+> ℹ️ `Image` 元素不会在 chunk 结果中保留。但如果启用 `include_orig_elements`，可在 `orig_elements` 内找到对应图片的 `image_base64` 信息。
 
 ### metadata.orig_elements
 
-当启用 **Include original elements** 时，Pipeline 会在 chunk 结果的 `metadata.orig_elements` 中记录原始元素：
+当启用 **include_orig_elements** 时，xParse 会在 chunk 结果的 `metadata.orig_elements` 中记录原始元素：
+`orig_elements` 会是一串压缩后的 JSON，需按"Base64 → gzip → UTF-8"顺序解码才能获取原文（用于保留图片/表格的原始元信息，支持快速回溯）。可参考[Chunk结果溯源](#chunk结果溯源)。
 
-- 默认输出：原始元素 ID 列表，便于快速回溯。
-- 高级模式：若按 gzip+Base64 方案配置，`orig_elements` 会是一串压缩后的 JSON，需按"Base64 → gzip → UTF-8"顺序解码才能获取原文（用于保留图片/表格的原始元信息）。
 
-### is_continuation
 
-`is_continuation` 仅用于描述 **parse 阶段**元素的跨段连续关系。完成 chunk 后，系统会重新组合文本块，因此 chunk 结果中不会出现该字段。
+### metadata.is_continuation
+
+`is_continuation` 用于标记 **chunk 阶段**之后当前块是否与上一块连续，即是否属于同一个解析元素（由于max_characters被截断）。
+
+更多基础字段请参考[文档元素和元数据](/pipeline/elements-metadata)。
 
 ## 输出结果说明
 
@@ -190,7 +190,7 @@ xParse ETL 在 chunk 阶段同样只输出以下几类元素：
 - **type**：仅可能是 `CompositeElement`、`Table` 或 `TableChunk`。
 - **text**：可能由多个原始段落拼接而成，或是拆分大表格后的片段。
 - **metadata**：
-  - 保留基础字段（如 `filename`、`filetype`、`languages` 等）。
+  - 保留基础字段（如 `filename`、`filetype`、`page_number`等）。
   - `orig_elements` 指向原始元素，用于还原上下文。
   - 大表格拆分时，后续块的 `metadata` 中会自动复用 `text_as_html` 等信息，保证结构完整。
 
@@ -207,11 +207,23 @@ xParse ETL 在 chunk 阶段同样只输出以下几类元素：
         "filename": "example.pdf",
         "file_directory": "/projects/demo/",
         "filetype": "application/pdf",
-        "orig_elements": [
-            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
-            "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-            "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
-        ]
+        "last_modified": "1758624866230",
+        "page_number": 1,
+        "page_width": 1191,
+        "page_height": 1684,
+        "orig_elements": "eJy ... Base64-encoded gzip+UTF-8 string ... x8=",
+        "is_continuation": false,
+        "data_source": {
+            "record_locator": {
+                "protocol": "file",
+                "remote_file_path": "/projects/demo/example.pdf"
+            },
+            "url": "file:///projects/demo/example.pdf",
+            "version": "1758624866230967485",
+            "date_created": "1764555574237",
+            "date_modified": "1758624866230",
+            "date_processed": "1764742970688"
+        }
     }
 }
 ```
@@ -227,10 +239,28 @@ xParse ETL 在 chunk 阶段同样只输出以下几类元素：
         "filename": "example.pdf",
         "filetype": "application/pdf",
         "text_as_html": "<table>...</table>",
-        "orig_elements": ["0a1b2c3d4e5f60710a1b2c3d4e5f60710a1b2c3d4e5f60710a1b2c3d4e5f6071"],
-        "detection_class_prob": 0.92
+        "orig_elements": "eJy ... Base64-encoded gzip+UTF-8 string ... x8=",
+        ...other metadata...
     }
 }
+```
+
+## Chunk结果溯源
+
+分块后 `medata.orig_elements` 中存储的了组成对应分块的所有原文信息（元素列表），格式为 gzip 压缩后的 base64 字符串，需按"Base64 → gzip → UTF-8"顺序解码才能获取原文。
+
+```python
+import base64
+import zlib
+import json
+
+def extract_orig_elements(orig_elements):
+    decoded = base64.b64decode(orig_elements)
+    decompressed = zlib.decompress(decoded)
+    return json.loads(decompressed.decode('utf-8'))
+
+result = extract_orig_elements(element['metadata']['orig_elements'])
+print(result)
 ```
 
 ## 使用示例
@@ -304,7 +334,7 @@ from xparse_client import ChunkConfig
 # 创建分块配置，按标题分块
 chunk_config = ChunkConfig(
     strategy='by_title',
-    include_orig_elements=True,  # 保留原始元素 ID
+    include_orig_elements=True,  # 保留原始元素
     new_after_n_chars=512,
     max_characters=1536,
     overlap=100  # 章节间重叠 100 字符
@@ -398,7 +428,7 @@ chunk_config = ChunkConfig(
 1. **选择合适的策略**：根据文档类型和业务需求选择合适的分块策略
 2. **设置合理的块大小**：`max_characters` 应该根据嵌入模型的限制和业务需求设置
 3. **使用重叠**：适度的重叠（50-150 字符）可以提高检索质量
-4. **保留原始元素 ID**：如果需要在后续处理中追溯原始元素，设置 `include_orig_elements=true`
+4. **保留原始元素信息**：如果需要在后续处理中追溯原始元素，设置 `include_orig_elements=true`
 5. **测试和优化**：根据实际效果调整分块参数
 
 ## 相关文档

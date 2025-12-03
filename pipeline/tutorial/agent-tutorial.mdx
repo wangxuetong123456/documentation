@@ -1,6 +1,6 @@
 ---
-title: "xParse ETL + LangChain 构建实时智能解析 Agent"
-description: "结合 xParse ETL 与 LangChain Agent，实现一体化的文档解析、知识入库与智能问答自动化流程。"
+title: "xParse + LangChain 构建 Agent"
+description: "结合 xParse 与 LangChain Agent，实现一体化的文档解析、知识入库与智能问答自动化流程。"
 ---
 
 <Tip>
@@ -83,7 +83,7 @@ def get_pipeline_config(scene: str = "support"):
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install "xparse-pipeline>=0.6" langchain langchain-community langchain-core \
+pip install "xparse-client>=0.2.5" langchain langchain-community langchain-core \
             pymilvus qianfan # 或者 openai/aliyun 对应 SDK
 export XTI_APP_ID=your-app-id
 export XTI_SECRET_CODE=your-secret-code

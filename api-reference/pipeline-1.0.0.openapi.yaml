@@ -92,12 +92,13 @@ paths:
 
                     1. **Parse Stage** (`type: "parse"`)
 
-                    Parse 参数中有必填项`Provider`，表示文档解析服务的供应商，目前可选项如下：
-                    - textin: 合合信息提供的文档解析服务，在速度、准确性上均为行业领先
-                      - 支持的文档解析参数参考 [Parse 参数说明](/pipeline/parse#参数说明)
-                      - 接口调用将按照 `TextIn 通用文档解析` 服务的计费标准进行计费
-                    - mineru: 基于开源的最新[MinerU](https://github.com/opendatalab/MinerU)解析引擎
-                    - paddle: 基于开源的最新[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)解析引擎
+                    Parse 参数中有必填项`provider`，表示文档解析服务的供应商，目前可选项如下：
+                    - textin: 合合信息提供的文档解析服务，在速度、准确性上均为行业领先，适合大多数场景（推荐）
+                    - textin-lite: 全文识别文档解析服务，适合纯文本、电子档 pdf 等场景，速度更快，价格更低
+                    - mineru: 基于开源的最新 MinerU vlm 解析引擎，在学术论文等场景表现优异
+                    - paddle: 基于开源的最新 PaddleOCR-VL 解析引擎，在多语言和复杂文档场景（如PPT）表现优异
+
+                    更多解析参数与详情参考[文档解析 - Parse](/pipeline/parse)。
 
                     2. **Chunk Stage** (`type: "chunk"`)
 
@@ -112,6 +113,7 @@ paths:
                     - **overlap** (`int`/可选): 将前一个文本分块末尾指定数量的字符，作为前缀应用到由过大元素分割而成的第二个及后续文本块。默认值：`None`。常用于确保分块之间的上下文连续性。
                     - **overlap_all** (`bool`/可选): 如果为 `true`，重叠也会应用到由完整元素组合而成的"普通"块。默认值：`False`。谨慎使用，可能在语义上引入噪声。
 
+                    更多分块参数与详情参考[文本分块 - Chunk](/pipeline/chunk)。
 
                     3. **Embed Stage** (`type: "embed"`)
 
@@ -122,6 +124,8 @@ paths:
                     - `doubao` 供应商，即火山引擎:
                       - `doubao-embedding-large-text-250515`
                       - `doubao-embedding-text-240715`
+                    
+                    更多向量化参数与详情参考[向量化 - Embed](/pipeline/embed)。
                   example: '[{"type":"parse","config":{"provider":"textin"}}]'
             encoding:
               stages:
@@ -142,10 +146,24 @@ paths:
                         type: "NarrativeText"
                         metadata:
                           filename: "example.pdf"
+                          file_directory: "/projects/demo/"
                           filetype: "application/pdf"
-                          file_size: 102400
-                          languages: ["zh"]
-                          is_continuation: false
+                          last_modified: "1758624866230"
+                          page_number: 1
+                          page_width: 1191
+                          page_height: 1684
+                          coordinates: [217, 390, 1336, 390, 1336, 460, 217, 460]
+                          parent_id: "23a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc"
+                          category_depth: 1
+                          data_source:
+                            record_locator:
+                              protocol: "file"
+                              remote_file_path: "/projects/demo/example.pdf"
+                            url: "file:///projects/demo/example.pdf"
+                            version: "1758624866230967485"
+                            date_created: "1764555574237"
+                            date_modified: "1758624866230"
+                            date_processed: "1764742970688"
                         text: "这是解析出的文本内容"
                     stats:
                       original_elements: 10
@@ -164,11 +182,25 @@ paths:
                         metadata:
                           filename: "example.pdf"
                           filetype: "application/pdf"
-                          file_size: 102400
-                          orig_elements:
-                            - "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
-                            - "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-                          detection_class_prob: 0.95
+                          file_directory: "/projects/demo/"
+                          last_modified: "1758624866230"
+                          page_number: 1
+                          page_width: 1191
+                          page_height: 1684
+                          coordinates: [217, 390, 1336, 390, 1336, 460, 217, 460]
+                          parent_id: "23a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc"
+                          category_depth: 1
+                          orig_elements: "eJy ... Base64-encoded gzip+UTF-8 string ... x8="
+                          is_continuation: false
+                          data_source:
+                            record_locator:
+                              protocol: "file"
+                              remote_file_path: "/projects/demo/example.pdf"
+                            url: "file:///projects/demo/example.pdf"
+                            version: "1758624866230967485"
+                            date_created: "1764555574237"
+                            date_modified: "1758624866230"
+                            date_processed: "1764742970688"
                         text: "这是处理后的文本块"
                         embeddings: [0.1, 0.2, 0.3, 0.4]
                     stats:
@@ -296,10 +328,6 @@ components:
       required:
         - filename
       properties:
-        record_id:
-          type: string
-          description: 记录 ID
-          example: "record_001"
         parent_id:
           type: string
           description: 父元素 ID
@@ -308,24 +336,19 @@ components:
           type: string
           description: 文件名
           example: "example.pdf"
-        filetype:
-          type: string
-          description: 文件类型
-          example: "application/pdf"
-        file_size:
-          type: integer
-          format: int64
-          description: 文件大小（字节）
-          example: 102400
         file_directory:
           type: string
           description: 文件所在的目录或前缀
           example: "/projects/demo/"
+        filetype:
+          type: string
+          description: 文件类型
+          example: "application/pdf"
         last_modified:
           type: string
           format: date-time
-          description: 文件最后修改时间
-          example: "2024-11-19T14:15:22Z"
+          description: 文件最后修改时间（Unix 毫秒时间戳）
+          example: "1758624866230"
         coordinates:
           type: array
           description: |
@@ -340,12 +363,6 @@ components:
           type: integer
           description: 元素在同类元素中的目录深度
           example: 1
-        languages:
-          type: array
-          description: 元素的语言列表
-          items:
-            type: string
-          example: ["zh", "en"]
         text_as_html:
           type: string
           description: 表格或富文本的 HTML 表示
@@ -357,32 +374,15 @@ components:
           type: string
           description: 图片的 MIME 类型
           example: "image/png"
-        emphasized_text_contents:
-          type: array
-          description: 被强调（粗体/斜体）的文本内容
-          items:
-            type: string
-        emphasized_text_tags:
-          type: array
-          description: 与强调文本对应的样式标签
-          items:
-            type: string
         is_continuation:
           type: boolean
-          description: 是否与下一段落连续（仅 parse 阶段）
+          description: 分块结果中，当前块是否与上一块连续，即是否属于同一个解析元素（由于max_characters被截断）（仅 chunk 阶段后）
         orig_elements:
           type: array
-          description: 原始元素 ID 列表（仅在 chunk 时设置 include_orig_elements 为 true 时存在）
+          description: 分块结果中，组成当前块的原始元素列表（仅在 chunk 时设置 include_orig_elements 为 true 时存在，格式为 gzip+Base64 压缩串）
           items:
             type: string
-          example:
-            - "7d3d8091c9f646cf8edcb9bf92f797b1"
-            - "bb9d1d24cfb442dcb25bbaaf634e210d"
-        detection_class_prob:
-          type: number
-          format: float
-          description: 版面检测置信度
-          example: 0.95
+          example: "eJy ... Base64-encoded gzip+UTF-8 string ... x8="
     
     PipelineStats:
       type: object
@@ -451,10 +451,11 @@ components:
       properties:
         provider:
           type: string
-          enum: [textin, mineru, paddle]
+          enum: [textin,textin-lite, mineru, paddle]
           description: |
             Parser 解析引擎：
-            - textin: TextIn 自研解析引擎
+            - textin: TextIn 解析引擎
+            - textin-lite: TextIn 全文识别解析引擎
             - mineru: MinerU 解析引擎
             - paddle: PaddleOCR 解析引擎
           default: "textin"
@@ -468,24 +469,14 @@ components:
             **安全提示**：对前端封装该接口参数时，需要自行对密码进行安全防护。
           example: "password123"
         
-        page_start:
-          type: integer
-          minimum: 1
+        page_ranges:
+          type: string
           description: |
-            起始页码。当上传的是 PDF 时，表示从第几页开始解析。
-            取值范围从 1 开始，不传该参数时默认从首页开始。
-          default: 1
-          example: 1
-        
-        page_count:
-          type: integer
-          minimum: 1
-          maximum: 1000
-          description: |
-            解析页数。当上传的是 PDF 时，表示要进行解析的 PDF 页数。
-            总页数不得超过 1000 页。
-          default: 1000
-          example: 10
+            PDF 文档的页码范围，格式为逗号分隔的字符串。
+            - 15: 只解析第 15 页
+            - 20-25: 解析第 20 页到第 25 页
+            - 1,3,5-7: 解析第 1、3、5、6、7 页
+          example: "15,20-25,1,3,5-7"
         
         parse_mode:
           type: string
@@ -498,52 +489,27 @@ components:
           default: "scan"
           example: "scan"
         
-        dpi:
-          type: integer
-          enum: [72, 144, 216]
-          description: |
-            PDF 文档的坐标基准，与 parse_mode 参数联动：
-            
-            - 当 parse_mode=auto 时：默认动态，支持 72、144、216
-            - 当 parse_mode=scan 时：默认 144，支持 72、144、216
-          default: 144
-          example: 144
-        
-        apply_document_tree:
+        crop_dewarp:
           type: integer
           enum: [0, 1]
           description: |
-            Markdown 中是否生成标题层级。
+            切边矫正。是否进行切边矫正预处理。
             
-            - **0**: 不生成标题（同时也不会返回 catalog 字段）
-            - **1**: 生成标题
-          default: 1
-          example: 1
-        
-        table_flavor:
-          type: string
-          enum: [md, html, none]
+            - **0**: 不进行切边矫正
+            - **1**: 进行切边矫正
+          default: 0
+          example: 0
+
+        remove_watermark:
+          type: integer
+          enum: [0, 1]
           description: |
-            Markdown 里的表格格式。
+            去水印。是否进行去水印预处理。
             
-            - **md**: 按 Markdown 语法输出表格
-            - **html**: 按 HTML 语法输出表格
-            - **none**: 不进行表格识别，把表格图像当成普通文字段落来识别
-          default: "html"
-          example: "html"
-        
-        get_image:
-          type: string
-          enum: [none, page, objects, both]
-          description: |
-            获取 Markdown 里的图片。
-            
-            - **none**: 不返回任何图像
-            - **page**: 返回每一页的整页图像（即 PDF 页的完整页图片）
-            - **objects**: 返回页面内的子图像（即 PDF 页内的各个子图片）
-            - **both**: 返回整页图像和图像对象
-          default: "none"
-          example: "none"
+            - **0**: 不去水印
+            - **1**: 去水印
+          default: 0
+          example: 0
         
         image_output_type:
           type: string
@@ -556,42 +522,6 @@ components:
           default: "default"
           example: "default"
         
-        apply_image_analysis:
-          type: integer
-          enum: [0, 1]
-          description: |
-            图像分析参数。利用大模型对文档中的子图片进行分析，分析结果以 Markdown 格式输出，
-            并替换掉子图片的文本识别内容。
-            
-            - **0**: 不进行图像分析
-            - **1**: 进行图像分析
-          default: 0
-          example: 0
-        
-        paratext_mode:
-          type: string
-          enum: [none, annotation, body]
-          description: |
-            Markdown 中非正文文本内容展示模式。非正文内容包括页眉页脚、子图中的文本。
-            
-            - **none**: 不展示
-            - **annotation**: 以注释格式插入到 Markdown 中（页眉页脚中的图片只保留文本，图片 base64 或 URL 不保留）
-            - **body**: 以正文格式插入到 Markdown 中
-          default: "annotation"
-          example: "annotation"
-        
-        formula_level:
-          type: integer
-          enum: [0, 1, 2]
-          description: |
-            公式识别等级。开启公式识别后，会使用 LaTeX 表达式。
-            
-            - **0**: 行间公式和行内公式都识别
-            - **1**: 仅识别行间公式，行内公式不识别
-            - **2**: 不识别公式
-          default: 0
-          example: 0
-        
         underline_level:
           type: integer
           enum: [0, 1, 2]
@@ -602,98 +532,7 @@ components:
             - **1**: 仅识别无文字的下划线（仅 scan 模式可用）
             - **2**: 识别全部的下划线（仅 scan 模式可用）
           default: 0
-          example: 0
-        
-        apply_merge:
-          type: integer
-          enum: [0, 1]
-          description: |
-            是否进行段落合并和表格合并。
-            
-            - **0**: 不合并
-            - **1**: 合并段落和表格
-          default: 1
-          example: 1
-        
-        raw_ocr:
-          type: integer
-          enum: [0, 1]
-          description: |
-            是否返回全部文字识别结果（包含字符坐标信息），结果字段为 raw_ocr。
-            与 page_details 参数联动，当 page_details 为 0 时不返回。
-            
-            - **0**: 不返回
-            - **1**: 返回
-          default: 0
-          example: 0
-        
-        char_details:
-          type: integer
-          enum: [0, 1]
-          description: |
-            是否返回结果中的 char_pos 字段（保存每个字符的位置信息）和 raw_ocr 中的 char_ 相关字段。
-            
-            - **0**: 不返回
-            - **1**: 返回
-          default: 0
-          example: 0
-        
-        catalog_details:
-          type: integer
-          enum: [0, 1]
-          description: |
-            是否返回结果中的 catalog 字段，保存目录相关信息。
-            与 apply_document_tree 参数联动，当 apply_document_tree 为 0 时不返回。
-            
-            - **0**: 不返回
-            - **1**: 返回
-          default: 0
-          example: 0
-        
-        get_excel:
-          type: integer
-          enum: [0, 1]
-          description: |
-            是否返回 Excel 的 base64 结果，结果字段为 excel_base64。
-            可以根据该字段进行后处理保存 Excel 文件。
-            
-            - **0**: 不返回
-            - **1**: 返回
-          default: 0
-          example: 0
-        
-        crop_dewarp:
-          type: integer
-          enum: [0, 1]
-          description: |
-            切边矫正。是否进行切边矫正预处理。
-            
-            - **0**: 不进行切边矫正
-            - **1**: 进行切边矫正
-          default: 0
-          example: 0
-        
-        remove_watermark:
-          type: integer
-          enum: [0, 1]
-          description: |
-            去水印。是否进行去水印预处理。
-            
-            - **0**: 不去水印
-            - **1**: 去水印
-          default: 0
-          example: 0
-        
-        apply_chart:
-          type: integer
-          enum: [0, 1]
-          description: |
-            图表识别。是否开启图表识别，开启图表识别会将识别到的图表以表格形式输出。
-            
-            - **0**: 不开启图表识别
-            - **1**: 开启图表识别
-          default: 0
-          example: 0
+          example: 0  
     
     ChunkConfig:
       type: object
@@ -710,7 +549,7 @@ components:
           example: "basic"
         include_orig_elements:
           type: boolean
-          description: 是否在 metadata 中包含原始元素 ID
+          description: 是否在 metadata 中包含原始元素信息
           default: false
           example: true
         new_after_n_chars:

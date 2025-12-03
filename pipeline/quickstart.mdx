@@ -1,31 +1,31 @@
 ---
 title: "快速启动"
-description: "5 分钟快速上手 xParse ETL，从安装到运行第一个文档处理流程"
+description: "5 分钟快速上手 xParse，从安装到运行第一个文档处理流程"
 ---
 
 <Tip>
-  本教程基于 Python 示例分步讲解如何使用 xParse ETL。我们提供了完整的示例代码，可在本地一键运行，助您快速体验 Pipeline 的强大能力。
+  本教程基于 Python 示例分步讲解如何使用 xParse。我们提供了完整的示例代码，可在本地一键运行，助您快速体验 Pipeline 的强大能力。
 </Tip>
 
-## 为什么使用 xParse ETL？
+## 为什么使用 xParse？
 
-在大模型和 RAG 应用开发中，文档处理是关键环节。传统方式需要分别调用解析、分块、向量化等多个接口，流程复杂且容易出错。xParse ETL 通过统一的 Pipeline API，一次性完成文档解析、智能分块和向量化全流程，让您专注于业务逻辑，无需处理繁琐的数据转换。
+在大模型和 RAG 应用开发中，文档处理是关键环节。传统方式需要分别调用解析、分块、向量化等多个接口，流程复杂且容易出错。xParse 通过统一的 Pipeline API，一次性完成文档解析、智能分块和向量化全流程，让您专注于业务逻辑，无需处理繁琐的数据转换。
 
-使用 xParse ETL，您可以：
+使用 xParse，您可以：
 - ✅ **一键完成全流程**：通过单个 API 调用完成 parse → chunk → embed 全流程
 - ✅ **灵活配置处理策略**：根据文档类型选择合适的分块策略和向量模型
 - ✅ **无缝对接向量数据库**：处理结果直接存储到 Milvus/Zilliz，无需额外转换
 - ✅ **支持批量处理**：自动处理数据源中的所有文档，支持大规模文档处理
 
-如果您正在构建 RAG 应用、知识库系统或 Agent 应用，xParse ETL 会是您的得力助手。
+如果您正在构建 RAG 应用、知识库系统或 Agent 应用，xParse 会是您的得力助手。
 
-## 如何使用 xParse ETL？
+## 如何使用 xParse？
 
-您可以参考以下示例和步骤，快速验证并将 xParse ETL 接入系统。
+您可以参考以下示例和步骤，快速验证并将 xParse 接入系统。
 
 ### 先决条件：获取 [API Key](/pipeline/api-key)
 
-使用 xParse ETL 处理文档前，需要先获取 [API Key](/pipeline/api-key)。请登录后前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取 `x-ti-app-id` 和 `x-ti-secret-code`。
+使用 xParse 处理文档前，需要先获取 [API Key](/pipeline/api-key)。请登录后前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取 `x-ti-app-id` 和 `x-ti-secret-code`。
 
 ### 步骤 1：安装依赖
 
@@ -70,19 +70,21 @@ destination = LocalDestination(
     output_dir='./output'
 )
 
-# 创建配置对象
+# 创建解析配置
 parse_config = ParseConfig(
-    provider='textin'
+    provider='textin' # 解析引擎：textin | textin-lite | mineru | paddle
 )
 
+# 创建分块配置
 chunk_config = ChunkConfig(
-    strategy='by_title',           # 按标题分块
+    strategy='by_title',  # 按标题分块
     include_orig_elements=False,
     new_after_n_chars=512,
     max_characters=1024,
-    overlap=50                     # 块之间重叠 50 字符
+    overlap=50  # 块之间重叠 50 字符
 )
 
+# 创建向量化配置
 embed_config = EmbedConfig(
     provider='qwen',
     model_name='text-embedding-v3'
@@ -117,7 +119,7 @@ pipeline = Pipeline(
 pipeline.run()
 ```
 
-#### 方式 2：通过Json格式配置创建
+#### 方式 2：通过JSON格式配置创建
 
 这是最简单的方式，适合快速上手：
 
@@ -151,7 +153,7 @@ config = {
         {
             'type': 'parse',
             'config': {
-                'provider': 'textin'  # 当前支持 textin 文档解析
+                'provider': 'textin'  # textin 自研高性能文档解析
             }
         },
         {
@@ -237,17 +239,6 @@ source = S3Source(
 )
 ```
 
-#### 本地文件系统数据源
-
-```python
-from xparse_client import LocalSource
-
-source = LocalSource(
-    directory='./input',                      # 文档目录
-    pattern='*.pdf'                           # 文件匹配模式: *.pdf, *.docx, **/*.txt
-)
-```
-
 #### FTP 数据源
 
 ```python
@@ -260,6 +251,19 @@ source = FtpSource(
     password='your-password'                   # 密码
 )
 ```
+
+#### 本地文件系统数据源
+
+```python
+from xparse_client import LocalSource
+
+source = LocalSource(
+    directory='./input',                      # 文档目录
+    pattern='*.pdf'                           # 文件匹配模式: *.pdf, *.docx, **/*.txt
+)
+```
+
+更多数据源配置参考：[数据源 - Sources](/pipeline/sources)
 
 ### Destination（目标存储）配置
 
@@ -298,6 +302,22 @@ destination = LocalDestination(
 )
 ```
 
+更多目标存储配置参考：[目的地 - Destinations](/pipeline/destinations)
+
+### Parse（解析）配置
+
+解析配置决定了使用哪个引擎解析文档：
+
+| 参数 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| **provider** | string | 解析引擎 | `textin` |
+| | | - `textin`: TextIn 自研高性能解析引擎，适合大多数场景 | |
+| | | - `textin-lite`: TextIn 全文识别解析引擎，适合纯文本、电子档 pdf 等场景，<br /> 速度更快，价格更低 | |
+| | | - `mineru`: MinerU 解析引擎，在学术论文等场景表现优异 | |
+| | | - `paddle`: PaddleOCR 解析引擎，在多语言和复杂文档场景（如PPT）表现优异 | |
+
+更多解析配置参考：[解析 - Parse](/pipeline/parse)
+
 ### Chunk（分块）配置
 
 分块配置决定了文档如何被切分成适合向量化的文本块：
@@ -318,6 +338,8 @@ destination = LocalDestination(
 - **by_title**：适合结构化文档（如技术文档、产品手册），保持章节完整性
 - **by_page**：适合 PDF 文档，保持页面完整性
 
+更多分块配置参考：[分块 - Chunk](/pipeline/chunk)
+
 ### Embed（向量化）配置
 
 向量化配置决定了使用哪个模型将文本转换为向量：
@@ -336,6 +358,8 @@ destination = LocalDestination(
 - **doubao（火山引擎）**：
   - `doubao-embedding-large-text-250515`：大模型版本
   - `doubao-embedding-text-240715`：标准版本
+
+更多向量化配置参考：[向量化 - Embed](/pipeline/embed)
 
 ## 使用示例
 
@@ -693,7 +717,7 @@ print(results)
   - [文档解析（Parse）](/pipeline/parse) - 了解如何配置解析参数
   - [文本分块（Chunk）](/pipeline/chunk) - 了解分块策略和参数配置
   - [向量化（Embed）](/pipeline/embed) - 了解向量模型选择和配置
-- **阅读[Agent/RAG 实战教程](/pipeline/tutorial/overview)**：了解如何使用 xParse ETL 构建完整的 RAG 应用与 LangChain Agent
+- **阅读[Agent/RAG 实战教程](/pipeline/tutorial/overview)**：了解如何使用 xParse 构建完整的 RAG 应用与 LangChain Agent
 - **查看[API 文档](/api-reference/endpoint/pipeline)**：了解 Pipeline API 的详细参数和返回格式
 
 <Tip>
