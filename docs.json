@@ -72,7 +72,17 @@
                 "group": "实战教程",
                 "pages": [
                   "pipeline/tutorial/overview",
-                  "pipeline/tutorial/agent-tutorial",
+                  {
+                    "group": "xParse + LangChain 构建 Agent",
+                    "expanded": true,
+                    "pages": [
+                      "pipeline/tutorial/information-extraction-agent-tutorial",
+                      "pipeline/tutorial/audit-agent-tutorial",
+                      "pipeline/tutorial/medical-agent-tutorial",
+                      "pipeline/tutorial/document-extraction-agent-tutorial",
+                      "pipeline/tutorial/agent-tutorial"
+                    ]
+                  },
                   "pipeline/tutorial/rag-tutorial"
                 ]
               },

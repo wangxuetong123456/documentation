@@ -1,0 +1,692 @@
+---
+title: "医疗文档Agent：智能病历分析与诊断辅助"
+description: "使用 xParse + LangChain 构建医疗文档处理Agent，实现病历解析、医疗信息提取、相似病例检索和药物相互作用检查"
+---
+
+<Tip>
+  本教程面向医疗场景，展示如何利用 xParse 作为数据底座，构建能够解析病历、检查报告、处方单，提取关键医疗信息，检索相似病例和医学文献的智能Agent。
+</Tip>
+
+## 场景介绍
+
+### 业务痛点
+
+在医疗场景中，医生和医疗工作者面临以下挑战：
+
+- **文档类型多样**：需要处理病历、检查报告、处方单、医学影像报告等多种格式
+- **信息提取复杂**：需要从非结构化文档中提取症状、诊断、用药、检查结果等关键信息
+- **病例检索困难**：需要快速检索相似病例和医学文献，辅助诊断决策
+- **药物安全**：需要检查药物相互作用、过敏史、用药禁忌等安全问题
+- **隐私保护**：医疗数据涉及患者隐私，需要安全处理
+
+### 解决方案
+
+通过构建医疗文档Agent，我们可以实现：
+
+- **自动化文档解析**：使用 xParse Pipeline 自动解析各类医疗文档
+- **智能信息提取**：从病历和报告中提取关键医疗信息（症状、诊断、用药等）
+- **相似病例检索**：基于症状和诊断，检索相似的历史病例
+- **医学文献检索**：检索相关的医学文献和研究资料
+- **药物安全检查**：检查药物相互作用、过敏史、用药禁忌等
+
+## 架构设计
+
+```
+医疗文档（PDF/图片/Word）
+    ↓
+[xParse Pipeline]
+    ├─ Parse: 解析病历、检查报告、处方单
+    ├─ Chunk: 按标题分块（保持病历结构）
+    └─ Embed: 向量化
+    ↓
+向量数据库（Milvus/Zilliz）
+    ↓
+[LangChain Agent]
+    ├─ Tool 1: extract_medical_info（提取医疗信息）
+    ├─ Tool 2: search_similar_cases（检索相似病例）
+    ├─ Tool 3: check_drug_interaction（药物相互作用检查）
+    └─ Tool 4: search_medical_literature（检索医学文献）
+    ↓
+诊断辅助报告（含引用和参考）
+```
+
+## 环境准备
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install "xparse-client>=0.2.5" langchain langchain-community langchain-core \
+            pymilvus qianfan openai python-dotenv
+export XTI_APP_ID=your-app-id
+export XTI_SECRET_CODE=your-secret-code
+export MILVUS_URI=./medical_vectors.db
+export OPENAI_API_KEY=your-openai-key
+```
+
+## Step 1：配置 xParse Pipeline
+
+针对医疗场景，我们使用以下配置：
+
+- **分块策略**：`by_title` - 保持病历的章节结构完整性
+- **原始元素保留**：`include_orig_elements=True` - 保留原始元素，便于追溯
+- **表格和图片**：确保检查报告中的表格和图片信息完整提取
+
+```python
+from xparse_client import create_pipeline_from_config
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+MEDICAL_PIPELINE_CONFIG = {
+    "source": {
+        "type": "local",
+        "directory": "./medical_documents",
+        "pattern": "**/*.{pdf,png,jpg,jpeg,docx}"  # 支持病历、检查报告、处方单等
+    },
+    "destination": {
+        "type": "milvus",
+        "db_path": "./medical_vectors.db",
+        "collection_name": "medical_documents",
+        "dimension": 1024
+    },
+    "api_base_url": "https://api.textin.com/api/xparse",
+    "api_headers": {
+        "x-ti-app-id": os.getenv("XTI_APP_ID"),
+        "x-ti-secret-code": os.getenv("XTI_SECRET_CODE")
+    },
+    "stages": [
+        {
+            "type": "parse",
+            "config": {
+                "provider": "textin"  # 使用TextIn解析引擎，对医疗表格识别效果好
+            }
+        },
+        {
+            "type": "chunk",
+            "config": {
+                "strategy": "by_title",  # 按标题分块，保持病历章节结构
+                "include_orig_elements": True,  # 保留原始元素，便于追溯
+                "new_after_n_chars": 512,
+                "max_characters": 1536,  # 病历章节可能较长
+                "overlap": 100  # 章节间重叠，保持上下文
+            }
+        },
+        {
+            "type": "embed",
+            "config": {
+                "provider": "qwen",
+                "model_name": "text-embedding-v4"  # 使用高精度模型
+            }
+        }
+    ]
+}
+
+def run_medical_pipeline(job_name: str = None) -> dict:
+    """运行医疗文档处理Pipeline"""
+    pipeline = create_pipeline_from_config(MEDICAL_PIPELINE_CONFIG)
+    stats = pipeline.run(job_name=job_name or f"medical-job-{int(time.time())}")
+    return {
+        "job_name": job_name,
+        "file_count": stats.processed_files if hasattr(stats, 'processed_files') else 0,
+        "chunk_count": stats.chunked_elements if hasattr(stats, 'chunked_elements') else 0,
+        "duration": stats.duration_seconds if hasattr(stats, 'duration_seconds') else 0
+    }
+```
+
+## Step 2：构建 LangChain Tools
+
+### Tool 1: 提取医疗信息
+
+```python
+from langchain.tools import Tool
+from langchain_community.vectorstores import Milvus
+from langchain.embeddings import QianfanEmbeddings
+import re
+import json
+
+embedding = QianfanEmbeddings(model_name="text-embedding-v4")
+vector_store = Milvus(
+    embedding_function=embedding,
+    collection_name="medical_documents",
+    connection_args={"uri": os.getenv("MILVUS_URI", "./medical_vectors.db")}
+)
+
+def extract_medical_info(query: str) -> str:
+    """
+    从医疗文档中提取关键医疗信息
+    
+    支持提取：
+    - 症状（主诉、现病史）
+    - 诊断（初步诊断、最终诊断）
+    - 用药（药物名称、剂量、用法）
+    - 检查结果（检验值、影像描述）
+    - 基本信息（年龄、性别、就诊日期）
+    """
+    # 检索相关文档片段
+    docs = vector_store.similarity_search(query, k=5)
+    
+    # 提取关键信息
+    results = []
+    for doc in docs:
+        text = doc.page_content
+        metadata = doc.metadata
+        
+        medical_info = {
+            "source": metadata.get("file_name", "unknown"),
+            "page": metadata.get("page_number", "unknown"),
+            "symptoms": [],
+            "diagnosis": [],
+            "medications": [],
+            "test_results": [],
+            "basic_info": {}
+        }
+        
+        # 提取症状（常见关键词）
+        symptom_keywords = ["主诉", "现病史", "症状", "不适", "疼痛", "发热", "咳嗽"]
+        for keyword in symptom_keywords:
+            if keyword in text:
+                # 提取症状描述（简化版，实际需要更复杂的NLP）
+                symptom_match = re.search(rf'{keyword}[：:]\s*([^\n]+)', text)
+                if symptom_match:
+                    medical_info["symptoms"].append(symptom_match.group(1)[:200])
+        
+        # 提取诊断
+        diagnosis_keywords = ["诊断", "初步诊断", "最终诊断", "临床诊断"]
+        for keyword in diagnosis_keywords:
+            if keyword in text:
+                diagnosis_match = re.search(rf'{keyword}[：:]\s*([^\n]+)', text)
+                if diagnosis_match:
+                    medical_info["diagnosis"].append(diagnosis_match.group(1)[:200])
+        
+        # 提取用药信息
+        medication_patterns = [
+            r'([\u4e00-\u9fa5]+)\s*(\d+\.?\d*)\s*(mg|g|ml|片|粒|次)',
+            r'([A-Za-z]+)\s*(\d+\.?\d*)\s*(mg|g|ml|tablet|capsule)'
+        ]
+        for pattern in medication_patterns:
+            medications = re.findall(pattern, text)
+            medical_info["medications"].extend([
+                {"name": m[0], "dose": m[1], "unit": m[2]} 
+                for m in medications[:5]
+            ])
+        
+        # 提取检查结果（常见检验项目）
+        test_keywords = ["血常规", "肝功能", "肾功能", "血糖", "血压", "CT", "MRI", "X光"]
+        for keyword in test_keywords:
+            if keyword in text:
+                test_match = re.search(rf'{keyword}[：:]\s*([^\n]+)', text)
+                if test_match:
+                    medical_info["test_results"].append({
+                        "test": keyword,
+                        "result": test_match.group(1)[:200]
+                    })
+        
+        # 提取基本信息
+        age_match = re.search(r'年龄[：:]?\s*(\d+)', text)
+        if age_match:
+            medical_info["basic_info"]["age"] = age_match.group(1)
+        
+        gender_match = re.search(r'性别[：:]?\s*([男女])', text)
+        if gender_match:
+            medical_info["basic_info"]["gender"] = gender_match.group(1)
+        
+        date_match = re.search(r'(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)', text)
+        if date_match:
+            medical_info["basic_info"]["visit_date"] = date_match.group(1)
+        
+        results.append(medical_info)
+    
+    return json.dumps(results, ensure_ascii=False, indent=2)
+```
+
+### Tool 2: 检索相似病例
+
+```python
+def search_similar_cases(query: str) -> str:
+    """
+    检索相似病例
+    
+    基于症状、诊断等信息，检索历史相似病例
+    """
+    # 检索相似文档
+    docs = vector_store.similarity_search(query, k=5)
+    
+    results = []
+    for i, doc in enumerate(docs, 1):
+        text = doc.page_content
+        metadata = doc.metadata
+        
+        # 提取关键信息用于展示
+        diagnosis = []
+        symptoms = []
+        
+        # 提取诊断
+        diagnosis_match = re.search(r'诊断[：:]\s*([^\n]+)', text)
+        if diagnosis_match:
+            diagnosis.append(diagnosis_match.group(1)[:100])
+        
+        # 提取症状
+        symptom_match = re.search(r'主诉[：:]\s*([^\n]+)', text)
+        if symptom_match:
+            symptoms.append(symptom_match.group(1)[:100])
+        
+        results.append({
+            f"相似病例 {i}": {
+                "文件": metadata.get("file_name", "unknown"),
+                "页码": metadata.get("page_number", "unknown"),
+                "诊断": diagnosis[0] if diagnosis else "未找到",
+                "症状": symptoms[0] if symptoms else "未找到",
+                "相似度": "高" if i <= 2 else "中",
+                "内容摘要": text[:300] + "..."
+            }
+        })
+    
+    return json.dumps(results, ensure_ascii=False, indent=2)
+```
+
+### Tool 3: 药物相互作用检查
+
+```python
+def check_drug_interaction(query: str) -> str:
+    """
+    检查药物相互作用
+    
+    检查多种药物之间是否存在相互作用、过敏史、用药禁忌等
+    """
+    # 检索相关文档，提取用药信息
+    docs = vector_store.similarity_search(query, k=3)
+    
+    # 药物相互作用数据库（示例，实际应使用专业数据库）
+    drug_interactions = {
+        "阿司匹林": ["华法林", "布洛芬"],
+        "华法林": ["阿司匹林", "布洛芬", "维生素K"],
+        "地高辛": ["利尿剂", "钙通道阻滞剂"]
+    }
+    
+    # 提取所有药物
+    all_medications = []
+    for doc in docs:
+        text = doc.page_content
+        # 提取药物名称（简化版）
+        medications = re.findall(r'([\u4e00-\u9fa5]{2,10})\s*\d+\.?\d*\s*(mg|g|ml|片|粒)', text)
+        all_medications.extend([m[0] for m in medications])
+    
+    # 检查相互作用
+    interactions = []
+    for i, drug1 in enumerate(all_medications):
+        for drug2 in all_medications[i+1:]:
+            if drug1 in drug_interactions and drug2 in drug_interactions[drug1]:
+                interactions.append({
+                    "药物1": drug1,
+                    "药物2": drug2,
+                    "警告": f"{drug1} 与 {drug2} 可能存在相互作用，请咨询医生"
+                })
+    
+    if not interactions:
+        return "✅ 未发现明显的药物相互作用"
+    
+    return json.dumps(interactions, ensure_ascii=False, indent=2)
+```
+
+### Tool 4: 检索医学文献
+
+```python
+def search_medical_literature(query: str) -> str:
+    """检索医学文献"""
+    docs = vector_store.similarity_search(query, k=5)
+    
+    results = []
+    for i, doc in enumerate(docs, 1):
+        text = doc.page_content
+        metadata = doc.metadata
+        
+        # 判断是否为医学文献（简化判断）
+        is_literature = any(keyword in text for keyword in ["研究", "文献", "期刊", "论文", "参考文献"])
+        
+        results.append({
+            f"文献 {i}": {
+                "标题": metadata.get("file_name", "unknown"),
+                "页码": metadata.get("page_number", "unknown"),
+                "类型": "医学文献" if is_literature else "病历/报告",
+                "内容摘要": text[:300] + "...",
+                "相关性": "高" if i <= 2 else "中"
+            }
+        })
+    
+    return json.dumps(results, ensure_ascii=False, indent=2)
+```
+
+### 组装所有Tools
+
+```python
+tools = [
+    Tool(
+        name="extract_medical_info",
+        description="从医疗文档中提取关键医疗信息，包括症状、诊断、用药、检查结果、基本信息等。输入应为要提取的信息类型描述，如'提取所有症状和诊断'。",
+        func=extract_medical_info
+    ),
+    Tool(
+        name="search_similar_cases",
+        description="检索相似病例，基于症状、诊断等信息查找历史相似病例。输入应为症状或诊断描述。",
+        func=search_similar_cases
+    ),
+    Tool(
+        name="check_drug_interaction",
+        description="检查药物相互作用，检查多种药物之间是否存在相互作用、过敏史、用药禁忌等。输入应为药物名称或用药描述。",
+        func=check_drug_interaction
+    ),
+    Tool(
+        name="search_medical_literature",
+        description="检索医学文献，查找相关的医学研究文献和资料。输入应为要检索的医学主题或关键词。",
+        func=search_medical_literature
+    ),
+    Tool(
+        name="vector_search",
+        description="基于语义检索相关医疗文档片段。输入应为自然语言查询。",
+        func=lambda q: "\n\n".join([
+            f"[{i+1}] {doc.metadata.get('file_name', 'unknown')} (页{doc.metadata.get('page_number', '?')})\n{doc.page_content[:300]}..."
+            for i, doc in enumerate(vector_store.similarity_search(q, k=3))
+        ])
+    )
+]
+```
+
+## Step 3：配置 LangChain Agent
+
+```python
+from langchain.agents import initialize_agent, AgentType
+from langchain.chat_models import ChatOpenAI
+import time
+
+llm = ChatOpenAI(
+    model_name="gpt-4o-mini",
+    temperature=0.2,
+    api_key=os.getenv("OPENAI_API_KEY")
+)
+
+agent = initialize_agent(
+    tools,
+    llm,
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=True,
+    handle_parsing_errors=True,
+    agent_kwargs={
+        "prefix": """你是一个专业的医疗文档分析助手。你的任务是帮助医生和医疗工作者：
+1. 从病历、检查报告中提取关键医疗信息
+2. 检索相似病例，辅助诊断决策
+3. 检查药物相互作用，确保用药安全
+4. 检索医学文献，提供参考资料
+
+在回答时，请：
+- 引用具体的文档名称和页码
+- 提供详细的医疗信息提取结果
+- 如果发现药物相互作用或安全问题，明确警告
+- 使用工具获取准确的信息，不要猜测
+- 注意保护患者隐私，不要泄露敏感信息
+"""
+    }
+)
+```
+
+## Step 4：完整示例代码
+
+```python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+医疗文档Agent完整示例
+"""
+
+import os
+import time
+import re
+import json
+from dotenv import load_dotenv
+from xparse_client import create_pipeline_from_config
+from langchain.tools import Tool
+from langchain.agents import initialize_agent, AgentType
+from langchain.chat_models import ChatOpenAI
+from langchain_community.vectorstores import Milvus
+from langchain.embeddings import QianfanEmbeddings
+
+load_dotenv()
+
+class MedicalAgent:
+    """医疗文档Agent"""
+    
+    def __init__(self):
+        self.setup_pipeline()
+        self.setup_vector_store()
+        self.setup_agent()
+    
+    def setup_pipeline(self):
+        """配置Pipeline"""
+        self.pipeline_config = {
+            "source": {
+                "type": "local",
+                "directory": "./medical_documents",
+                "pattern": "**/*.{pdf,png,jpg,jpeg,docx}"
+            },
+            "destination": {
+                "type": "milvus",
+                "db_path": "./medical_vectors.db",
+                "collection_name": "medical_documents",
+                "dimension": 1024
+            },
+            "api_base_url": "https://api.textin.com/api/xparse",
+            "api_headers": {
+                "x-ti-app-id": os.getenv("XTI_APP_ID"),
+                "x-ti-secret-code": os.getenv("XTI_SECRET_CODE")
+            },
+            "stages": [
+                {
+                    "type": "parse",
+                    "config": {"provider": "textin"}
+                },
+                {
+                    "type": "chunk",
+                    "config": {
+                        "strategy": "by_title",
+                        "include_orig_elements": True,
+                        "max_characters": 1536,
+                        "overlap": 100
+                    }
+                },
+                {
+                    "type": "embed",
+                    "config": {
+                        "provider": "qwen",
+                        "model_name": "text-embedding-v4"
+                    }
+                }
+            ]
+        }
+    
+    def setup_vector_store(self):
+        """配置向量数据库"""
+        self.embedding = QianfanEmbeddings(model_name="text-embedding-v4")
+        self.vector_store = Milvus(
+            embedding_function=self.embedding,
+            collection_name="medical_documents",
+            connection_args={"uri": os.getenv("MILVUS_URI", "./medical_vectors.db")}
+        )
+    
+    def setup_agent(self):
+        """配置Agent和Tools"""
+        tools = [
+            Tool(
+                name="extract_medical_info",
+                description="提取医疗信息：症状、诊断、用药、检查结果等",
+                func=self.extract_medical_info
+            ),
+            Tool(
+                name="search_similar_cases",
+                description="检索相似病例",
+                func=self.search_similar_cases
+            ),
+            Tool(
+                name="check_drug_interaction",
+                description="检查药物相互作用",
+                func=self.check_drug_interaction
+            ),
+            Tool(
+                name="vector_search",
+                description="语义检索相关文档",
+                func=lambda q: "\n\n".join([
+                    f"[{i+1}] {doc.metadata.get('file_name', 'unknown')}\n{doc.page_content[:300]}..."
+                    for i, doc in enumerate(self.vector_store.similarity_search(q, k=3))
+                ])
+            )
+        ]
+        
+        llm = ChatOpenAI(
+            model_name="gpt-4o-mini",
+            temperature=0.2,
+            api_key=os.getenv("OPENAI_API_KEY")
+        )
+        
+        self.agent = initialize_agent(
+            tools,
+            llm,
+            agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            verbose=True,
+            handle_parsing_errors=True
+        )
+    
+    def extract_medical_info(self, query: str) -> str:
+        """提取医疗信息"""
+        docs = self.vector_store.similarity_search(query, k=5)
+        results = []
+        for doc in docs:
+            text = doc.page_content
+            diagnosis = []
+            diagnosis_match = re.search(r'诊断[：:]\s*([^\n]+)', text)
+            if diagnosis_match:
+                diagnosis.append(diagnosis_match.group(1)[:200])
+            results.append({
+                "file": doc.metadata.get("file_name", "unknown"),
+                "page": doc.metadata.get("page_number", "unknown"),
+                "diagnosis": diagnosis,
+                "snippet": text[:200]
+            })
+        return json.dumps(results, ensure_ascii=False, indent=2)
+    
+    def search_similar_cases(self, query: str) -> str:
+        """检索相似病例"""
+        docs = self.vector_store.similarity_search(query, k=5)
+        results = []
+        for i, doc in enumerate(docs, 1):
+            results.append({
+                f"病例 {i}": {
+                    "file": doc.metadata.get("file_name", "unknown"),
+                    "page": doc.metadata.get("page_number", "unknown"),
+                    "content": doc.page_content[:300]
+                }
+            })
+        return json.dumps(results, ensure_ascii=False, indent=2)
+    
+    def check_drug_interaction(self, query: str) -> str:
+        """检查药物相互作用"""
+        docs = self.vector_store.similarity_search(query, k=3)
+        medications = []
+        for doc in docs:
+            meds = re.findall(r'([\u4e00-\u9fa5]{2,10})\s*\d+\.?\d*\s*(mg|g|ml)', doc.page_content)
+            medications.extend([m[0] for m in meds])
+        
+        if len(medications) > 1:
+            return f"检测到多种药物：{', '.join(set(medications))}，请咨询医生确认是否存在相互作用"
+        return "✅ 未发现明显的药物相互作用"
+    
+    def process_documents(self):
+        """处理文档"""
+        print("=" * 60)
+        print("开始处理医疗文档...")
+        print("=" * 60)
+        
+        pipeline = create_pipeline_from_config(self.pipeline_config)
+        pipeline.run()
+        
+        print("\n文档处理完成！")
+    
+    def query(self, question: str) -> str:
+        """查询Agent"""
+        response = self.agent.invoke({"input": question})
+        return response["output"]
+
+def main():
+    """主函数"""
+    agent = MedicalAgent()
+    
+    # 1. 处理文档（首次运行）
+    # agent.process_documents()
+    
+    # 2. 查询示例
+    questions = [
+        "从病历中提取所有症状和诊断信息",
+        "检索与'发热、咳嗽'相似的病例",
+        "检查处方中的药物是否存在相互作用",
+        "检索关于'高血压治疗'的医学文献"
+    ]
+    
+    for question in questions:
+        print(f"\n{'='*60}")
+        print(f"问题: {question}")
+        print(f"{'='*60}")
+        answer = agent.query(question)
+        print(f"\n回答:\n{answer}")
+
+if __name__ == "__main__":
+    main()
+```
+
+## 使用示例
+
+### 示例1：提取医疗信息
+
+```python
+agent = MedicalAgent()
+response = agent.query("从病历中提取患者的主诉、诊断和用药信息")
+print(response)
+```
+
+### 示例2：检索相似病例
+
+```python
+response = agent.query("检索与'发热、咳嗽、胸闷'症状相似的病例")
+print(response)
+```
+
+### 示例3：药物安全检查
+
+```python
+response = agent.query("检查处方中的'阿司匹林'和'华法林'是否存在相互作用")
+print(response)
+```
+
+## 最佳实践
+
+1. **隐私保护**：医疗数据涉及患者隐私，确保数据加密存储和传输
+2. **分块策略**：使用 `by_title` 保持病历章节结构，便于理解上下文
+3. **原始元素保留**：开启 `include_orig_elements`，便于追溯和验证
+4. **药物数据库**：集成专业的药物相互作用数据库，提高检查准确性
+5. **多语言支持**：医疗术语可能涉及多语言，确保解析引擎支持
+6. **结果验证**：Agent的建议仅供参考，最终诊断需由医生确认
+
+## 常见问题
+
+**Q: 如何处理手写病历？**  
+A: 使用支持OCR的解析引擎（如textin），可以识别手写内容，但准确率可能低于打印文档。
+
+**Q: 如何提高诊断准确性？**  
+A: 1) 增加相似病例的检索数量；2) 结合多个检查结果综合判断；3) 参考最新的医学文献。
+
+**Q: 如何保护患者隐私？**  
+A: 1) 数据加密存储；2) 访问权限控制；3) 日志脱敏处理；4) 符合HIPAA等医疗数据保护法规。
+
+## 相关文档
+
+- [快速启动](/pipeline/quickstart) - 了解Pipeline基本使用方法
+- [文档元素和元数据](/pipeline/elements-metadata) - 了解数据结构
+- [结果回溯与可视化](/pipeline/traceability) - 了解如何追溯结果
+- [Agent教程](/pipeline/tutorial/agent-tutorial) - 了解通用Agent构建方法
+

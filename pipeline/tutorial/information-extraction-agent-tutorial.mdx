@@ -1,0 +1,749 @@
+---
+title: "信息提取Agent：结构化数据提取与整理"
+description: "使用 xParse + LangChain 构建信息提取Agent，实现从简历、产品文档、技术文档中提取结构化信息并自动整理"
+---
+
+<Tip>
+  本教程面向信息提取场景，展示如何利用 xParse 作为数据底座，构建能够从非结构化文档中提取结构化信息（如简历、产品规格、API接口等）并自动整理的智能Agent。
+</Tip>
+
+## 场景介绍
+
+### 业务痛点
+
+在信息提取场景中，企业和开发者面临以下挑战：
+
+- **文档格式多样**：需要处理简历、产品文档、技术文档、规格说明等多种格式
+- **信息提取繁琐**：需要从非结构化文档中提取结构化信息（个人信息、工作经历、产品参数、API接口等）
+- **数据标准化困难**：不同来源的数据格式不统一，需要标准化处理
+- **批量处理需求**：需要处理大量文档，手动提取效率低
+- **数据验证**：提取的数据需要验证和校验，确保准确性
+
+### 解决方案
+
+通过构建信息提取Agent，我们可以实现：
+
+- **自动化文档解析**：使用 xParse Pipeline 自动解析各类文档
+- **智能信息提取**：从文档中提取结构化信息（简历信息、产品规格、API接口等）
+- **数据标准化**：将提取的信息转换为标准格式（JSON、CSV等）
+- **数据验证**：验证提取的数据完整性和准确性
+- **批量处理**：支持批量处理大量文档
+
+## 架构设计
+
+```
+文档（PDF/Word/Excel/图片）
+    ↓
+[xParse Pipeline]
+    ├─ Parse: 解析文档，提取结构化内容
+    ├─ Chunk: 基础分块（快速处理）
+    └─ Embed: 向量化
+    ↓
+向量数据库（Milvus/Zilliz）
+    ↓
+[LangChain Agent]
+    ├─ Tool 1: extract_resume_info（提取简历信息）
+    ├─ Tool 2: extract_product_specs（提取产品规格）
+    ├─ Tool 3: extract_api_info（提取API信息）
+    └─ Tool 4: format_data（数据格式化）
+    ↓
+结构化数据（JSON/CSV）
+```
+
+## 环境准备
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install "xparse-client>=0.2.5" langchain langchain-community langchain-core \
+            pymilvus qianfan openai python-dotenv pandas
+export XTI_APP_ID=your-app-id
+export XTI_SECRET_CODE=your-secret-code
+export MILVUS_URI=./extraction_vectors.db
+export OPENAI_API_KEY=your-openai-key
+```
+
+## Step 1：配置 xParse Pipeline
+
+针对信息提取场景，我们使用以下配置：
+
+- **分块策略**：`basic` - 快速处理，适合信息提取
+- **表格优化**：确保表格结构完整提取（HTML格式）
+- **列表识别**：识别和保留列表结构
+
+```python
+from xparse_client import create_pipeline_from_config
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+EXTRACTION_PIPELINE_CONFIG = {
+    "source": {
+        "type": "local",
+        "directory": "./extraction_documents",
+        "pattern": "**/*.{pdf,docx,xlsx,xls,png,jpg}"  # 支持多种文档格式
+    },
+    "destination": {
+        "type": "milvus",
+        "db_path": "./extraction_vectors.db",
+        "collection_name": "extraction_documents",
+        "dimension": 1024
+    },
+    "api_base_url": "https://api.textin.com/api/xparse",
+    "api_headers": {
+        "x-ti-app-id": os.getenv("XTI_APP_ID"),
+        "x-ti-secret-code": os.getenv("XTI_SECRET_CODE")
+    },
+    "stages": [
+        {
+            "type": "parse",
+            "config": {
+                "provider": "textin"  # 使用TextIn解析引擎，对表格和列表识别效果好
+            }
+        },
+        {
+            "type": "chunk",
+            "config": {
+                "strategy": "basic",  # 基础分块，快速处理
+                "include_orig_elements": False,  # 信息提取场景不需要原始元素
+                "new_after_n_chars": 512,
+                "max_characters": 1024,
+                "overlap": 50  # 适度的重叠
+            }
+        },
+        {
+            "type": "embed",
+            "config": {
+                "provider": "qwen",
+                "model_name": "text-embedding-v3"  # 使用标准模型，速度快
+            }
+        }
+    ]
+}
+
+def run_extraction_pipeline(job_name: str = None) -> dict:
+    """运行信息提取文档处理Pipeline"""
+    pipeline = create_pipeline_from_config(EXTRACTION_PIPELINE_CONFIG)
+    stats = pipeline.run(job_name=job_name or f"extraction-job-{int(time.time())}")
+    return {
+        "job_name": job_name,
+        "file_count": stats.processed_files if hasattr(stats, 'processed_files') else 0,
+        "chunk_count": stats.chunked_elements if hasattr(stats, 'chunked_elements') else 0,
+        "duration": stats.duration_seconds if hasattr(stats, 'duration_seconds') else 0
+    }
+```
+
+## Step 2：构建 LangChain Tools
+
+### Tool 1: 提取简历信息
+
+```python
+from langchain.tools import Tool
+from langchain_community.vectorstores import Milvus
+from langchain.embeddings import QianfanEmbeddings
+import re
+import json
+
+embedding = QianfanEmbeddings(model_name="text-embedding-v3")
+vector_store = Milvus(
+    embedding_function=embedding,
+    collection_name="extraction_documents",
+    connection_args={"uri": os.getenv("MILVUS_URI", "./extraction_vectors.db")}
+)
+
+def extract_resume_info(query: str) -> str:
+    """
+    从简历中提取结构化信息
+    
+    提取内容包括：
+    - 个人信息（姓名、性别、年龄、联系方式）
+    - 教育经历（学校、专业、学历、时间）
+    - 工作经历（公司、职位、时间、工作内容）
+    - 技能（专业技能、语言能力、证书等）
+    """
+    # 检索相关文档片段
+    docs = vector_store.similarity_search(query, k=3)
+    
+    resume_data = {
+        "personal_info": {},
+        "education": [],
+        "work_experience": [],
+        "skills": []
+    }
+    
+    for doc in docs:
+        text = doc.page_content
+        metadata = doc.metadata
+        
+        # 提取姓名
+        name_patterns = [
+            r'姓名[：:]\s*([^\n]+)',
+            r'名字[：:]\s*([^\n]+)',
+            r'^([\u4e00-\u9fa5]{2,4})\s*',  # 文档开头的中文姓名
+        ]
+        for pattern in name_patterns:
+            match = re.search(pattern, text)
+            if match and not resume_data["personal_info"].get("name"):
+                resume_data["personal_info"]["name"] = match.group(1).strip()
+                break
+        
+        # 提取联系方式
+        phone_match = re.search(r'1[3-9]\d{9}', text)
+        if phone_match:
+            resume_data["personal_info"]["phone"] = phone_match.group(0)
+        
+        email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
+        if email_match:
+            resume_data["personal_info"]["email"] = email_match.group(0)
+        
+        # 提取教育经历
+        education_pattern = r'(\d{4}[-年]\d{1,2}[-月]?)\s*[-至到]\s*(\d{4}[-年]\d{1,2}[-月]?)?\s*([^\n]+)'
+        education_matches = re.findall(education_pattern, text)
+        for match in education_matches[:3]:  # 限制数量
+            resume_data["education"].append({
+                "start_date": match[0],
+                "end_date": match[1] if match[1] else "至今",
+                "description": match[2][:200]
+            })
+        
+        # 提取工作经历
+        work_pattern = r'(\d{4}[-年]\d{1,2}[-月]?)\s*[-至到]\s*(\d{4}[-年]\d{1,2}[-月]?)?\s*([^\n]+)'
+        work_matches = re.findall(work_pattern, text)
+        for match in work_matches[:5]:  # 限制数量
+            resume_data["work_experience"].append({
+                "start_date": match[0],
+                "end_date": match[1] if match[1] else "至今",
+                "description": match[2][:200]
+            })
+        
+        # 提取技能（常见技能关键词）
+        skill_keywords = ["Python", "Java", "JavaScript", "SQL", "Linux", "Docker", "Kubernetes", 
+                         "机器学习", "深度学习", "数据分析", "项目管理", "团队协作"]
+        found_skills = [skill for skill in skill_keywords if skill in text]
+        resume_data["skills"].extend(found_skills)
+    
+    # 去重
+    resume_data["skills"] = list(set(resume_data["skills"]))
+    
+    return json.dumps(resume_data, ensure_ascii=False, indent=2)
+```
+
+### Tool 2: 提取产品规格
+
+```python
+def extract_product_specs(query: str) -> str:
+    """
+    从产品文档中提取产品规格和技术参数
+    
+    提取内容包括：
+    - 产品名称和型号
+    - 技术参数（尺寸、重量、性能指标等）
+    - 功能特性
+    - 价格信息
+    """
+    docs = vector_store.similarity_search(query, k=3)
+    
+    product_specs = {
+        "product_name": "",
+        "model": "",
+        "specifications": {},
+        "features": [],
+        "price": ""
+    }
+    
+    for doc in docs:
+        text = doc.page_content
+        
+        # 提取产品名称
+        name_patterns = [
+            r'产品名称[：:]\s*([^\n]+)',
+            r'产品[：:]\s*([^\n]+)',
+            r'型号[：:]\s*([^\n]+)'
+        ]
+        for pattern in name_patterns:
+            match = re.search(pattern, text)
+            if match:
+                if "型号" in pattern:
+                    product_specs["model"] = match.group(1).strip()
+                else:
+                    product_specs["product_name"] = match.group(1).strip()
+        
+        # 提取技术参数（常见参数格式）
+        spec_patterns = [
+            r'([^\n：:]+)[：:]\s*([^\n]+)',
+            r'([^\n]+)\s*[:：]\s*([^\n]+)'
+        ]
+        for pattern in spec_patterns:
+            matches = re.findall(pattern, text)
+            for match in matches[:10]:  # 限制数量
+                key = match[0].strip()
+                value = match[1].strip()
+                # 过滤掉明显不是规格的项
+                if len(key) < 20 and len(value) < 100:
+                    product_specs["specifications"][key] = value
+        
+        # 提取价格
+        price_patterns = [
+            r'价格[：:]\s*[¥$€]?\s*([\d,]+\.?\d*)',
+            r'[¥$€]\s*([\d,]+\.?\d*)',
+            r'([\d,]+\.?\d*)\s*[元美元欧元]'
+        ]
+        for pattern in price_patterns:
+            match = re.search(pattern, text)
+            if match:
+                product_specs["price"] = match.group(1)
+                break
+        
+        # 提取功能特性（列表形式）
+        feature_keywords = ["支持", "具备", "特性", "功能", "特点"]
+        for keyword in feature_keywords:
+            if keyword in text:
+                # 提取列表项
+                list_items = re.findall(r'[•·\-\d+\.]\s*([^\n]+)', text)
+                product_specs["features"].extend([item.strip() for item in list_items[:10]])
+                break
+    
+    return json.dumps(product_specs, ensure_ascii=False, indent=2)
+```
+
+### Tool 3: 提取API信息
+
+```python
+def extract_api_info(query: str) -> str:
+    """
+    从技术文档中提取API接口信息
+    
+    提取内容包括：
+    - API端点（URL路径）
+    - 请求方法（GET、POST等）
+    - 请求参数
+    - 响应格式
+    - 认证方式
+    """
+    docs = vector_store.similarity_search(query, k=5)
+    
+    api_info = []
+    
+    for doc in docs:
+        text = doc.page_content
+        metadata = doc.metadata
+        
+        # 提取API端点
+        endpoint_patterns = [
+            r'POST\s+([/\w\-{}]+)',
+            r'GET\s+([/\w\-{}]+)',
+            r'PUT\s+([/\w\-{}]+)',
+            r'DELETE\s+([/\w\-{}]+)',
+            r'端点[：:]\s*([/\w\-{}]+)',
+            r'URL[：:]\s*([/\w\-{}]+)'
+        ]
+        
+        api_endpoints = []
+        for pattern in endpoint_patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            api_endpoints.extend(matches)
+        
+        # 提取请求方法
+        methods = re.findall(r'\b(GET|POST|PUT|DELETE|PATCH)\b', text, re.IGNORECASE)
+        
+        # 提取参数（简化版）
+        param_patterns = [
+            r'参数[：:]\s*([^\n]+)',
+            r'请求参数[：:]\s*([^\n]+)',
+            r'(\w+)\s*[:：]\s*(string|int|boolean|array)'
+        ]
+        params = []
+        for pattern in param_patterns:
+            matches = re.findall(pattern, text)
+            params.extend(matches)
+        
+        if api_endpoints or methods:
+            api_info.append({
+                "file": metadata.get("file_name", "unknown"),
+                "page": metadata.get("page_number", "unknown"),
+                "endpoints": list(set(api_endpoints))[:5],
+                "methods": list(set(methods)),
+                "parameters": params[:10],
+                "snippet": text[:300]
+            })
+    
+    return json.dumps(api_info, ensure_ascii=False, indent=2)
+```
+
+### Tool 4: 数据格式化
+
+```python
+import pandas as pd
+
+def format_data(query: str) -> str:
+    """
+    将提取的数据格式化为标准格式（JSON、CSV等）
+    
+    支持格式：
+    - JSON格式
+    - CSV格式
+    - 表格格式
+    """
+    # 这里简化处理，实际应该接收提取的数据
+    docs = vector_store.similarity_search(query, k=3)
+    
+    # 提取数据（简化示例）
+    data_list = []
+    for doc in docs:
+        text = doc.page_content
+        # 提取键值对
+        kv_pairs = re.findall(r'([^\n：:]+)[：:]\s*([^\n]+)', text)
+        for key, value in kv_pairs[:5]:
+            data_list.append({
+                "key": key.strip(),
+                "value": value.strip(),
+                "source": doc.metadata.get("file_name", "unknown")
+            })
+    
+    if not data_list:
+        return "未找到可格式化的数据"
+    
+    # 格式化为JSON
+    json_output = json.dumps(data_list, ensure_ascii=False, indent=2)
+    
+    # 格式化为CSV（使用pandas）
+    try:
+        df = pd.DataFrame(data_list)
+        csv_output = df.to_csv(index=False)
+    except:
+        csv_output = "CSV格式化失败"
+    
+    return f"JSON格式：\n{json_output}\n\nCSV格式：\n{csv_output}"
+```
+
+### 组装所有Tools
+
+```python
+tools = [
+    Tool(
+        name="extract_resume_info",
+        description="从简历中提取结构化信息，包括个人信息、教育经历、工作经历、技能等。输入应为'提取简历信息'或类似描述。",
+        func=extract_resume_info
+    ),
+    Tool(
+        name="extract_product_specs",
+        description="从产品文档中提取产品规格和技术参数，包括产品名称、型号、技术参数、功能特性、价格等。输入应为产品相关查询。",
+        func=extract_product_specs
+    ),
+    Tool(
+        name="extract_api_info",
+        description="从技术文档中提取API接口信息，包括API端点、请求方法、请求参数、响应格式等。输入应为API相关查询。",
+        func=extract_api_info
+    ),
+    Tool(
+        name="format_data",
+        description="将提取的数据格式化为标准格式（JSON、CSV等）。输入应为要格式化的数据类型描述。",
+        func=format_data
+    ),
+    Tool(
+        name="vector_search",
+        description="基于语义检索相关文档片段。输入应为自然语言查询。",
+        func=lambda q: "\n\n".join([
+            f"[{i+1}] {doc.metadata.get('file_name', 'unknown')} (页{doc.metadata.get('page_number', '?')})\n{doc.page_content[:300]}..."
+            for i, doc in enumerate(vector_store.similarity_search(q, k=3))
+        ])
+    )
+]
+```
+
+## Step 3：配置 LangChain Agent
+
+```python
+from langchain.agents import initialize_agent, AgentType
+from langchain.chat_models import ChatOpenAI
+
+llm = ChatOpenAI(
+    model_name="gpt-4o-mini",
+    temperature=0.2,
+    api_key=os.getenv("OPENAI_API_KEY")
+)
+
+agent = initialize_agent(
+    tools,
+    llm,
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=True,
+    handle_parsing_errors=True,
+    agent_kwargs={
+        "prefix": """你是一个专业的信息提取助手。你的任务是帮助用户：
+1. 从文档中提取结构化信息（简历、产品规格、API接口等）
+2. 将提取的信息格式化为标准格式（JSON、CSV等）
+3. 验证提取数据的完整性和准确性
+
+在回答时，请：
+- 提供结构化的提取结果
+- 使用JSON或表格格式展示数据
+- 如果数据不完整，说明缺失的部分
+- 使用工具获取准确的信息，不要猜测
+"""
+    }
+)
+```
+
+## Step 4：完整示例代码
+
+```python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+信息提取Agent完整示例
+"""
+
+import os
+import re
+import json
+from dotenv import load_dotenv
+from xparse_client import create_pipeline_from_config
+from langchain.tools import Tool
+from langchain.agents import initialize_agent, AgentType
+from langchain.chat_models import ChatOpenAI
+from langchain_community.vectorstores import Milvus
+from langchain.embeddings import QianfanEmbeddings
+
+load_dotenv()
+
+class InformationExtractionAgent:
+    """信息提取Agent"""
+    
+    def __init__(self):
+        self.setup_pipeline()
+        self.setup_vector_store()
+        self.setup_agent()
+    
+    def setup_pipeline(self):
+        """配置Pipeline"""
+        self.pipeline_config = {
+            "source": {
+                "type": "local",
+                "directory": "./extraction_documents",
+                "pattern": "**/*.{pdf,docx,xlsx,xls,png,jpg}"
+            },
+            "destination": {
+                "type": "milvus",
+                "db_path": "./extraction_vectors.db",
+                "collection_name": "extraction_documents",
+                "dimension": 1024
+            },
+            "api_base_url": "https://api.textin.com/api/xparse",
+            "api_headers": {
+                "x-ti-app-id": os.getenv("XTI_APP_ID"),
+                "x-ti-secret-code": os.getenv("XTI_SECRET_CODE")
+            },
+            "stages": [
+                {
+                    "type": "parse",
+                    "config": {"provider": "textin"}
+                },
+                {
+                    "type": "chunk",
+                    "config": {
+                        "strategy": "basic",
+                        "max_characters": 1024,
+                        "overlap": 50
+                    }
+                },
+                {
+                    "type": "embed",
+                    "config": {
+                        "provider": "qwen",
+                        "model_name": "text-embedding-v3"
+                    }
+                }
+            ]
+        }
+    
+    def setup_vector_store(self):
+        """配置向量数据库"""
+        self.embedding = QianfanEmbeddings(model_name="text-embedding-v3")
+        self.vector_store = Milvus(
+            embedding_function=self.embedding,
+            collection_name="extraction_documents",
+            connection_args={"uri": os.getenv("MILVUS_URI", "./extraction_vectors.db")}
+        )
+    
+    def setup_agent(self):
+        """配置Agent和Tools"""
+        tools = [
+            Tool(
+                name="extract_resume_info",
+                description="提取简历信息",
+                func=self.extract_resume_info
+            ),
+            Tool(
+                name="extract_product_specs",
+                description="提取产品规格",
+                func=self.extract_product_specs
+            ),
+            Tool(
+                name="extract_api_info",
+                description="提取API信息",
+                func=self.extract_api_info
+            ),
+            Tool(
+                name="vector_search",
+                description="语义检索",
+                func=lambda q: "\n\n".join([
+                    f"[{i+1}] {doc.metadata.get('file_name', 'unknown')}\n{doc.page_content[:300]}..."
+                    for i, doc in enumerate(self.vector_store.similarity_search(q, k=3))
+                ])
+            )
+        ]
+        
+        llm = ChatOpenAI(
+            model_name="gpt-4o-mini",
+            temperature=0.2,
+            api_key=os.getenv("OPENAI_API_KEY")
+        )
+        
+        self.agent = initialize_agent(
+            tools,
+            llm,
+            agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            verbose=True,
+            handle_parsing_errors=True
+        )
+    
+    def extract_resume_info(self, query: str) -> str:
+        """提取简历信息"""
+        docs = self.vector_store.similarity_search(query, k=3)
+        resume_data = {"personal_info": {}, "education": [], "work_experience": []}
+        
+        for doc in docs:
+            text = doc.page_content
+            name_match = re.search(r'姓名[：:]\s*([^\n]+)', text)
+            if name_match:
+                resume_data["personal_info"]["name"] = name_match.group(1).strip()
+            
+            email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
+            if email_match:
+                resume_data["personal_info"]["email"] = email_match.group(0)
+        
+        return json.dumps(resume_data, ensure_ascii=False, indent=2)
+    
+    def extract_product_specs(self, query: str) -> str:
+        """提取产品规格"""
+        docs = self.vector_store.similarity_search(query, k=3)
+        specs = {"product_name": "", "specifications": {}}
+        
+        for doc in docs:
+            text = doc.page_content
+            name_match = re.search(r'产品名称[：:]\s*([^\n]+)', text)
+            if name_match:
+                specs["product_name"] = name_match.group(1).strip()
+        
+        return json.dumps(specs, ensure_ascii=False, indent=2)
+    
+    def extract_api_info(self, query: str) -> str:
+        """提取API信息"""
+        docs = self.vector_store.similarity_search(query, k=3)
+        api_info = []
+        
+        for doc in docs:
+            text = doc.page_content
+            endpoints = re.findall(r'POST\s+([/\w\-{}]+)|GET\s+([/\w\-{}]+)', text)
+            if endpoints:
+                api_info.append({
+                    "file": doc.metadata.get("file_name", "unknown"),
+                    "endpoints": [e[0] or e[1] for e in endpoints[:5]]
+                })
+        
+        return json.dumps(api_info, ensure_ascii=False, indent=2)
+    
+    def process_documents(self):
+        """处理文档"""
+        print("=" * 60)
+        print("开始处理文档...")
+        print("=" * 60)
+        
+        pipeline = create_pipeline_from_config(self.pipeline_config)
+        pipeline.run()
+        
+        print("\n文档处理完成！")
+    
+    def query(self, question: str) -> str:
+        """查询Agent"""
+        response = self.agent.invoke({"input": question})
+        return response["output"]
+
+def main():
+    """主函数"""
+    agent = InformationExtractionAgent()
+    
+    # 1. 处理文档（首次运行）
+    # agent.process_documents()
+    
+    # 2. 查询示例
+    questions = [
+        "从简历中提取所有个人信息、教育经历和工作经历",
+        "从产品文档中提取产品规格和技术参数",
+        "从技术文档中提取所有API接口信息",
+        "将提取的数据格式化为JSON格式"
+    ]
+    
+    for question in questions:
+        print(f"\n{'='*60}")
+        print(f"问题: {question}")
+        print(f"{'='*60}")
+        answer = agent.query(question)
+        print(f"\n回答:\n{answer}")
+
+if __name__ == "__main__":
+    main()
+```
+
+## 使用示例
+
+### 示例1：提取简历信息
+
+```python
+agent = InformationExtractionAgent()
+response = agent.query("从简历中提取姓名、联系方式、教育经历和工作经历")
+print(response)
+```
+
+### 示例2：提取产品规格
+
+```python
+response = agent.query("从产品文档中提取产品名称、型号、技术参数和价格")
+print(response)
+```
+
+### 示例3：提取API信息
+
+```python
+response = agent.query("从技术文档中提取所有API端点、请求方法和参数")
+print(response)
+```
+
+## 最佳实践
+
+1. **文档预处理**：确保文档格式统一，命名规范
+2. **分块策略**：使用 `basic` 策略快速处理，适合信息提取场景
+3. **表格识别**：确保表格结构完整提取，使用HTML格式保留结构
+4. **数据验证**：提取后验证数据完整性和准确性
+5. **批量处理**：支持批量处理，提高效率
+6. **格式标准化**：将提取的数据转换为标准格式（JSON、CSV），便于后续处理
+
+## 常见问题
+
+**Q: 如何提高提取准确率？**  
+A: 1) 优化文档格式，确保结构清晰；2) 使用更精确的正则表达式；3) 结合大模型进行后处理。
+
+**Q: 如何处理格式不统一的文档？**  
+A: 1) 先统一文档格式；2) 使用多种提取策略；3) 人工校验和修正。
+
+**Q: 如何批量处理大量文档？**  
+A: 1) 使用Pipeline的批量处理功能；2) 并行处理多个文档；3) 使用队列管理任务。
+
+## 相关文档
+
+- [快速启动](/pipeline/quickstart) - 了解Pipeline基本使用方法
+- [文档元素和元数据](/pipeline/elements-metadata) - 了解数据结构
+- [结果回溯与可视化](/pipeline/traceability) - 了解如何追溯结果
+- [Agent教程](/pipeline/tutorial/agent-tutorial) - 了解通用Agent构建方法
+

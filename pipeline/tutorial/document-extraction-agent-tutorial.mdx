@@ -1,0 +1,845 @@
+---
+title: "单据录入Agent：发票合同订单自动化处理"
+description: "使用 xParse + LangChain 构建单据提取Agent，实现发票、合同、订单等单据的自动化信息提取和数据验证"
+---
+
+<Tip>
+  本教程面向单据处理场景，展示如何利用 xParse 作为数据底座，构建能够自动提取发票、合同、订单等单据信息并进行数据验证的智能Agent。
+</Tip>
+
+## 场景介绍
+
+### 业务痛点
+
+在财务和采购场景中，企业面临以下挑战：
+
+- **单据量大**：需要处理大量发票、合同、订单、收据等单据
+- **信息提取繁琐**：需要从单据中提取关键信息（金额、税号、日期、商品明细等）
+- **数据验证困难**：需要验证数据的完整性和准确性（金额计算、日期合理性等）
+- **格式多样**：单据格式不统一，有PDF、图片、扫描件等
+- **人工成本高**：手动录入和核对效率低，容易出错
+
+### 解决方案
+
+通过构建单据提取Agent，我们可以实现：
+
+- **自动化单据解析**：使用 xParse Pipeline 自动解析各类单据
+- **智能信息提取**：从单据中提取关键信息（发票信息、合同条款、订单明细等）
+- **数据验证**：自动验证提取的数据（金额校验、日期检查、必填项检查等）
+- **批量处理**：支持批量处理大量单据
+- **结果可视化**：保留坐标信息，便于可视化验证
+
+## 架构设计
+
+```
+单据文档（PDF/图片/扫描件）
+    ↓
+[xParse Pipeline]
+    ├─ Parse: 解析发票、合同、订单（OCR+表格识别）
+    ├─ Chunk: 按页面分块（单据通常单页）
+    └─ Embed: 向量化
+    ↓
+向量数据库（Milvus/Zilliz）
+    ↓
+[LangChain Agent]
+    ├─ Tool 1: extract_invoice_info（提取发票信息）
+    ├─ Tool 2: extract_contract_info（提取合同信息）
+    ├─ Tool 3: extract_order_info（提取订单信息）
+    └─ Tool 4: validate_data（数据验证）
+    ↓
+结构化数据（JSON/CSV）+ 验证报告
+```
+
+## 环境准备
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install "xparse-client>=0.2.5" langchain langchain-community langchain-core \
+            pymilvus qianfan openai python-dotenv
+export XTI_APP_ID=your-app-id
+export XTI_SECRET_CODE=your-secret-code
+export MILVUS_URI=./document_vectors.db
+export OPENAI_API_KEY=your-openai-key
+```
+
+## Step 1：配置 xParse Pipeline
+
+针对单据提取场景，我们使用以下配置：
+
+- **分块策略**：`by_page` - 单据通常单页，保持页面完整性
+- **OCR优化**：确保扫描件和图片中的文字正确识别
+- **表格识别**：确保表格结构完整提取（发票明细、订单明细等）
+- **坐标保留**：保留坐标信息，便于可视化验证
+
+```python
+from xparse_client import create_pipeline_from_config
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DOCUMENT_PIPELINE_CONFIG = {
+    "source": {
+        "type": "local",
+        "directory": "./document_documents",
+        "pattern": "**/*.{pdf,png,jpg,jpeg}"  # 支持PDF和图片格式
+    },
+    "destination": {
+        "type": "milvus",
+        "db_path": "./document_vectors.db",
+        "collection_name": "document_documents",
+        "dimension": 1024
+    },
+    "api_base_url": "https://api.textin.com/api/xparse",
+    "api_headers": {
+        "x-ti-app-id": os.getenv("XTI_APP_ID"),
+        "x-ti-secret-code": os.getenv("XTI_SECRET_CODE")
+    },
+    "stages": [
+        {
+            "type": "parse",
+            "config": {
+                "provider": "textin",  # 使用TextIn解析引擎，OCR效果好
+                "parse_mode": "scan"  # 扫描模式，适合图片和扫描件
+            }
+        },
+        {
+            "type": "chunk",
+            "config": {
+                "strategy": "by_page",  # 按页面分块，单据通常单页
+                "include_orig_elements": True,  # 保留原始元素和坐标信息
+                "max_characters": 2048,  # 单据页面可能较长
+                "overlap": 0  # 单据通常单页，不需要重叠
+            }
+        },
+        {
+            "type": "embed",
+            "config": {
+                "provider": "qwen",
+                "model_name": "text-embedding-v4"  # 使用高精度模型
+            }
+        }
+    ]
+}
+
+def run_document_pipeline(job_name: str = None) -> dict:
+    """运行单据处理Pipeline"""
+    pipeline = create_pipeline_from_config(DOCUMENT_PIPELINE_CONFIG)
+    stats = pipeline.run(job_name=job_name or f"document-job-{int(time.time())}")
+    return {
+        "job_name": job_name,
+        "file_count": stats.processed_files if hasattr(stats, 'processed_files') else 0,
+        "chunk_count": stats.chunked_elements if hasattr(stats, 'chunked_elements') else 0,
+        "duration": stats.duration_seconds if hasattr(stats, 'duration_seconds') else 0
+    }
+```
+
+## Step 2：构建 LangChain Tools
+
+### Tool 1: 提取发票信息
+
+```python
+from langchain.tools import Tool
+from langchain_community.vectorstores import Milvus
+from langchain.embeddings import QianfanEmbeddings
+import re
+import json
+from datetime import datetime
+
+embedding = QianfanEmbeddings(model_name="text-embedding-v4")
+vector_store = Milvus(
+    embedding_function=embedding,
+    collection_name="document_documents",
+    connection_args={"uri": os.getenv("MILVUS_URI", "./document_vectors.db")}
+)
+
+def extract_invoice_info(query: str) -> str:
+    """
+    从发票中提取结构化信息
+    
+    提取内容包括：
+    - 发票基本信息（发票号码、发票代码、开票日期）
+    - 销售方信息（名称、税号、地址、电话）
+    - 购买方信息（名称、税号、地址、电话）
+    - 商品明细（名称、规格、数量、单价、金额、税率）
+    - 金额信息（合计金额、税额、价税合计）
+    """
+    # 检索相关文档片段
+    docs = vector_store.similarity_search(query, k=3)
+    
+    invoice_data = {
+        "invoice_basic": {},
+        "seller_info": {},
+        "buyer_info": {},
+        "items": [],
+        "amounts": {}
+    }
+    
+    for doc in docs:
+        text = doc.page_content
+        metadata = doc.metadata
+        
+        # 提取发票号码
+        invoice_no_patterns = [
+            r'发票号码[：:]\s*([^\n]+)',
+            r'发票号[：:]\s*([^\n]+)',
+            r'No[\.：:]\s*([^\n]+)'
+        ]
+        for pattern in invoice_no_patterns:
+            match = re.search(pattern, text)
+            if match and not invoice_data["invoice_basic"].get("invoice_no"):
+                invoice_data["invoice_basic"]["invoice_no"] = match.group(1).strip()
+                break
+        
+        # 提取发票代码
+        invoice_code_match = re.search(r'发票代码[：:]\s*([^\n]+)', text)
+        if invoice_code_match:
+            invoice_data["invoice_basic"]["invoice_code"] = invoice_code_match.group(1).strip()
+        
+        # 提取开票日期
+        date_patterns = [
+            r'开票日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)',
+            r'日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)',
+            r'(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)'
+        ]
+        for pattern in date_patterns:
+            match = re.search(pattern, text)
+            if match:
+                invoice_data["invoice_basic"]["invoice_date"] = match.group(1)
+                break
+        
+        # 提取销售方信息
+        seller_name_match = re.search(r'销售方[：:]\s*([^\n]+)', text)
+        if seller_name_match:
+            invoice_data["seller_info"]["name"] = seller_name_match.group(1).strip()
+        
+        seller_tax_match = re.search(r'销售方.*税号[：:]\s*([^\n]+)', text)
+        if seller_tax_match:
+            invoice_data["seller_info"]["tax_no"] = seller_tax_match.group(1).strip()
+        
+        # 提取购买方信息
+        buyer_name_match = re.search(r'购买方[：:]\s*([^\n]+)', text)
+        if buyer_name_match:
+            invoice_data["buyer_info"]["name"] = buyer_name_match.group(1).strip()
+        
+        buyer_tax_match = re.search(r'购买方.*税号[：:]\s*([^\n]+)', text)
+        if buyer_tax_match:
+            invoice_data["buyer_info"]["tax_no"] = buyer_tax_match.group(1).strip()
+        
+        # 提取金额信息
+        amount_patterns = [
+            r'合计[：:]\s*[¥$€]?\s*([\d,]+\.?\d*)',
+            r'价税合计[：:]\s*[¥$€]?\s*([\d,]+\.?\d*)',
+            r'总计[：:]\s*[¥$€]?\s*([\d,]+\.?\d*)'
+        ]
+        for pattern in amount_patterns:
+            match = re.search(pattern, text)
+            if match:
+                invoice_data["amounts"]["total"] = match.group(1)
+                break
+        
+        tax_match = re.search(r'税额[：:]\s*[¥$€]?\s*([\d,]+\.?\d*)', text)
+        if tax_match:
+            invoice_data["amounts"]["tax"] = tax_match.group(1)
+        
+        # 提取商品明细（简化版，实际需要更复杂的表格解析）
+        # 这里假设商品信息在表格中
+        item_patterns = [
+            r'([^\n]+)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)',  # 商品名 数量 单价 金额
+        ]
+        for pattern in item_patterns:
+            matches = re.findall(pattern, text)
+            for match in matches[:10]:  # 限制数量
+                invoice_data["items"].append({
+                    "name": match[0].strip(),
+                    "quantity": match[1],
+                    "unit_price": match[2],
+                    "amount": match[3]
+                })
+        
+        invoice_data["source_file"] = metadata.get("file_name", "unknown")
+        invoice_data["page"] = metadata.get("page_number", "unknown")
+    
+    return json.dumps(invoice_data, ensure_ascii=False, indent=2)
+```
+
+### Tool 2: 提取合同信息
+
+```python
+def extract_contract_info(query: str) -> str:
+    """
+    从合同中提取关键信息
+    
+    提取内容包括：
+    - 合同基本信息（合同编号、签署日期、生效日期、到期日期）
+    - 签约方信息（甲方、乙方、联系方式）
+    - 合同金额（合同总价、付款方式、付款期限）
+    - 关键条款（违约责任、争议解决、合同期限等）
+    """
+    docs = vector_store.similarity_search(query, k=3)
+    
+    contract_data = {
+        "contract_basic": {},
+        "parties": {},
+        "amount": {},
+        "key_terms": {}
+    }
+    
+    for doc in docs:
+        text = doc.page_content
+        
+        # 提取合同编号
+        contract_no_match = re.search(r'合同编号[：:]\s*([^\n]+)', text)
+        if contract_no_match:
+            contract_data["contract_basic"]["contract_no"] = contract_no_match.group(1).strip()
+        
+        # 提取签署日期
+        sign_date_match = re.search(r'签署日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)', text)
+        if sign_date_match:
+            contract_data["contract_basic"]["sign_date"] = sign_date_match.group(1)
+        
+        # 提取甲方信息
+        party_a_match = re.search(r'甲方[：:]\s*([^\n]+)', text)
+        if party_a_match:
+            contract_data["parties"]["party_a"] = party_a_match.group(1).strip()
+        
+        # 提取乙方信息
+        party_b_match = re.search(r'乙方[：:]\s*([^\n]+)', text)
+        if party_b_match:
+            contract_data["parties"]["party_b"] = party_b_match.group(1).strip()
+        
+        # 提取合同金额
+        amount_match = re.search(r'合同总价[：:]\s*[¥$€]?\s*([\d,]+\.?\d*)', text)
+        if amount_match:
+            contract_data["amount"]["total"] = amount_match.group(1)
+        
+        # 提取关键条款
+        breach_match = re.search(r'违约责任[：:]\s*([^\n]+)', text)
+        if breach_match:
+            contract_data["key_terms"]["breach"] = breach_match.group(1).strip()[:200]
+        
+        dispute_match = re.search(r'争议解决[：:]\s*([^\n]+)', text)
+        if dispute_match:
+            contract_data["key_terms"]["dispute"] = dispute_match.group(1).strip()[:200]
+        
+        term_match = re.search(r'合同期限[：:]\s*([^\n]+)', text)
+        if term_match:
+            contract_data["key_terms"]["term"] = term_match.group(1).strip()[:200]
+    
+    return json.dumps(contract_data, ensure_ascii=False, indent=2)
+```
+
+### Tool 3: 提取订单信息
+
+```python
+def extract_order_info(query: str) -> str:
+    """
+    从订单中提取信息
+    
+    提取内容包括：
+    - 订单基本信息（订单号、下单日期、交货日期）
+    - 客户信息（客户名称、联系方式、地址）
+    - 商品明细（商品名称、规格、数量、单价、金额）
+    - 金额信息（订单总额、运费、优惠金额）
+    """
+    docs = vector_store.similarity_search(query, k=3)
+    
+    order_data = {
+        "order_basic": {},
+        "customer_info": {},
+        "items": [],
+        "amounts": {}
+    }
+    
+    for doc in docs:
+        text = doc.page_content
+        
+        # 提取订单号
+        order_no_match = re.search(r'订单号[：:]\s*([^\n]+)', text)
+        if order_no_match:
+            order_data["order_basic"]["order_no"] = order_no_match.group(1).strip()
+        
+        # 提取下单日期
+        order_date_match = re.search(r'下单日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)', text)
+        if order_date_match:
+            order_data["order_basic"]["order_date"] = order_date_match.group(1)
+        
+        # 提取客户信息
+        customer_match = re.search(r'客户[：:]\s*([^\n]+)', text)
+        if customer_match:
+            order_data["customer_info"]["name"] = customer_match.group(1).strip()
+        
+        # 提取订单总额
+        total_match = re.search(r'订单总额[：:]\s*[¥$€]?\s*([\d,]+\.?\d*)', text)
+        if total_match:
+            order_data["amounts"]["total"] = total_match.group(1)
+        
+        # 提取商品明细（简化版）
+        item_patterns = [
+            r'([^\n]+)\s+(\d+)\s+(\d+\.?\d*)\s+(\d+\.?\d*)',  # 商品名 数量 单价 金额
+        ]
+        for pattern in item_patterns:
+            matches = re.findall(pattern, text)
+            for match in matches[:10]:
+                order_data["items"].append({
+                    "name": match[0].strip(),
+                    "quantity": match[1],
+                    "unit_price": match[2],
+                    "amount": match[3]
+                })
+    
+    return json.dumps(order_data, ensure_ascii=False, indent=2)
+```
+
+### Tool 4: 数据验证
+
+```python
+def validate_data(query: str) -> str:
+    """
+    验证提取的数据
+    
+    验证项包括：
+    - 必填项检查（发票号码、金额等）
+    - 金额计算验证（明细金额之和是否等于合计）
+    - 日期合理性检查（日期不能是未来日期等）
+    - 格式验证（税号格式、电话号码格式等）
+    """
+    docs = vector_store.similarity_search(query, k=3)
+    
+    validation_results = []
+    
+    for doc in docs:
+        text = doc.page_content
+        metadata = doc.metadata
+        
+        validation = {
+            "file": metadata.get("file_name", "unknown"),
+            "page": metadata.get("page_number", "unknown"),
+            "checks": [],
+            "status": "pass"
+        }
+        
+        # 检查1: 必填项检查
+        required_fields = ["发票号码", "金额", "日期"]
+        missing_fields = [field for field in required_fields if field not in text]
+        if missing_fields:
+            validation["checks"].append({
+                "type": "必填项检查",
+                "status": "fail",
+                "message": f"缺少必填项: {', '.join(missing_fields)}"
+            })
+            validation["status"] = "fail"
+        
+        # 检查2: 金额计算验证（简化版）
+        amounts = re.findall(r'[\d,]+\.?\d*', text)
+        if len(amounts) >= 2:
+            try:
+                amounts_float = [float(a.replace(',', '')) for a in amounts]
+                # 简单检查：最大金额应该合理
+                max_amount = max(amounts_float)
+                min_amount = min(amounts_float)
+                if max_amount / min_amount > 10000:  # 金额差异过大可能有问题
+                    validation["checks"].append({
+                        "type": "金额合理性检查",
+                        "status": "warning",
+                        "message": f"金额差异较大: 最大{max_amount}, 最小{min_amount}"
+                    })
+            except:
+                pass
+        
+        # 检查3: 日期合理性检查
+        dates = re.findall(r'(\d{4})[-年](\d{1,2})[-月](\d{1,2})', text)
+        current_year = datetime.now().year
+        for date_match in dates:
+            year = int(date_match[0])
+            if year > current_year:
+                validation["checks"].append({
+                    "type": "日期合理性检查",
+                    "status": "fail",
+                    "message": f"日期不合理: {year}年（未来日期）"
+                })
+                validation["status"] = "fail"
+        
+        # 检查4: 税号格式验证（中国税号18位）
+        tax_no_matches = re.findall(r'税号[：:]\s*([^\n]+)', text)
+        for tax_no in tax_no_matches:
+            tax_no_clean = re.sub(r'[^\d]', '', tax_no)
+            if len(tax_no_clean) not in [15, 18, 20]:  # 常见税号长度
+                validation["checks"].append({
+                    "type": "税号格式检查",
+                    "status": "warning",
+                    "message": f"税号格式可能不正确: {tax_no.strip()}"
+                })
+        
+        if not validation["checks"]:
+            validation["checks"].append({
+                "type": "数据验证",
+                "status": "pass",
+                "message": "所有检查通过"
+            })
+        
+        validation_results.append(validation)
+    
+    return json.dumps(validation_results, ensure_ascii=False, indent=2)
+```
+
+### 组装所有Tools
+
+```python
+tools = [
+    Tool(
+        name="extract_invoice_info",
+        description="从发票中提取结构化信息，包括发票号码、开票日期、销售方信息、购买方信息、商品明细、金额信息等。输入应为'提取发票信息'或类似描述。",
+        func=extract_invoice_info
+    ),
+    Tool(
+        name="extract_contract_info",
+        description="从合同中提取关键信息，包括合同编号、签署日期、签约方信息、合同金额、关键条款等。输入应为'提取合同信息'或类似描述。",
+        func=extract_contract_info
+    ),
+    Tool(
+        name="extract_order_info",
+        description="从订单中提取信息，包括订单号、下单日期、客户信息、商品明细、金额信息等。输入应为'提取订单信息'或类似描述。",
+        func=extract_order_info
+    ),
+    Tool(
+        name="validate_data",
+        description="验证提取的数据，包括必填项检查、金额计算验证、日期合理性检查、格式验证等。输入应为要验证的数据类型描述。",
+        func=validate_data
+    ),
+    Tool(
+        name="vector_search",
+        description="基于语义检索相关单据片段。输入应为自然语言查询。",
+        func=lambda q: "\n\n".join([
+            f"[{i+1}] {doc.metadata.get('file_name', 'unknown')} (页{doc.metadata.get('page_number', '?')})\n{doc.page_content[:300]}..."
+            for i, doc in enumerate(vector_store.similarity_search(q, k=3))
+        ])
+    )
+]
+```
+
+## Step 3：配置 LangChain Agent
+
+```python
+from langchain.agents import initialize_agent, AgentType
+from langchain.chat_models import ChatOpenAI
+
+llm = ChatOpenAI(
+    model_name="gpt-4o-mini",
+    temperature=0.2,
+    api_key=os.getenv("OPENAI_API_KEY")
+)
+
+agent = initialize_agent(
+    tools,
+    llm,
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=True,
+    handle_parsing_errors=True,
+    agent_kwargs={
+        "prefix": """你是一个专业的单据处理助手。你的任务是帮助用户：
+1. 从发票、合同、订单中提取关键信息
+2. 验证提取的数据完整性和准确性
+3. 检查数据格式和合理性
+
+在回答时，请：
+- 提供结构化的提取结果（JSON格式）
+- 明确标注验证结果（通过/失败/警告）
+- 如果发现问题，说明具体的问题和建议
+- 使用工具获取准确的信息，不要猜测
+"""
+    }
+)
+```
+
+## Step 4：完整示例代码
+
+```python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+单据提取Agent完整示例
+"""
+
+import os
+import re
+import json
+from datetime import datetime
+from dotenv import load_dotenv
+from xparse_client import create_pipeline_from_config
+from langchain.tools import Tool
+from langchain.agents import initialize_agent, AgentType
+from langchain.chat_models import ChatOpenAI
+from langchain_community.vectorstores import Milvus
+from langchain.embeddings import QianfanEmbeddings
+
+load_dotenv()
+
+class DocumentExtractionAgent:
+    """单据提取Agent"""
+    
+    def __init__(self):
+        self.setup_pipeline()
+        self.setup_vector_store()
+        self.setup_agent()
+    
+    def setup_pipeline(self):
+        """配置Pipeline"""
+        self.pipeline_config = {
+            "source": {
+                "type": "local",
+                "directory": "./document_documents",
+                "pattern": "**/*.{pdf,png,jpg,jpeg}"
+            },
+            "destination": {
+                "type": "milvus",
+                "db_path": "./document_vectors.db",
+                "collection_name": "document_documents",
+                "dimension": 1024
+            },
+            "api_base_url": "https://api.textin.com/api/xparse",
+            "api_headers": {
+                "x-ti-app-id": os.getenv("XTI_APP_ID"),
+                "x-ti-secret-code": os.getenv("XTI_SECRET_CODE")
+            },
+            "stages": [
+                {
+                    "type": "parse",
+                    "config": {
+                        "provider": "textin",
+                        "parse_mode": "scan"
+                    }
+                },
+                {
+                    "type": "chunk",
+                    "config": {
+                        "strategy": "by_page",
+                        "include_orig_elements": True,
+                        "max_characters": 2048
+                    }
+                },
+                {
+                    "type": "embed",
+                    "config": {
+                        "provider": "qwen",
+                        "model_name": "text-embedding-v4"
+                    }
+                }
+            ]
+        }
+    
+    def setup_vector_store(self):
+        """配置向量数据库"""
+        self.embedding = QianfanEmbeddings(model_name="text-embedding-v4")
+        self.vector_store = Milvus(
+            embedding_function=self.embedding,
+            collection_name="document_documents",
+            connection_args={"uri": os.getenv("MILVUS_URI", "./document_vectors.db")}
+        )
+    
+    def setup_agent(self):
+        """配置Agent和Tools"""
+        tools = [
+            Tool(
+                name="extract_invoice_info",
+                description="提取发票信息",
+                func=self.extract_invoice_info
+            ),
+            Tool(
+                name="extract_contract_info",
+                description="提取合同信息",
+                func=self.extract_contract_info
+            ),
+            Tool(
+                name="extract_order_info",
+                description="提取订单信息",
+                func=self.extract_order_info
+            ),
+            Tool(
+                name="validate_data",
+                description="验证数据",
+                func=self.validate_data
+            ),
+            Tool(
+                name="vector_search",
+                description="语义检索",
+                func=lambda q: "\n\n".join([
+                    f"[{i+1}] {doc.metadata.get('file_name', 'unknown')}\n{doc.page_content[:300]}..."
+                    for i, doc in enumerate(self.vector_store.similarity_search(q, k=3))
+                ])
+            )
+        ]
+        
+        llm = ChatOpenAI(
+            model_name="gpt-4o-mini",
+            temperature=0.2,
+            api_key=os.getenv("OPENAI_API_KEY")
+        )
+        
+        self.agent = initialize_agent(
+            tools,
+            llm,
+            agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            verbose=True,
+            handle_parsing_errors=True
+        )
+    
+    def extract_invoice_info(self, query: str) -> str:
+        """提取发票信息"""
+        docs = self.vector_store.similarity_search(query, k=3)
+        invoice_data = {"invoice_basic": {}, "amounts": {}}
+        
+        for doc in docs:
+            text = doc.page_content
+            invoice_no_match = re.search(r'发票号码[：:]\s*([^\n]+)', text)
+            if invoice_no_match:
+                invoice_data["invoice_basic"]["invoice_no"] = invoice_no_match.group(1).strip()
+            
+            amount_match = re.search(r'合计[：:]\s*[¥$€]?\s*([\d,]+\.?\d*)', text)
+            if amount_match:
+                invoice_data["amounts"]["total"] = amount_match.group(1)
+        
+        return json.dumps(invoice_data, ensure_ascii=False, indent=2)
+    
+    def extract_contract_info(self, query: str) -> str:
+        """提取合同信息"""
+        docs = self.vector_store.similarity_search(query, k=3)
+        contract_data = {"contract_basic": {}, "parties": {}}
+        
+        for doc in docs:
+            text = doc.page_content
+            contract_no_match = re.search(r'合同编号[：:]\s*([^\n]+)', text)
+            if contract_no_match:
+                contract_data["contract_basic"]["contract_no"] = contract_no_match.group(1).strip()
+        
+        return json.dumps(contract_data, ensure_ascii=False, indent=2)
+    
+    def extract_order_info(self, query: str) -> str:
+        """提取订单信息"""
+        docs = self.vector_store.similarity_search(query, k=3)
+        order_data = {"order_basic": {}, "items": []}
+        
+        for doc in docs:
+            text = doc.page_content
+            order_no_match = re.search(r'订单号[：:]\s*([^\n]+)', text)
+            if order_no_match:
+                order_data["order_basic"]["order_no"] = order_no_match.group(1).strip()
+        
+        return json.dumps(order_data, ensure_ascii=False, indent=2)
+    
+    def validate_data(self, query: str) -> str:
+        """验证数据"""
+        docs = self.vector_store.similarity_search(query, k=3)
+        validation_results = []
+        
+        for doc in docs:
+            text = doc.page_content
+            checks = []
+            
+            # 检查必填项
+            if "发票号码" not in text and "订单号" not in text:
+                checks.append({"type": "必填项检查", "status": "fail", "message": "缺少单据编号"})
+            
+            if not checks:
+                checks.append({"type": "数据验证", "status": "pass", "message": "基本检查通过"})
+            
+            validation_results.append({
+                "file": doc.metadata.get("file_name", "unknown"),
+                "checks": checks
+            })
+        
+        return json.dumps(validation_results, ensure_ascii=False, indent=2)
+    
+    def process_documents(self):
+        """处理文档"""
+        print("=" * 60)
+        print("开始处理单据...")
+        print("=" * 60)
+        
+        pipeline = create_pipeline_from_config(self.pipeline_config)
+        pipeline.run()
+        
+        print("\n单据处理完成！")
+    
+    def query(self, question: str) -> str:
+        """查询Agent"""
+        response = self.agent.invoke({"input": question})
+        return response["output"]
+
+def main():
+    """主函数"""
+    agent = DocumentExtractionAgent()
+    
+    # 1. 处理文档（首次运行）
+    # agent.process_documents()
+    
+    # 2. 查询示例
+    questions = [
+        "从发票中提取发票号码、开票日期、金额和商品明细",
+        "从合同中提取合同编号、签署日期、签约方和合同金额",
+        "从订单中提取订单号、下单日期、客户信息和商品明细",
+        "验证提取的发票数据是否完整和准确"
+    ]
+    
+    for question in questions:
+        print(f"\n{'='*60}")
+        print(f"问题: {question}")
+        print(f"{'='*60}")
+        answer = agent.query(question)
+        print(f"\n回答:\n{answer}")
+
+if __name__ == "__main__":
+    main()
+```
+
+## 使用示例
+
+### 示例1：提取发票信息
+
+```python
+agent = DocumentExtractionAgent()
+response = agent.query("从发票中提取发票号码、开票日期、销售方税号、购买方税号、商品明细和金额")
+print(response)
+```
+
+### 示例2：提取合同信息
+
+```python
+response = agent.query("从合同中提取合同编号、签署日期、甲方、乙方、合同金额和违约责任条款")
+print(response)
+```
+
+### 示例3：数据验证
+
+```python
+response = agent.query("验证提取的发票数据：检查必填项、金额计算、日期合理性、税号格式")
+print(response)
+```
+
+## 最佳实践
+
+1. **OCR优化**：对于扫描件和图片，使用 `parse_mode: "scan"` 确保文字识别准确
+2. **表格识别**：确保表格结构完整提取，特别是发票明细和订单明细
+3. **坐标保留**：开启 `include_orig_elements`，保留坐标信息，便于可视化验证
+4. **数据验证**：提取后立即验证，确保数据完整性和准确性
+5. **批量处理**：支持批量处理，提高效率
+6. **错误处理**：对于识别失败的单据，记录错误信息，便于人工处理
+
+## 常见问题
+
+**Q: 如何处理模糊的扫描件？**  
+A: 1) 使用高质量的扫描件；2) 预处理图片（去噪、增强对比度）；3) 使用支持OCR的解析引擎。
+
+**Q: 如何提高表格识别准确率？**  
+A: 1) 确保表格结构清晰；2) 使用支持表格识别的解析引擎；3) 后处理验证表格数据。
+
+**Q: 如何处理多页单据？**  
+A: xParse会自动处理多页文档，使用 `by_page` 策略保持页面完整性，可以提取每页的信息。
+
+## 相关文档
+
+- [快速启动](/pipeline/quickstart) - 了解Pipeline基本使用方法
+- [文档元素和元数据](/pipeline/elements-metadata) - 了解数据结构
+- [结果回溯与可视化](/pipeline/traceability) - 了解如何追溯结果
+- [Agent教程](/pipeline/tutorial/agent-tutorial) - 了解通用Agent构建方法
+
