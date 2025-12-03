@@ -64,7 +64,8 @@
                   },
                   "pipeline/parse",
                   "pipeline/chunk",
-                  "pipeline/embed"
+                  "pipeline/embed",
+                  "pipeline/traceability"
                 ]
               },
               {

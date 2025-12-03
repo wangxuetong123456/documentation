@@ -1,0 +1,511 @@
+---
+title: "结果回溯与可视化"
+description: "通过结果溯源与可视化，帮助您更好地理解文档处理结果"
+---
+
+在处理文档时，了解处理结果的来源和位置对于调试、验证和优化处理流程至关重要。xParse 提供了丰富的元数据信息，支持完整的结果回溯和可视化功能。
+
+## 为什么需要结果回溯？
+
+结果回溯可以帮助您：
+
+- **验证处理结果**：确认解析、分块和向量化的结果是否正确
+- **调试问题**：当检索结果不理想时，可以追溯到原始文档位置
+- **优化策略**：通过分析处理过程，优化分块和向量化策略
+- **用户展示**：在 RAG 应用中，向用户展示检索结果的原始位置
+- **质量控制**：审核和校正处理结果，确保数据质量
+
+## 回溯机制概览
+
+xParse 通过以下机制支持结果回溯：
+
+1. **元素 ID（element_id）**：每个元素的唯一标识符，基于内容、位置和文件信息生成
+2. **元数据（metadata）**：包含文件信息、页面位置、坐标等溯源信息
+3. **原始元素追踪（orig_elements）**：分块后可以追溯到组成块的原始元素
+4. **数据源信息（data_source）**：记录文件的来源、版本和处理时间
+5. **坐标信息（coordinates）**：精确定位元素在原始页面上的位置
+
+## 元数据字段详解
+
+### 文件信息
+
+每个元素都包含以下文件信息，用于追溯到原始文件：
+
+```json
+{
+  "metadata": {
+    "filename": "example.pdf",
+    "file_directory": "/projects/demo/",
+    "filetype": "application/pdf",
+    "last_modified": "1758624866230"
+  }
+}
+```
+
+- **filename**：文件名，用于识别源文件
+- **file_directory**：文件在存储系统中的目录路径
+- **filetype**：文件的 MIME 类型
+- **last_modified**：文件最后修改时间（Unix 毫秒时间戳）
+
+### 页面位置信息
+
+```json
+{
+  "metadata": {
+    "page_number": 1,
+    "page_width": 1191,
+    "page_height": 1684
+  }
+}
+```
+
+- **page_number**：元素所在的页码（从 1 开始）
+- **page_width**：页面宽度（像素）
+- **page_height**：页面高度（像素）
+
+这些信息可以帮助您快速定位到原始文档的特定页面。
+
+### 坐标信息（coordinates）
+
+坐标信息用于精确定位元素在页面上的位置：
+
+```json
+{
+  "metadata": {
+    "coordinates": [217, 390, 1336, 390, 1336, 460, 217, 460]
+  }
+}
+```
+
+坐标格式为 `[x1, y1, x2, y2, x3, y3, x4, y4]`，表示一个四边形的四个顶点坐标，按顺时针排列：
+
+```
+坐标数组: [x1, y1, x2, y2, x3, y3, x4, y4]
+          ↑左上    ↑右上    ↑右下    ↑左下
+```
+
+坐标系统说明：
+- 原点位于页面左上角
+- 单位为像素（px）
+- 当输入是 PDF 时，坐标基于 72dpi
+- 当输入是图片时，坐标是原图里的坐标
+
+### 层级关系
+
+```json
+{
+  "metadata": {
+    "parent_id": "23a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
+    "category_depth": 1
+  }
+}
+```
+
+- **parent_id**：父节点 ID，用于构建元素之间的层级关系
+- **category_depth**：在同类元素中的层级深度（如标题等级：H1=0, H2=1, H3=2）
+
+### 数据源信息（data_source）
+
+`data_source` 字段包含完整的数据源信息：
+
+```json
+{
+  "metadata": {
+    "data_source": {
+      "record_locator": {
+        "protocol": "file",
+        "remote_file_path": "/projects/demo/example.pdf"
+      },
+      "url": "file:///projects/demo/example.pdf",
+      "version": "1758624866230967485",
+      "date_created": "1764555574237",
+      "date_modified": "1758624866230",
+      "date_processed": "1764742970688"
+    }
+  }
+}
+```
+
+- **record_locator**：记录原始文件的归档信息
+  - **protocol**：协议类型（如 `file`、`s3`、`ftp` 等）
+  - **remote_file_path**：远程文件路径
+- **url**：原始文件的 URL 地址
+- **version**：原始文件的版本号
+- **date_created**：文件创建时间（毫秒时间戳）
+- **date_modified**：文件修改时间（毫秒时间戳）
+- **date_processed**：文件处理时间（毫秒时间戳）
+
+## 分块结果溯源
+
+当使用分块功能时，可以通过 `orig_elements` 字段追溯到组成块的原始元素。
+
+### 启用原始元素追踪
+
+在分块配置中设置 `include_orig_elements=true`：
+
+```python
+from xparse_client import ChunkConfig
+
+chunk_config = ChunkConfig(
+    strategy='by_title',
+    include_orig_elements=True,  # 启用原始元素追踪
+    max_characters=1024
+)
+```
+
+### 解码原始元素
+
+`orig_elements` 字段是一个 gzip 压缩后的 Base64 字符串，需要按以下步骤解码：
+
+```python
+import base64
+import zlib
+import json
+
+def extract_orig_elements(orig_elements_str):
+    """
+    从 orig_elements 字段中提取原始元素列表
+    
+    Args:
+        orig_elements_str: metadata.orig_elements 字段的值（Base64 编码的 gzip 压缩字符串）
+    
+    Returns:
+        list: 原始元素列表
+    """
+    # 1. Base64 解码
+    decoded = base64.b64decode(orig_elements_str)
+    
+    # 2. gzip 解压缩
+    decompressed = zlib.decompress(decoded)
+    
+    # 3. UTF-8 解码并解析 JSON
+    return json.loads(decompressed.decode('utf-8'))
+
+# 使用示例
+element = {
+    "element_id": "...",
+    "type": "CompositeElement",
+    "text": "这是分块后的文本",
+    "metadata": {
+        "orig_elements": "eJy ... Base64-encoded gzip+UTF-8 string ... x8="
+    }
+}
+
+# 提取原始元素
+orig_elements = extract_orig_elements(element['metadata']['orig_elements'])
+print(f"此块由 {len(orig_elements)} 个原始元素组成")
+for orig in orig_elements:
+    print(f"  - {orig['type']}: {orig['text'][:50]}...")
+```
+
+### 完整示例：追踪分块来源
+
+```python
+import base64
+import zlib
+import json
+
+def trace_chunk_origin(chunked_element):
+    """
+    追踪分块元素的来源
+    
+    Args:
+        chunked_element: 分块后的元素
+    
+    Returns:
+        dict: 包含溯源信息的字典
+    """
+    trace_info = {
+        "chunk_id": chunked_element["element_id"],
+        "chunk_text": chunked_element["text"],
+        "source_file": chunked_element["metadata"].get("filename"),
+        "page_number": chunked_element["metadata"].get("page_number"),
+        "original_elements": []
+    }
+    
+    # 提取原始元素
+    if "orig_elements" in chunked_element["metadata"]:
+        orig_elements_str = chunked_element["metadata"]["orig_elements"]
+        try:
+            decoded = base64.b64decode(orig_elements_str)
+            decompressed = zlib.decompress(decoded)
+            orig_elements = json.loads(decompressed.decode('utf-8'))
+            
+            trace_info["original_elements"] = [
+                {
+                    "element_id": elem.get("element_id"),
+                    "type": elem.get("type"),
+                    "text": elem.get("text", "")[:100],  # 只显示前100字符
+                    "page_number": elem.get("metadata", {}).get("page_number"),
+                    "coordinates": elem.get("metadata", {}).get("coordinates")
+                }
+                for elem in orig_elements
+            ]
+        except Exception as e:
+            print(f"解码原始元素失败: {e}")
+    
+    return trace_info
+
+# 使用示例
+chunked_element = {
+    "element_id": "5f84a1db7c9f4ad65f84a1db7c9f4ad65f84a1db7c9f4ad65f84a1db7c9f4ad6",
+    "type": "CompositeElement",
+    "text": "这是由多个原始元素组合而成的文本块。",
+    "metadata": {
+        "filename": "example.pdf",
+        "page_number": 1,
+        "orig_elements": "eJy ... Base64-encoded gzip+UTF-8 string ... x8="
+    }
+}
+
+trace_info = trace_chunk_origin(chunked_element)
+print(json.dumps(trace_info, indent=2, ensure_ascii=False))
+```
+
+## 坐标可视化
+
+利用坐标信息，您可以在原始文档上可视化元素位置，这对于验证处理结果和用户展示非常有用。
+
+### 坐标可视化示例
+
+以下示例展示如何在原始页面上绘制元素边界框：
+
+```python
+from PIL import Image, ImageDraw, ImageFont
+import json
+
+def visualize_elements_on_page(page_image_path, elements, output_path):
+    """
+    在原始页面上可视化元素位置
+    
+    Args:
+        page_image_path: 原始页面图片路径
+        elements: 元素列表（同一页的元素）
+        output_path: 输出图片路径
+    """
+    # 加载原始页面图片
+    image = Image.open(page_image_path)
+    draw = ImageDraw.Draw(image)
+    
+    # 定义颜色映射（根据元素类型）
+    color_map = {
+        "Title": (255, 0, 0),      # 红色
+        "NarrativeText": (0, 255, 0), # 绿色
+        "Table": (0, 0, 255),       # 蓝色
+        "Image": (255, 165, 0),     # 橙色
+        "ListItem": (128, 0, 128)   # 紫色
+    }
+    
+    # 绘制每个元素的边界框
+    for element in elements:
+        coords = element.get("metadata", {}).get("coordinates")
+        if not coords or len(coords) != 8:
+            continue
+        
+        elem_type = element.get("type", "Unknown")
+        color = color_map.get(elem_type, (128, 128, 128))  # 默认灰色
+        
+        # 提取四个顶点坐标
+        points = [
+            (coords[0], coords[1]),  # 左上
+            (coords[2], coords[3]),  # 右上
+            (coords[4], coords[5]),  # 右下
+            (coords[6], coords[7])   # 左下
+        ]
+        
+        # 绘制边界框
+        for i in range(4):
+            start_point = points[i]
+            end_point = points[(i + 1) % 4]
+            draw.line([start_point, end_point], fill=color, width=2)
+        
+        # 可选：添加元素类型标签
+        try:
+            font = ImageFont.truetype("arial.ttf", 12)
+        except:
+            font = ImageFont.load_default()
+        
+        label = f"{elem_type}"
+        draw.text((coords[0], coords[1] - 15), label, fill=color, font=font)
+    
+    # 保存结果
+    image.save(output_path)
+    print(f"可视化结果已保存到: {output_path}")
+
+# 使用示例
+elements = [
+    {
+        "type": "Title",
+        "text": "第一章 简介",
+        "metadata": {
+            "coordinates": [120, 180, 980, 180, 980, 240, 120, 240],
+            "page_number": 1
+        }
+    },
+    {
+        "type": "NarrativeText",
+        "text": "这是正文内容...",
+        "metadata": {
+            "coordinates": [217, 390, 1336, 390, 1336, 460, 217, 460],
+            "page_number": 1
+        }
+    }
+]
+
+visualize_elements_on_page(
+    page_image_path="page_1.png",
+    elements=elements,
+    output_path="annotated_page_1.png"
+)
+```
+
+### 高亮检索结果
+
+在 RAG 应用中，当用户查询得到结果时，可以在原始文档上高亮显示匹配的元素：
+
+```python
+def highlight_search_results(page_image_path, matched_elements, query_text, output_path):
+    """
+    在原始页面上高亮显示检索结果
+    
+    Args:
+        page_image_path: 原始页面图片路径
+        matched_elements: 匹配的元素列表
+        query_text: 查询文本
+        output_path: 输出图片路径
+    """
+    image = Image.open(page_image_path)
+    draw = ImageDraw.Draw(image)
+    
+    # 高亮颜色（半透明黄色）
+    highlight_color = (255, 255, 0, 128)  # RGBA
+    
+    for element in matched_elements:
+        coords = element.get("metadata", {}).get("coordinates")
+        if not coords or len(coords) != 8:
+            continue
+        
+        # 绘制高亮矩形
+        points = [
+            (coords[0], coords[1]),  # 左上
+            (coords[2], coords[3]),  # 右上
+            (coords[4], coords[5]),  # 右下
+            (coords[6], coords[7])   # 左下
+        ]
+        
+        # 创建半透明图层
+        overlay = Image.new('RGBA', image.size, (0, 0, 0, 0))
+        overlay_draw = ImageDraw.Draw(overlay)
+        overlay_draw.polygon(points, fill=highlight_color)
+        
+        # 合并图层
+        image = Image.alpha_composite(image.convert('RGBA'), overlay).convert('RGB')
+        draw = ImageDraw.Draw(image)
+        
+        # 绘制边框
+        for i in range(4):
+            start_point = points[i]
+            end_point = points[(i + 1) % 4]
+            draw.line([start_point, end_point], fill=(255, 0, 0), width=2)
+    
+    image.save(output_path)
+    print(f"高亮结果已保存到: {output_path}")
+```
+
+## 完整回溯流程示例
+
+以下示例展示如何从向量检索结果回溯到原始文档：
+
+```python
+def trace_search_result_to_source(search_result, original_elements_map):
+    """
+    从检索结果回溯到原始文档
+    
+    Args:
+        search_result: 向量检索返回的结果元素
+        original_elements_map: 原始元素映射（element_id -> element）
+    
+    Returns:
+        dict: 包含完整溯源信息的字典
+    """
+    trace = {
+        "search_result": {
+            "element_id": search_result["element_id"],
+            "text": search_result["text"],
+            "type": search_result["type"]
+        },
+        "source_file": search_result["metadata"].get("filename"),
+        "page_info": {
+            "page_number": search_result["metadata"].get("page_number"),
+            "page_width": search_result["metadata"].get("page_width"),
+            "page_height": search_result["metadata"].get("page_height"),
+            "coordinates": search_result["metadata"].get("coordinates")
+        },
+        "data_source": search_result["metadata"].get("data_source", {}),
+        "original_elements": []
+    }
+    
+    # 如果是分块后的元素，追溯原始元素
+    if "orig_elements" in search_result["metadata"]:
+        orig_elements_str = search_result["metadata"]["orig_elements"]
+        try:
+            decoded = base64.b64decode(orig_elements_str)
+            decompressed = zlib.decompress(decoded)
+            orig_elements = json.loads(decompressed.decode('utf-8'))
+            
+            trace["original_elements"] = [
+                {
+                    "element_id": elem.get("element_id"),
+                    "type": elem.get("type"),
+                    "text": elem.get("text"),
+                    "page_number": elem.get("metadata", {}).get("page_number"),
+                    "coordinates": elem.get("metadata", {}).get("coordinates")
+                }
+                for elem in orig_elements
+            ]
+        except Exception as e:
+            print(f"解码原始元素失败: {e}")
+    
+    return trace
+
+# 使用示例：在 RAG 应用中
+def display_search_result_with_trace(search_result):
+    """
+    在 RAG 应用中展示检索结果及其溯源信息
+    """
+    trace = trace_search_result_to_source(search_result, {})
+    
+    print("=" * 60)
+    print("检索结果:")
+    print(f"  文本: {trace['search_result']['text'][:100]}...")
+    print(f"  类型: {trace['search_result']['type']}")
+    print()
+    print("来源信息:")
+    print(f"  文件: {trace['source_file']}")
+    print(f"  页码: {trace['page_info']['page_number']}")
+    print(f"  坐标: {trace['page_info']['coordinates']}")
+    print()
+    
+    if trace['original_elements']:
+        print(f"原始元素 ({len(trace['original_elements'])} 个):")
+        for i, orig in enumerate(trace['original_elements'], 1):
+            print(f"  {i}. [{orig['type']}] {orig['text'][:50]}...")
+            print(f"     页码: {orig['page_number']}, 坐标: {orig['coordinates']}")
+    
+    print("=" * 60)
+```
+
+## 最佳实践
+
+1. **启用原始元素追踪**：在分块配置中设置 `include_orig_elements=true`，以便后续追溯
+2. **保存原始文件路径**：确保 `file_directory` 和 `filename` 信息完整，便于定位源文件
+3. **利用坐标信息**：使用 `coordinates` 字段在原始文档上可视化元素位置
+4. **记录处理时间**：利用 `data_source.date_processed` 追踪处理时间，便于版本管理
+5. **构建元素映射**：在处理大量文档时，可以构建 `element_id` 到元素的映射，加速回溯
+
+## 相关文档
+
+- [文档元素和元数据](/pipeline/elements-metadata) - 了解完整的元素结构和元数据字段
+- [文本分块 - Chunk](/pipeline/chunk) - 了解分块配置和 `orig_elements` 的使用
+- [文档解析 - Parse](/pipeline/parse) - 了解解析配置和坐标信息
+- [快速启动](/pipeline/quickstart) - 了解如何使用 Pipeline 处理文档
