@@ -29,6 +29,11 @@ xParse ETL 目前支持以下数据源类型（点击可查看详细配置指南
 - [SMB 网络共享](/pipeline/sources/smb)：从 SMB/CIFS 网络共享读取文档
 - [本地文件夹](/pipeline/sources/local)：从本地文件系统读取文档
 
+### 通用配置
+
+1. `pattern`：`string`类型，文件匹配模式，配置后仅拉取符合规则的文件，例如 `*.pdf`，默认为`*`。
+2. `recursive`：`boolean`类型，是否递归遍历，开启后将递归遍历子文件夹中的文件，默认为 `False`。
+
 ## 相关文档
 
 - [目的地连接器](/pipeline/destinations) - 了解如何配置目标存储
