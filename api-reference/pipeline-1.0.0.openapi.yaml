@@ -51,7 +51,7 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: 需要处理的文档文件（支持 PDF、图片等格式）
+                  description: 需要处理的文档文件（支持 PDF、WORD、EXCEL、PPT、图片等[多种格式](/pipeline/sources/overview#支持的文件格式)）
                 stages:
                   type: string
                   description: |

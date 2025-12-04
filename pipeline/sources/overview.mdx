@@ -34,6 +34,15 @@ xParse 目前支持以下数据源类型（点击可查看详细配置指南）�
 1. `pattern`：`string`类型，文件匹配模式，配置后仅拉取符合规则的文件，例如 `*.pdf`，默认为`*`。
 2. `recursive`：`boolean`类型，是否递归遍历，开启后将递归遍历子文件夹中的文件，默认为 `False`。
 
+## 支持的文件格式
+
+xParse 目前支持的文件格式有：png, jpg, jpeg, pdf, bmp, tiff, webp, doc, docx, html, mhtml, xls, xlsx, csv, ppt, pptx, txt, ofd, rtf。
+
+- 如果是xls/xlsx/csv文件，每个sheet行数不能超过2000，列数不能超过100。
+- 如果是txt文件，文件大小不超过100k。
+- 长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内。
+- 单个文件大小不超过500M。
+
 ## 相关文档
 
 - [目的地连接器](/pipeline/destinations) - 了解如何配置目标存储
