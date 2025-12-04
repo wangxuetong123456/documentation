@@ -1,10 +1,10 @@
 ---
 title: "信息提取Agent：结构化数据提取与整理"
-description: "使用 xParse + LangChain 构建信息提取Agent，实现从简历、产品文档、技术文档中提取结构化信息并自动整理"
+description: "使用 xParse + LangChain 构建信息提取Agent，实现从发票、医疗票据、合同、简历、产品文档、技术文档等文档中提取结构化信息并自动整理"
 ---
 
 <Tip>
-  本教程面向信息提取场景，展示如何利用 xParse 作为数据底座，构建能够从非结构化文档中提取结构化信息（如简历、产品规格、API接口等）并自动整理的智能Agent。
+  本教程面向信息提取场景，展示如何利用 xParse 作为数据底座，构建能够从非结构化文档中提取结构化信息（如发票、医疗票据、合同、简历、产品规格、API接口等）并自动整理的智能Agent。
 </Tip>
 
 ## 场景介绍
@@ -13,21 +13,25 @@ description: "使用 xParse + LangChain 构建信息提取Agent，实现从简�
 
 在信息提取场景中，企业和开发者面临以下挑战：
 
-- **文档格式多样**：需要处理简历、产品文档、技术文档、规格说明等多种格式
-- **信息提取繁琐**：需要从非结构化文档中提取结构化信息（个人信息、工作经历、产品参数、API接口等）
+- **文档格式多样**：需要处理发票、医疗票据、合同、简历、产品文档、技术文档等多种格式
+- **信息提取繁琐**：需要从非结构化文档中提取结构化信息（发票信息、医疗费用、合同条款、个人信息、工作经历、产品参数、API接口等）
 - **数据标准化困难**：不同来源的数据格式不统一，需要标准化处理
 - **批量处理需求**：需要处理大量文档，手动提取效率低
 - **数据验证**：提取的数据需要验证和校验，确保准确性
+- **财务合规**：发票和医疗票据需要符合财务和税务要求
+- **法律风险**：合同信息提取需要准确识别关键条款和风险点
 
 ### 解决方案
 
 通过构建信息提取Agent，我们可以实现：
 
 - **自动化文档解析**：使用 xParse Pipeline 自动解析各类文档
-- **智能信息提取**：从文档中提取结构化信息（简历信息、产品规格、API接口等）
+- **智能信息提取**：从文档中提取结构化信息（发票信息、医疗费用、合同条款、简历信息、产品规格、API接口等）
 - **数据标准化**：将提取的信息转换为标准格式（JSON、CSV等）
 - **数据验证**：验证提取的数据完整性和准确性
 - **批量处理**：支持批量处理大量文档
+- **财务自动化**：自动提取发票和医疗票据信息，支持财务系统对接
+- **合同分析**：提取合同关键信息，识别重要条款和风险点
 
 ## 架构设计
 
@@ -42,10 +46,13 @@ description: "使用 xParse + LangChain 构建信息提取Agent，实现从简�
 向量数据库（Milvus/Zilliz）
     ↓
 [LangChain Agent]
-    ├─ Tool 1: extract_resume_info（提取简历信息）
-    ├─ Tool 2: extract_product_specs（提取产品规格）
-    ├─ Tool 3: extract_api_info（提取API信息）
-    └─ Tool 4: format_data（数据格式化）
+    ├─ Tool 1: extract_invoice_info（提取发票信息）
+    ├─ Tool 2: extract_medical_bill_info（提取医疗票据信息）
+    ├─ Tool 3: extract_contract_info（提取合同信息）
+    ├─ Tool 4: extract_resume_info（提取简历信息）
+    ├─ Tool 5: extract_product_specs（提取产品规格）
+    ├─ Tool 6: extract_api_info（提取API信息）
+    └─ Tool 7: format_data（数据格式化）
     ↓
 结构化数据（JSON/CSV）
 ```
@@ -135,7 +142,7 @@ def run_extraction_pipeline(job_name: str = None) -> dict:
 
 ## Step 2：构建 LangChain Tools
 
-### Tool 1: 提取简历信息
+### Tool 1: 提取发票信息
 
 ```python
 from langchain.tools import Tool
@@ -151,6 +158,355 @@ vector_store = Milvus(
     connection_args={"uri": os.getenv("MILVUS_URI", "./extraction_vectors.db")}
 )
 
+def extract_invoice_info(query: str) -> str:
+    """
+    从发票中提取结构化信息
+    
+    提取内容包括：
+    - 发票基本信息（发票代码、发票号码、开票日期）
+    - 销售方信息（名称、纳税人识别号、地址电话、开户行及账号）
+    - 购买方信息（名称、纳税人识别号、地址电话、开户行及账号）
+    - 商品明细（名称、规格、单位、数量、单价、金额、税率、税额）
+    - 金额信息（合计金额、合计税额、价税合计）
+    - 其他信息（备注、收款人、复核人、开票人等）
+    """
+    docs = vector_store.similarity_search(query, k=5)
+    
+    invoice_data = {
+        "invoice_info": {},
+        "seller": {},
+        "buyer": {},
+        "items": [],
+        "amounts": {},
+        "other_info": {}
+    }
+    
+    for doc in docs:
+        text = doc.page_content
+        metadata = doc.metadata
+        
+        # 提取发票代码和号码
+        invoice_code_match = re.search(r'发票代码[：:]\s*([0-9]+)', text)
+        if invoice_code_match:
+            invoice_data["invoice_info"]["invoice_code"] = invoice_code_match.group(1)
+        
+        invoice_number_match = re.search(r'发票号码[：:]\s*([0-9]+)', text)
+        if invoice_number_match:
+            invoice_data["invoice_info"]["invoice_number"] = invoice_number_match.group(1)
+        
+        # 提取开票日期
+        date_patterns = [
+            r'开票日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)',
+            r'日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)',
+            r'(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)'
+        ]
+        for pattern in date_patterns:
+            match = re.search(pattern, text)
+            if match and not invoice_data["invoice_info"].get("date"):
+                invoice_data["invoice_info"]["date"] = match.group(1)
+                break
+        
+        # 提取销售方信息
+        seller_name_match = re.search(r'销售方[：:]\s*名称[：:]\s*([^\n]+)', text)
+        if seller_name_match:
+            invoice_data["seller"]["name"] = seller_name_match.group(1).strip()
+        
+        seller_tax_id_match = re.search(r'销售方[：:].*?纳税人识别号[：:]\s*([0-9A-Z]+)', text, re.DOTALL)
+        if seller_tax_id_match:
+            invoice_data["seller"]["tax_id"] = seller_tax_id_match.group(1).strip()
+        
+        # 提取购买方信息
+        buyer_name_match = re.search(r'购买方[：:]\s*名称[：:]\s*([^\n]+)', text)
+        if buyer_name_match:
+            invoice_data["buyer"]["name"] = buyer_name_match.group(1).strip()
+        
+        buyer_tax_id_match = re.search(r'购买方[：:].*?纳税人识别号[：:]\s*([0-9A-Z]+)', text, re.DOTALL)
+        if buyer_tax_id_match:
+            invoice_data["buyer"]["tax_id"] = buyer_tax_id_match.group(1).strip()
+        
+        # 提取商品明细（简化版，实际应该解析表格）
+        # 查找商品相关的行
+        item_lines = re.findall(r'([^\n]+商品[^\n]+)', text)
+        for line in item_lines[:10]:
+            # 尝试提取商品信息
+            item_match = re.search(r'([^\s]+)\s+(\d+\.?\d*)\s+([\d,]+\.?\d*)', line)
+            if item_match:
+                invoice_data["items"].append({
+                    "name": item_match.group(1),
+                    "quantity": item_match.group(2),
+                    "amount": item_match.group(3)
+                })
+        
+        # 提取金额信息
+        total_amount_match = re.search(r'合计[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
+        if total_amount_match:
+            invoice_data["amounts"]["total_amount"] = total_amount_match.group(1)
+        
+        tax_amount_match = re.search(r'税额[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
+        if tax_amount_match:
+            invoice_data["amounts"]["tax_amount"] = tax_amount_match.group(1)
+        
+        total_with_tax_match = re.search(r'价税合计[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
+        if total_with_tax_match:
+            invoice_data["amounts"]["total_with_tax"] = total_with_tax_match.group(1)
+        
+        # 提取其他信息
+        remark_match = re.search(r'备注[：:]\s*([^\n]+)', text)
+        if remark_match:
+            invoice_data["other_info"]["remark"] = remark_match.group(1).strip()
+        
+        drawer_match = re.search(r'开票人[：:]\s*([^\n]+)', text)
+        if drawer_match:
+            invoice_data["other_info"]["drawer"] = drawer_match.group(1).strip()
+    
+    return json.dumps(invoice_data, ensure_ascii=False, indent=2)
+```
+
+### Tool 2: 提取医疗票据信息
+
+```python
+def extract_medical_bill_info(query: str) -> str:
+    """
+    从医疗票据中提取结构化信息
+    
+    提取内容包括：
+    - 患者信息（姓名、性别、年龄、身份证号、医保卡号）
+    - 医疗机构信息（医院名称、科室、医生姓名）
+    - 就诊信息（就诊日期、就诊类型、诊断结果）
+    - 费用明细（项目名称、数量、单价、金额、医保类型）
+    - 费用汇总（总费用、自费金额、医保支付、个人支付）
+    - 其他信息（发票号码、结算方式等）
+    """
+    docs = vector_store.similarity_search(query, k=5)
+    
+    medical_bill_data = {
+        "patient_info": {},
+        "hospital_info": {},
+        "visit_info": {},
+        "fee_items": [],
+        "fee_summary": {},
+        "other_info": {}
+    }
+    
+    for doc in docs:
+        text = doc.page_content
+        metadata = doc.metadata
+        
+        # 提取患者姓名
+        patient_name_patterns = [
+            r'患者姓名[：:]\s*([^\n]+)',
+            r'姓名[：:]\s*([^\n]+)',
+            r'病人姓名[：:]\s*([^\n]+)'
+        ]
+        for pattern in patient_name_patterns:
+            match = re.search(pattern, text)
+            if match and not medical_bill_data["patient_info"].get("name"):
+                medical_bill_data["patient_info"]["name"] = match.group(1).strip()
+                break
+        
+        # 提取性别
+        gender_match = re.search(r'性别[：:]\s*([男女])', text)
+        if gender_match:
+            medical_bill_data["patient_info"]["gender"] = gender_match.group(1)
+        
+        # 提取年龄
+        age_match = re.search(r'年龄[：:]\s*(\d+)', text)
+        if age_match:
+            medical_bill_data["patient_info"]["age"] = age_match.group(1)
+        
+        # 提取身份证号
+        id_card_match = re.search(r'身份证[：:]\s*([0-9X]{15,18})', text)
+        if id_card_match:
+            medical_bill_data["patient_info"]["id_card"] = id_card_match.group(1)
+        
+        # 提取医保卡号
+        medical_card_match = re.search(r'医保卡号[：:]\s*([0-9]+)', text)
+        if medical_card_match:
+            medical_bill_data["patient_info"]["medical_card"] = medical_card_match.group(1)
+        
+        # 提取医院信息
+        hospital_name_match = re.search(r'医院[：:]\s*([^\n]+)|医疗机构[：:]\s*([^\n]+)', text)
+        if hospital_name_match:
+            medical_bill_data["hospital_info"]["name"] = (hospital_name_match.group(1) or hospital_name_match.group(2)).strip()
+        
+        department_match = re.search(r'科室[：:]\s*([^\n]+)', text)
+        if department_match:
+            medical_bill_data["hospital_info"]["department"] = department_match.group(1).strip()
+        
+        doctor_match = re.search(r'医生[：:]\s*([^\n]+)|医师[：:]\s*([^\n]+)', text)
+        if doctor_match:
+            medical_bill_data["hospital_info"]["doctor"] = (doctor_match.group(1) or doctor_match.group(2)).strip()
+        
+        # 提取就诊信息
+        visit_date_match = re.search(r'就诊日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)', text)
+        if visit_date_match:
+            medical_bill_data["visit_info"]["date"] = visit_date_match.group(1)
+        
+        diagnosis_match = re.search(r'诊断[：:]\s*([^\n]+)|诊断结果[：:]\s*([^\n]+)', text)
+        if diagnosis_match:
+            medical_bill_data["visit_info"]["diagnosis"] = (diagnosis_match.group(1) or diagnosis_match.group(2)).strip()
+        
+        # 提取费用明细（简化版）
+        fee_item_patterns = [
+            r'([^\n]+)\s+(\d+)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)',
+            r'项目[：:]\s*([^\n]+).*?金额[：:]\s*([\d,]+\.?\d*)'
+        ]
+        for pattern in fee_item_patterns:
+            matches = re.findall(pattern, text)
+            for match in matches[:10]:
+                if len(match) >= 2:
+                    medical_bill_data["fee_items"].append({
+                        "item_name": match[0] if len(match) > 0 else "",
+                        "amount": match[-1] if len(match) > 0 else ""
+                    })
+        
+        # 提取费用汇总
+        total_fee_match = re.search(r'总费用[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
+        if total_fee_match:
+            medical_bill_data["fee_summary"]["total_fee"] = total_fee_match.group(1)
+        
+        self_pay_match = re.search(r'自费[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
+        if self_pay_match:
+            medical_bill_data["fee_summary"]["self_pay"] = self_pay_match.group(1)
+        
+        medical_pay_match = re.search(r'医保支付[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
+        if medical_pay_match:
+            medical_bill_data["fee_summary"]["medical_pay"] = medical_pay_match.group(1)
+        
+        personal_pay_match = re.search(r'个人支付[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
+        if personal_pay_match:
+            medical_bill_data["fee_summary"]["personal_pay"] = personal_pay_match.group(1)
+        
+        # 提取发票号码
+        invoice_number_match = re.search(r'发票号码[：:]\s*([0-9]+)', text)
+        if invoice_number_match:
+            medical_bill_data["other_info"]["invoice_number"] = invoice_number_match.group(1)
+    
+    return json.dumps(medical_bill_data, ensure_ascii=False, indent=2)
+```
+
+### Tool 3: 提取合同信息
+
+```python
+def extract_contract_info(query: str) -> str:
+    """
+    从合同中提取结构化信息
+    
+    提取内容包括：
+    - 合同基本信息（合同编号、合同名称、签订日期、生效日期、到期日期）
+    - 合同双方（甲方、乙方信息：名称、地址、法定代表人、联系方式）
+    - 合同标的（标的物、服务内容、数量、金额）
+    - 关键条款（付款方式、交付方式、违约责任、争议解决）
+    - 金额信息（合同总金额、付款计划、保证金等）
+    - 其他信息（签署地点、签署人、附件等）
+    """
+    docs = vector_store.similarity_search(query, k=5)
+    
+    contract_data = {
+        "contract_info": {},
+        "party_a": {},
+        "party_b": {},
+        "subject_matter": {},
+        "key_terms": {},
+        "amounts": {},
+        "other_info": {}
+    }
+    
+    for doc in docs:
+        text = doc.page_content
+        metadata = doc.metadata
+        
+        # 提取合同编号
+        contract_number_match = re.search(r'合同编号[：:]\s*([^\n]+)', text)
+        if contract_number_match:
+            contract_data["contract_info"]["contract_number"] = contract_number_match.group(1).strip()
+        
+        # 提取合同名称
+        contract_name_match = re.search(r'合同名称[：:]\s*([^\n]+)|([^\n]+)合同', text)
+        if contract_name_match:
+            contract_data["contract_info"]["contract_name"] = (contract_name_match.group(1) or contract_name_match.group(2)).strip()
+        
+        # 提取签订日期
+        sign_date_match = re.search(r'签订日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)', text)
+        if sign_date_match:
+            contract_data["contract_info"]["sign_date"] = sign_date_match.group(1)
+        
+        # 提取生效日期和到期日期
+        effective_date_match = re.search(r'生效日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)', text)
+        if effective_date_match:
+            contract_data["contract_info"]["effective_date"] = effective_date_match.group(1)
+        
+        expiry_date_match = re.search(r'到期日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)|有效期至[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)', text)
+        if expiry_date_match:
+            contract_data["contract_info"]["expiry_date"] = expiry_date_match.group(1) or expiry_date_match.group(2)
+        
+        # 提取甲方信息
+        party_a_name_match = re.search(r'甲方[：:].*?名称[：:]\s*([^\n]+)', text, re.DOTALL)
+        if party_a_name_match:
+            contract_data["party_a"]["name"] = party_a_name_match.group(1).strip()
+        
+        party_a_address_match = re.search(r'甲方[：:].*?地址[：:]\s*([^\n]+)', text, re.DOTALL)
+        if party_a_address_match:
+            contract_data["party_a"]["address"] = party_a_address_match.group(1).strip()
+        
+        party_a_legal_rep_match = re.search(r'甲方[：:].*?法定代表人[：:]\s*([^\n]+)', text, re.DOTALL)
+        if party_a_legal_rep_match:
+            contract_data["party_a"]["legal_representative"] = party_a_legal_rep_match.group(1).strip()
+        
+        # 提取乙方信息
+        party_b_name_match = re.search(r'乙方[：:].*?名称[：:]\s*([^\n]+)', text, re.DOTALL)
+        if party_b_name_match:
+            contract_data["party_b"]["name"] = party_b_name_match.group(1).strip()
+        
+        party_b_address_match = re.search(r'乙方[：:].*?地址[：:]\s*([^\n]+)', text, re.DOTALL)
+        if party_b_address_match:
+            contract_data["party_b"]["address"] = party_b_address_match.group(1).strip()
+        
+        party_b_legal_rep_match = re.search(r'乙方[：:].*?法定代表人[：:]\s*([^\n]+)', text, re.DOTALL)
+        if party_b_legal_rep_match:
+            contract_data["party_b"]["legal_representative"] = party_b_legal_rep_match.group(1).strip()
+        
+        # 提取合同标的
+        subject_matter_match = re.search(r'标的[：:]\s*([^\n]+)|标的物[：:]\s*([^\n]+)', text)
+        if subject_matter_match:
+            contract_data["subject_matter"]["description"] = (subject_matter_match.group(1) or subject_matter_match.group(2)).strip()
+        
+        # 提取合同金额
+        contract_amount_match = re.search(r'合同总金额[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)|合同金额[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
+        if contract_amount_match:
+            contract_data["amounts"]["total_amount"] = contract_amount_match.group(1) or contract_amount_match.group(2)
+        
+        # 提取付款方式
+        payment_method_match = re.search(r'付款方式[：:]\s*([^\n]+)', text)
+        if payment_method_match:
+            contract_data["key_terms"]["payment_method"] = payment_method_match.group(1).strip()
+        
+        # 提取交付方式
+        delivery_method_match = re.search(r'交付方式[：:]\s*([^\n]+)|交货方式[：:]\s*([^\n]+)', text)
+        if delivery_method_match:
+            contract_data["key_terms"]["delivery_method"] = (delivery_method_match.group(1) or delivery_method_match.group(2)).strip()
+        
+        # 提取违约责任
+        breach_match = re.search(r'违约责任[：:]\s*([^\n]+)', text)
+        if breach_match:
+            contract_data["key_terms"]["breach_of_contract"] = breach_match.group(1).strip()[:200]
+        
+        # 提取争议解决方式
+        dispute_resolution_match = re.search(r'争议解决[：:]\s*([^\n]+)|争议处理[：:]\s*([^\n]+)', text)
+        if dispute_resolution_match:
+            contract_data["key_terms"]["dispute_resolution"] = (dispute_resolution_match.group(1) or dispute_resolution_match.group(2)).strip()[:200]
+        
+        # 提取签署地点
+        sign_location_match = re.search(r'签署地点[：:]\s*([^\n]+)', text)
+        if sign_location_match:
+            contract_data["other_info"]["sign_location"] = sign_location_match.group(1).strip()
+    
+    return json.dumps(contract_data, ensure_ascii=False, indent=2)
+```
+
+### Tool 4: 提取简历信息
+
+```python
 def extract_resume_info(query: str) -> str:
     """
     从简历中提取结构化信息
@@ -228,7 +584,7 @@ def extract_resume_info(query: str) -> str:
     return json.dumps(resume_data, ensure_ascii=False, indent=2)
 ```
 
-### Tool 2: 提取产品规格
+### Tool 5: 提取产品规格
 
 ```python
 def extract_product_specs(query: str) -> str:
@@ -306,7 +662,7 @@ def extract_product_specs(query: str) -> str:
     return json.dumps(product_specs, ensure_ascii=False, indent=2)
 ```
 
-### Tool 3: 提取API信息
+### Tool 6: 提取API信息
 
 ```python
 def extract_api_info(query: str) -> str:
@@ -370,7 +726,7 @@ def extract_api_info(query: str) -> str:
     return json.dumps(api_info, ensure_ascii=False, indent=2)
 ```
 
-### Tool 4: 数据格式化
+### Tool 7: 数据格式化
 
 ```python
 import pandas as pd
@@ -420,6 +776,21 @@ def format_data(query: str) -> str:
 
 ```python
 tools = [
+    Tool(
+        name="extract_invoice_info",
+        description="从发票中提取结构化信息，包括发票基本信息、销售方/购买方信息、商品明细、金额信息等。输入应为发票相关查询。",
+        func=extract_invoice_info
+    ),
+    Tool(
+        name="extract_medical_bill_info",
+        description="从医疗票据中提取结构化信息，包括患者信息、医疗机构信息、就诊信息、费用明细、费用汇总等。输入应为医疗票据相关查询。",
+        func=extract_medical_bill_info
+    ),
+    Tool(
+        name="extract_contract_info",
+        description="从合同中提取结构化信息，包括合同基本信息、合同双方信息、合同标的、关键条款、金额信息等。输入应为合同相关查询。",
+        func=extract_contract_info
+    ),
     Tool(
         name="extract_resume_info",
         description="从简历中提取结构化信息，包括个人信息、教育经历、工作经历、技能等。输入应为'提取简历信息'或类似描述。",
@@ -471,7 +842,7 @@ agent = initialize_agent(
     handle_parsing_errors=True,
     agent_kwargs={
         "prefix": """你是一个专业的信息提取助手。你的任务是帮助用户：
-1. 从文档中提取结构化信息（简历、产品规格、API接口等）
+1. 从文档中提取结构化信息（发票、医疗票据、合同、简历、产品规格、API接口等）
 2. 将提取的信息格式化为标准格式（JSON、CSV等）
 3. 验证提取数据的完整性和准确性
 
@@ -480,6 +851,8 @@ agent = initialize_agent(
 - 使用JSON或表格格式展示数据
 - 如果数据不完整，说明缺失的部分
 - 使用工具获取准确的信息，不要猜测
+- 对于财务类文档（发票、医疗票据），确保金额和税务信息的准确性
+- 对于合同文档，重点关注关键条款和风险点
 """
     }
 )
@@ -570,6 +943,21 @@ class InformationExtractionAgent:
         """配置Agent和Tools"""
         tools = [
             Tool(
+                name="extract_invoice_info",
+                description="提取发票信息",
+                func=self.extract_invoice_info
+            ),
+            Tool(
+                name="extract_medical_bill_info",
+                description="提取医疗票据信息",
+                func=self.extract_medical_bill_info
+            ),
+            Tool(
+                name="extract_contract_info",
+                description="提取合同信息",
+                func=self.extract_contract_info
+            ),
+            Tool(
                 name="extract_resume_info",
                 description="提取简历信息",
                 func=self.extract_resume_info
@@ -607,6 +995,41 @@ class InformationExtractionAgent:
             verbose=True,
             handle_parsing_errors=True
         )
+    
+    def extract_invoice_info(self, query: str) -> str:
+        """提取发票信息"""
+        docs = self.vector_store.similarity_search(query, k=5)
+        invoice_data = {
+            "invoice_info": {},
+            "seller": {},
+            "buyer": {},
+            "items": [],
+            "amounts": {}
+        }
+        
+        for doc in docs:
+            text = doc.page_content
+            invoice_code_match = re.search(r'发票代码[：:]\s*([0-9]+)', text)
+            if invoice_code_match:
+                invoice_data["invoice_info"]["invoice_code"] = invoice_code_match.group(1)
+            
+            invoice_number_match = re.search(r'发票号码[：:]\s*([0-9]+)', text)
+            if invoice_number_match:
+                invoice_data["invoice_info"]["invoice_number"] = invoice_number_match.group(1)
+            
+            seller_name_match = re.search(r'销售方[：:]\s*名称[：:]\s*([^\n]+)', text)
+            if seller_name_match:
+                invoice_data["seller"]["name"] = seller_name_match.group(1).strip()
+            
+            buyer_name_match = re.search(r'购买方[：:]\s*名称[：:]\s*([^\n]+)', text)
+            if buyer_name_match:
+                invoice_data["buyer"]["name"] = buyer_name_match.group(1).strip()
+            
+            total_amount_match = re.search(r'合计[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
+            if total_amount_match:
+                invoice_data["amounts"]["total_amount"] = total_amount_match.group(1)
+        
+        return json.dumps(invoice_data, ensure_ascii=False, indent=2)
     
     def extract_resume_info(self, query: str) -> str:
         """提取简历信息"""
@@ -654,6 +1077,67 @@ class InformationExtractionAgent:
         
         return json.dumps(api_info, ensure_ascii=False, indent=2)
     
+    def extract_medical_bill_info(self, query: str) -> str:
+        """提取医疗票据信息"""
+        docs = self.vector_store.similarity_search(query, k=5)
+        medical_bill_data = {
+            "patient_info": {},
+            "hospital_info": {},
+            "visit_info": {},
+            "fee_summary": {}
+        }
+        
+        for doc in docs:
+            text = doc.page_content
+            patient_name_match = re.search(r'患者姓名[：:]\s*([^\n]+)|姓名[：:]\s*([^\n]+)', text)
+            if patient_name_match:
+                medical_bill_data["patient_info"]["name"] = (patient_name_match.group(1) or patient_name_match.group(2)).strip()
+            
+            hospital_name_match = re.search(r'医院[：:]\s*([^\n]+)', text)
+            if hospital_name_match:
+                medical_bill_data["hospital_info"]["name"] = hospital_name_match.group(1).strip()
+            
+            diagnosis_match = re.search(r'诊断[：:]\s*([^\n]+)', text)
+            if diagnosis_match:
+                medical_bill_data["visit_info"]["diagnosis"] = diagnosis_match.group(1).strip()
+            
+            total_fee_match = re.search(r'总费用[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
+            if total_fee_match:
+                medical_bill_data["fee_summary"]["total_fee"] = total_fee_match.group(1)
+        
+        return json.dumps(medical_bill_data, ensure_ascii=False, indent=2)
+    
+    def extract_contract_info(self, query: str) -> str:
+        """提取合同信息"""
+        docs = self.vector_store.similarity_search(query, k=5)
+        contract_data = {
+            "contract_info": {},
+            "party_a": {},
+            "party_b": {},
+            "amounts": {},
+            "key_terms": {}
+        }
+        
+        for doc in docs:
+            text = doc.page_content
+            contract_number_match = re.search(r'合同编号[：:]\s*([^\n]+)', text)
+            if contract_number_match:
+                contract_data["contract_info"]["contract_number"] = contract_number_match.group(1).strip()
+            
+            party_a_name_match = re.search(r'甲方[：:].*?名称[：:]\s*([^\n]+)', text, re.DOTALL)
+            if party_a_name_match:
+                contract_data["party_a"]["name"] = party_a_name_match.group(1).strip()
+            
+            party_b_name_match = re.search(r'乙方[：:].*?名称[：:]\s*([^\n]+)', text, re.DOTALL)
+            if party_b_name_match:
+                contract_data["party_b"]["name"] = party_b_name_match.group(1).strip()
+            
+            contract_amount_match = re.search(r'合同总金额[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
+            if contract_amount_match:
+                contract_data["amounts"]["total_amount"] = contract_amount_match.group(1)
+        
+        return json.dumps(contract_data, ensure_ascii=False, indent=2)
+    
     def process_documents(self):
         """处理文档"""
         print("=" * 60)
@@ -679,6 +1163,9 @@ def main():
     
     # 2. 查询示例
     questions = [
+        "从发票中提取发票代码、发票号码、销售方和购买方信息、商品明细和金额",
+        "从医疗票据中提取患者信息、医院信息、诊断结果和费用明细",
+        "从合同中提取合同编号、合同双方信息、合同金额和关键条款",
         "从简历中提取所有个人信息、教育经历和工作经历",
         "从产品文档中提取产品规格和技术参数",
         "从技术文档中提取所有API接口信息",
@@ -698,22 +1185,43 @@ if __name__ == "__main__":
 
 ## 使用示例
 
-### 示例1：提取简历信息
+### 示例1：提取发票信息
 
 ```python
 agent = InformationExtractionAgent()
+response = agent.query("从发票中提取发票代码、发票号码、销售方和购买方信息、商品明细和金额")
+print(response)
+```
+
+### 示例2：提取医疗票据信息
+
+```python
+response = agent.query("从医疗票据中提取患者姓名、医院名称、诊断结果、总费用和医保支付金额")
+print(response)
+```
+
+### 示例3：提取合同信息
+
+```python
+response = agent.query("从合同中提取合同编号、甲方和乙方信息、合同金额、付款方式和违约责任")
+print(response)
+```
+
+### 示例4：提取简历信息
+
+```python
 response = agent.query("从简历中提取姓名、联系方式、教育经历和工作经历")
 print(response)
 ```
 
-### 示例2：提取产品规格
+### 示例5：提取产品规格
 
 ```python
 response = agent.query("从产品文档中提取产品名称、型号、技术参数和价格")
 print(response)
 ```
 
-### 示例3：提取API信息
+### 示例6：提取API信息
 
 ```python
 response = agent.query("从技术文档中提取所有API端点、请求方法和参数")
@@ -728,6 +1236,16 @@ print(response)
 4. **数据验证**：提取后验证数据完整性和准确性
 5. **批量处理**：支持批量处理，提高效率
 6. **格式标准化**：将提取的数据转换为标准格式（JSON、CSV），便于后续处理
+7. **财务文档处理**：
+   - 发票提取时重点关注发票代码、号码、金额等关键信息
+   - 医疗票据提取时注意区分自费、医保支付等不同费用类型
+   - 确保金额计算的准确性，支持财务系统对接
+8. **合同文档处理**：
+   - 重点关注合同双方信息、合同金额、关键条款
+   - 识别违约责任、争议解决等重要条款
+   - 提取合同有效期，便于合同管理
+9. **场景适配**：根据不同文档类型调整提取策略和正则表达式模式
+10. **错误处理**：对提取失败的情况进行记录和人工复核
 
 ## 常见问题
 
@@ -739,6 +1257,15 @@ A: 1) 先统一文档格式；2) 使用多种提取策略；3) 人工校验和�
 
 **Q: 如何批量处理大量文档？**  
 A: 1) 使用Pipeline的批量处理功能；2) 并行处理多个文档；3) 使用队列管理任务。
+
+**Q: 发票信息提取不准确怎么办？**  
+A: 1) 确保发票图片清晰，OCR识别准确；2) 优化正则表达式匹配模式；3) 对于特殊格式的发票，可以添加自定义提取规则。
+
+**Q: 医疗票据的费用明细如何提取？**  
+A: 1) 优先使用表格识别功能提取费用明细表；2) 结合正则表达式匹配费用项目；3) 区分医保支付、自费等不同费用类型。
+
+**Q: 合同关键条款如何识别？**  
+A: 1) 使用语义检索找到相关条款；2) 结合关键词匹配（如"违约责任"、"争议解决"等）；3) 提取完整条款内容，不要截断。
 
 ## 相关文档
 
