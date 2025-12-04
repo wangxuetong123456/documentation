@@ -187,9 +187,6 @@ paths:
                           page_number: 1
                           page_width: 1191
                           page_height: 1684
-                          coordinates: [217, 390, 1336, 390, 1336, 460, 217, 460]
-                          parent_id: "23a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc"
-                          category_depth: 1
                           orig_elements: "eJy ... Base64-encoded gzip+UTF-8 string ... x8="
                           is_continuation: false
                           data_source:
@@ -328,10 +325,6 @@ components:
       required:
         - filename
       properties:
-        parent_id:
-          type: string
-          description: 父元素 ID
-          example: "parent_001"
         filename:
           type: string
           description: 文件名
@@ -349,6 +342,26 @@ components:
           format: date-time
           description: 文件最后修改时间（Unix 毫秒时间戳）
           example: "1758624866230"
+        page_number:
+          type: integer
+          description: 元素所在的页码
+          example: 1
+        page_width:
+          type: integer
+          description: 元素所在的页面的宽度（单位：像素）
+          example: 1191
+        page_height:
+          type: integer
+          description: 元素所在的页面的高度（单位：像素）
+          example: 1684
+        parent_id:
+          type: string
+          description: 父元素 ID
+          example: "24a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc"
+        category_depth:
+          type: integer
+          description: 元素在同类元素中的目录深度
+          example: 1
         coordinates:
           type: array
           description: |
@@ -359,10 +372,6 @@ components:
           minItems: 8
           maxItems: 8
           example: [217, 390, 1336, 390, 1336, 460, 217, 460]
-        category_depth:
-          type: integer
-          description: 元素在同类元素中的目录深度
-          example: 1
         text_as_html:
           type: string
           description: 表格或富文本的 HTML 表示

@@ -228,18 +228,44 @@ xParse 在 chunk 阶段同样只输出以下几类元素：
 }
 ```
 
+#### Table
+```json
+{
+    "element_id": "dfe41a2b3c4d5e6fdfe41a2b3c4d5e6fdfe41a2b3c4d5e6fdfe41a2b3c4d5e6",
+    "type": "Table",
+    "text": "这是表格内容",
+    "metadata": {
+        "filename": "example.pdf",
+        "filetype": "application/pdf",
+        "text_as_html": "<table>...</table>",
+        "orig_elements": "eJy ... Base64-encoded gzip+UTF-8 string ... x8=",
+        ...other metadata...
+    }
+}
+```
 #### TableChunk
 
 ```json
 {
     "element_id": "dfe41a2b3c4d5e6fdfe41a2b3c4d5e6fdfe41a2b3c4d5e6fdfe41a2b3c4d5e6",
     "type": "TableChunk",
-    "text": "Term Definition\\nTeam A team is defined as ...",
+    "text": "这是表格的一部分内容...",
     "metadata": {
         "filename": "example.pdf",
         "filetype": "application/pdf",
-        "text_as_html": "<table>...</table>",
         "orig_elements": "eJy ... Base64-encoded gzip+UTF-8 string ... x8=",
+        ...other metadata...
+    }
+},
+{
+    "element_id": "dfe41a2b3c4d5e6fdfe41a2b3c4d5e6fdfe41a2b3c4d5e6fdfe41a2b3c4d5e6",
+    "type": "TableChunk",
+    "text": "...这是表格的另一部分内容",
+    "metadata": {
+        "filename": "example.pdf",
+        "filetype": "application/pdf",
+        "is_continuation": true,
+        "orig_elements": "eJz ... Base64-encoded gzip+UTF-8 string ... kw=",
         ...other metadata...
     }
 }
