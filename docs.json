@@ -65,7 +65,8 @@
                   "pipeline/parse",
                   "pipeline/chunk",
                   "pipeline/embed",
-                  "pipeline/traceability"
+                  "pipeline/traceability",
+                  "pipeline/error"
                 ]
               },
               {

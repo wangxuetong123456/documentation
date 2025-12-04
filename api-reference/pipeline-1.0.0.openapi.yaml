@@ -132,15 +132,19 @@ paths:
                 contentType: application/json
       responses:
         '200':
-          description: 处理成功
+          description: 处理结果
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PipelineResponse'
+                allOf:
+                  - $ref: '#/components/schemas/codemessage'
+                  - $ref: '#/components/schemas/PipelineResponse'
               examples:
                 parseOnly:
                   summary: 仅解析示例
                   value:
+                    code: 200
+                    message: "success"
                     elements:
                       - element_id: "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc"
                         type: "NarrativeText"
@@ -177,6 +181,8 @@ paths:
                 fullPipeline:
                   summary: 完整流水线示例
                   value:
+                    code: 200
+                    message: "success"
                     elements:
                       - element_id: "5f84a1db7c9f4ad65f84a1db7c9f4ad65f84a1db7c9f4ad65f84a1db7c9f4ad6"
                         type: "CompositeElement"
@@ -218,50 +224,6 @@ paths:
                             provider: "qwen"
                             model_name: "text-embedding-v4"
         
-        '400':
-          description: 请求参数错误
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              examples:
-                missingFile:
-                  summary: 缺少文件
-                  value:
-                    code: 400
-                    message: "file is required"
-                
-                invalidStages:
-                  summary: stages 格式错误
-                  value:
-                    code: 400
-                    message: "parse stages failed: invalid JSON"
-                
-                stagesValidationError:
-                  summary: stages 验证失败
-                  value:
-                    code: 400
-                    message: "first stage must be parse, got: chunk"
-        
-        '401':
-          description: 鉴权失败
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 401
-                message: "unauthorized: invalid app-id or secret-code"
-        
-        '500':
-          description: 服务器内部错误
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: 500
-                message: "internal server error: parse failed"
 
 components:
   securitySchemes:
@@ -278,6 +240,35 @@ components:
 
 
   schemas:
+    codemessage:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          default: 200
+          description: |
+            状态码
+            - 200: Success
+            - 40101: x-ti-app-id 或 x-ti-secret-code 为空
+            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败
+            - 40004: 参数错误，请查看技术文档，检查传参
+            - 500: 服务器内部错误
+
+            更多详细错误信息参考[错误码说明](/pipeline/error)。
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40004
+            - 500
+        message:
+          type: string
+          description: 错误信息
+          example: "success"
+    
     PipelineResponse:
       type: object
       required:
@@ -618,20 +609,6 @@ components:
             - doubao-embedding-large-text-250515
             - doubao-embedding-text-240715
     
-    Error:
-      type: object
-      required:
-        - code
-        - message
-      properties:
-        code:
-          type: integer
-          description: 错误码
-          example: 400
-        message:
-          type: string
-          description: 错误信息
-          example: "invalid request parameters"
 
 tags:
   - name: XParse Pipeline
