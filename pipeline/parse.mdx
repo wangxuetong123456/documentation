@@ -151,7 +151,7 @@ parse 阶段返回一个[文档元素](/pipeline/elements-metadata)列表。每�
   - `filename` / `file_directory` / `filetype`
   - `last_modified`
   - `page_number` / `page_width` / `page_height`
-  - `coordinates`（8位数组，表示四边形四个点）
+  - `coordinates`（8位数组，表示四边形四个点，归一化坐标，范围 [0, 1]）
   - `parent_id` / `category_depth`
   - `image_base64` / `image_mine_type`
   - `text_as_html`（针对表格）
@@ -171,17 +171,17 @@ parse 阶段返回一个[文档元素](/pipeline/elements-metadata)列表。每�
                 "type": "NarrativeText",
                 "text": "xParse 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。",
                 "metadata": {
+                    "filename": "example.pdf",
+                    "file_directory": "/projects/demo/",
+                    "filetype": "application/pdf",
+                    "last_modified": "1758624866230",
                     "page_number": 1,
                     "page_width": 1191,
                     "page_height": 1684,
                     "parent_id": "23a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
                     "category_depth": 1,
-                    "coordinates": [217, 390, 1336, 390, 1336, 460, 217, 460],
+                    "coordinates": [0.1822, 0.2316, 0.6717, 0.2316, 0.6717, 0.2732, 0.1822, 0.2732],
                     "text_as_html": "<p>...</p>",
-                    "filename": "example.pdf",
-                    "file_directory": "/projects/demo/",
-                    "filetype": "application/pdf",
-                    "last_modified": "2024-11-19T14:15:22",
                     "data_source": {
                         "record_locator": {
                             "protocol": "file",
@@ -189,6 +189,9 @@ parse 阶段返回一个[文档元素](/pipeline/elements-metadata)列表。每�
                         },
                         "url": "file:///projects/demo/example.pdf",
                         "version": "1758624866230967485",
+                        "date_created": "1764555574237",
+                        "date_modified": "1758624866230",
+                        "date_processed": "1764742970688"
                     }
                 }
             },

@@ -72,7 +72,7 @@ xParse 通过以下机制支持结果回溯：
 ```json
 {
   "metadata": {
-    "coordinates": [217, 390, 1336, 390, 1336, 460, 217, 460]
+    "coordinates": [0.1822, 0.2316, 0.6717, 0.2316, 0.6717, 0.2732, 0.1822, 0.2732]
   }
 }
 ```
@@ -86,9 +86,8 @@ xParse 通过以下机制支持结果回溯：
 
 坐标系统说明：
 - 原点位于页面左上角
-- 单位为像素（px）
-- 当输入是 PDF 时，坐标基于 72dpi
-- 当输入是图片时，坐标是原图里的坐标
+- 坐标为归一化坐标，范围在 [0, 1] 之间，保留4位小数
+- 坐标值相对于页面尺寸（page_width × page_height）进行归一化
 
 ### 层级关系
 
@@ -285,6 +284,7 @@ def visualize_elements_on_page(page_image_path, elements, output_path):
     """
     # 加载原始页面图片
     image = Image.open(page_image_path)
+    image_width, image_height = image.size
     draw = ImageDraw.Draw(image)
     
     # 定义颜色映射（根据元素类型）
@@ -302,15 +302,19 @@ def visualize_elements_on_page(page_image_path, elements, output_path):
         if not coords or len(coords) != 8:
             continue
         
+        # 获取页面尺寸（如果元素中有，否则使用图片尺寸）
+        page_width = element.get("metadata", {}).get("page_width", image_width)
+        page_height = element.get("metadata", {}).get("page_height", image_height)
+        
         elem_type = element.get("type", "Unknown")
         color = color_map.get(elem_type, (128, 128, 128))  # 默认灰色
         
-        # 提取四个顶点坐标
+        # 将归一化坐标转换为像素坐标
         points = [
-            (coords[0], coords[1]),  # 左上
-            (coords[2], coords[3]),  # 右上
-            (coords[4], coords[5]),  # 右下
-            (coords[6], coords[7])   # 左下
+            (coords[0] * page_width, coords[1] * page_height),  # 左上
+            (coords[2] * page_width, coords[3] * page_height),  # 右上
+            (coords[4] * page_width, coords[5] * page_height),  # 右下
+            (coords[6] * page_width, coords[7] * page_height)   # 左下
         ]
         
         # 绘制边界框
@@ -326,7 +330,7 @@ def visualize_elements_on_page(page_image_path, elements, output_path):
             font = ImageFont.load_default()
         
         label = f"{elem_type}"
-        draw.text((coords[0], coords[1] - 15), label, fill=color, font=font)
+        draw.text((points[0][0], points[0][1] - 15), label, fill=color, font=font)
     
     # 保存结果
     image.save(output_path)
@@ -338,16 +342,20 @@ elements = [
         "type": "Title",
         "text": "第一章 简介",
         "metadata": {
-            "coordinates": [120, 180, 980, 180, 980, 240, 120, 240],
-            "page_number": 1
+            "coordinates": [0.1008, 0.1069, 0.8228, 0.1069, 0.8228, 0.1425, 0.1008, 0.1425],
+            "page_number": 1,
+            "page_width": 1191,
+            "page_height": 1684
         }
     },
     {
         "type": "NarrativeText",
         "text": "这是正文内容...",
         "metadata": {
-            "coordinates": [217, 390, 1336, 390, 1336, 460, 217, 460],
-            "page_number": 1
+            "coordinates": [0.1822, 0.2316, 0.6717, 0.2316, 0.6717, 0.2732, 0.1822, 0.2732],
+            "page_number": 1,
+            "page_width": 1191,
+            "page_height": 1684
         }
     }
 ]
@@ -375,6 +383,7 @@ def highlight_search_results(page_image_path, matched_elements, query_text, outp
         output_path: 输出图片路径
     """
     image = Image.open(page_image_path)
+    image_width, image_height = image.size
     draw = ImageDraw.Draw(image)
     
     # 高亮颜色（半透明黄色）
@@ -385,12 +394,16 @@ def highlight_search_results(page_image_path, matched_elements, query_text, outp
         if not coords or len(coords) != 8:
             continue
         
-        # 绘制高亮矩形
+        # 获取页面尺寸（如果元素中有，否则使用图片尺寸）
+        page_width = element.get("metadata", {}).get("page_width", image_width)
+        page_height = element.get("metadata", {}).get("page_height", image_height)
+        
+        # 将归一化坐标转换为像素坐标
         points = [
-            (coords[0], coords[1]),  # 左上
-            (coords[2], coords[3]),  # 右上
-            (coords[4], coords[5]),  # 右下
-            (coords[6], coords[7])   # 左下
+            (coords[0] * page_width, coords[1] * page_height),  # 左上
+            (coords[2] * page_width, coords[3] * page_height),  # 右上
+            (coords[4] * page_width, coords[5] * page_height),  # 右下
+            (coords[6] * page_width, coords[7] * page_height)   # 左下
         ]
         
         # 创建半透明图层
