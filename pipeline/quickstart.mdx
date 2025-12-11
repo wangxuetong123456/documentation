@@ -62,7 +62,7 @@ from xparse_client import (
 # 创建数据源
 source = LocalSource(
     directory='/projects/demo/',
-    pattern='*.pdf'
+    pattern=['*.pdf']
 )
 
 # 创建目标存储
@@ -132,7 +132,7 @@ config = {
     'source': {
         'type': 'local',
         'directory': '/projects/demo/',  # 文档目录
-        'pattern': '*.pdf'           # 文件匹配模式：*.pdf, *.docx, **/*.txt
+        'pattern': ['*.pdf']           # 文件匹配模式：['*.pdf'], ['*.pdf','*.docx']
     },
     
     # 目标存储配置：本地文件系统（用于测试）
@@ -259,7 +259,7 @@ from xparse_client import LocalSource
 
 source = LocalSource(
     directory='./input',                      # 文档目录（绝对路径或相对路径）
-    pattern='*.pdf'                           # 文件匹配模式: *.pdf, *.docx, **/*.txt
+    pattern=['*.pdf']                           # 文件匹配模式: ['*.pdf'], ['*.pdf','*.docx']
 )
 ```
 
@@ -381,7 +381,7 @@ from xparse_client import (
 # 创建数据源
 source = LocalSource(
     directory='./test_files',
-    pattern='*.pdf'
+    pattern=['*.pdf']
 )
 
 # 创建目标存储
@@ -523,7 +523,7 @@ from xparse_client import (
 )
 
 # 创建共享的数据源和目标存储
-source = LocalSource(directory='./documents', pattern='*.pdf')
+source = LocalSource(directory='./documents', pattern=['*.pdf'])
 destination = LocalDestination(output_dir='./output')
 
 parse_config = ParseConfig(
@@ -591,7 +591,7 @@ pipeline.run()
 from xparse_client import LocalSource, LocalDestination, Pipeline, Stage, ParseConfig, ChunkConfig, EmbedConfig
 
 # 创建 pipeline
-source = LocalSource(directory='./docs', pattern='*.pdf')
+source = LocalSource(directory='./docs', pattern=['*.pdf'])
 destination = LocalDestination(output_dir='./output')
 
 parse_config = ParseConfig(

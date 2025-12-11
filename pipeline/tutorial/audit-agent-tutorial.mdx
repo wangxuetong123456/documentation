@@ -81,7 +81,7 @@ AUDIT_PIPELINE_CONFIG = {
     "source": {
         "type": "local",
         "directory": "./audit_documents",
-        "pattern": "**/*.{pdf,xlsx,xls,png,jpg}"  # 支持多种财务文档格式
+        "pattern": ["*.pdf", "*.xlsx", "*.xls", "*.png", "*.jpg"]  # 支持多种财务文档格式
     },
     "destination": {
         "type": "milvus",
@@ -457,7 +457,7 @@ class AuditAgent:
             "source": {
                 "type": "local",
                 "directory": "./audit_documents",
-                "pattern": "**/*.{pdf,xlsx,xls,png,jpg}"
+                "pattern": ["*.pdf", "*.xlsx", "*.xls", "*.png", "*.jpg"]
             },
             "destination": {
                 "type": "milvus",

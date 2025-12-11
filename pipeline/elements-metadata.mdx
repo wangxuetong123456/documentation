@@ -83,17 +83,17 @@ xParse 会为每个元素记录丰富的元数据信息，这些信息存储在 
 
 ### 元数据字段
 
-常用的 `metadata` 字段如下（✅ 表示默认一定存在，⚙️ 表示按配置可选）：
+常用的 `metadata` 字段如下（✅ 表示一定存在，⚙️ 表示可选）：
 
-| 字段 | 说明 | 默认 |
+| 字段 | 说明 | 可见性 |
 | --- | --- | --- |
 | `filename` | 文件名 | ✅ |
 | `file_directory` | 文件在云存储中的目录/前缀 | ⚙️ |
 | `last_modified` | 文件最后修改时间（Unix 毫秒时间戳） | ⚙️ |
 | `filetype` | MIME 类型（如 `application/pdf`、`image/png`） | ✅ |
-| `page_number` | 元素所在的页码 | ⚙️ |
-| `page_width` | 元素所在的页面的宽度（单位：像素） | ⚙️ |
-| `page_height` | 元素所在的页面的高度（单位：像素） | ⚙️ |
+| `page_number` | 元素所在的页码 |  ✅  |
+| `page_width` | 元素所在的页面的宽度（单位：像素） |  ✅  |
+| `page_height` | 元素所在的页面的高度（单位：像素） |  ✅  |
 | `coordinates` | 元素在页面上的坐标（8位数组，表示四边形四个点，归一化坐标，范围 [0, 1]） | ⚙️ |
 | `parent_id` | 父节点 ID（配合层级目录） | ⚙️ |
 | `category_depth` | 在同类元素中的层级深度（如 H1=0） | ⚙️ |
@@ -102,7 +102,7 @@ xParse 会为每个元素记录丰富的元数据信息，这些信息存储在 
 | `text_as_html` | 表格/富文本的 HTML 表示 | ⚙️ |
 | `orig_elements` | 分块结果中，形成当前块的原始元素列表（gzip+Base64 压缩串） | ⚙️ |
 | `is_continuation` | 分块结果中，当前块是否与上一块连续，属于同一个解析元素（由于max_characters被截断） | ⚙️ |
-| `data_source` | 数据源详细信息 | ⚙️ |
+| `data_source` | 数据源详细信息 |  ✅  |
 
 #### filename / file_directory / last_modified
 - `filename`：例如 `annual_report.pdf`，用于溯源。

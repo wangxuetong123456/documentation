@@ -88,7 +88,7 @@ EXTRACTION_PIPELINE_CONFIG = {
     "source": {
         "type": "local",
         "directory": "./extraction_documents",
-        "pattern": "**/*.{pdf,docx,xlsx,xls,png,jpg}"  # 支持多种文档格式
+        "pattern": ["*.pdf", "*.docx", "*.xlsx", "*.xls", "*.png", "*.jpg"]  # 支持多种文档格式
     },
     "destination": {
         "type": "milvus",
@@ -894,7 +894,7 @@ class InformationExtractionAgent:
             "source": {
                 "type": "local",
                 "directory": "./extraction_documents",
-                "pattern": "**/*.{pdf,docx,xlsx,xls,png,jpg}"
+                "pattern": ["*.pdf", "*.docx", "*.xlsx", "*.xls", "*.png", "*.jpg"]
             },
             "destination": {
                 "type": "milvus",

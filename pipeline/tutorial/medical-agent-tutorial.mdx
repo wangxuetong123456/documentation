@@ -81,7 +81,7 @@ MEDICAL_PIPELINE_CONFIG = {
     "source": {
         "type": "local",
         "directory": "./medical_documents",
-        "pattern": "**/*.{pdf,png,jpg,jpeg,docx}"  # 支持病历、检查报告、处方单等
+        "pattern": ["*.pdf", "*.png", "*.jpg", "*.jpeg", "*.docx"]  # 支持病历、检查报告、处方单等
     },
     "destination": {
         "type": "milvus",
@@ -465,7 +465,7 @@ class MedicalAgent:
             "source": {
                 "type": "local",
                 "directory": "./medical_documents",
-                "pattern": "**/*.{pdf,png,jpg,jpeg,docx}"
+                "pattern": ["*.pdf", "*.png", "*.jpg", "*.jpeg", "*.docx"]
             },
             "destination": {
                 "type": "milvus",

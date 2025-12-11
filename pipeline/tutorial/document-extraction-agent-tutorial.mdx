@@ -82,7 +82,7 @@ DOCUMENT_PIPELINE_CONFIG = {
     "source": {
         "type": "local",
         "directory": "./document_documents",
-        "pattern": "**/*.{pdf,png,jpg,jpeg}"  # 支持PDF和图片格式
+        "pattern": ["*.pdf", "*.png", "*.jpg", "*.jpeg"]  # 支持PDF和图片格式
     },
     "destination": {
         "type": "milvus",
@@ -589,7 +589,7 @@ class DocumentExtractionAgent:
             "source": {
                 "type": "local",
                 "directory": "./document_documents",
-                "pattern": "**/*.{pdf,png,jpg,jpeg}"
+                "pattern": ["*.pdf", "*.png", "*.jpg", "*.jpeg"]
             },
             "destination": {
                 "type": "milvus",
