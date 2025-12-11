@@ -68,7 +68,7 @@ config = {
     'source': {
         'type': 'local',
         'directory': './knowledge_base',
-        'pattern': '**/*.{pdf,docx}'  # 支持 PDF 和 Word
+        'pattern': '*.pdf'  # 支持 PDF
     },
     
     # 目标存储：Milvus 向量数据库
@@ -143,7 +143,7 @@ def build_knowledge_base():
         'source': {
             'type': 'local',
             'directory': './knowledge_base',
-            'pattern': '**/*.{pdf,docx}'
+            'pattern': '**/*.pdf'
         },
         'destination': {
             'type': 'milvus',
@@ -458,7 +458,7 @@ config = {
     'source': {
         'type': 'local',
         'directory': './api_docs',
-        'pattern': '**/*.{md,pdf}'
+        'pattern': '**/*.pdf'
     },
     
     # 目标存储：本地 Milvus
@@ -537,7 +537,7 @@ class APIDocQASystem:
             'source': {
                 'type': 'local',
                 'directory': './api_docs',
-                'pattern': '**/*.{md,pdf}'
+                'pattern': '**/*.pdf'
             },
             'destination': {
                 'type': 'milvus',

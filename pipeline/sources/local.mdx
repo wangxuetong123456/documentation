@@ -26,15 +26,13 @@ description: "配置本地文件夹数据源，从本地文件系统读取文档
 **示例**：
 - `*.pdf`：匹配当前目录下所有 PDF 文件
 - `**/*.pdf`：递归匹配所有子目录下的 PDF 文件
-- `**/*.{pdf,docx}`：递归匹配所有 PDF 和 Word 文件
-- `documents/*.txt`：匹配 documents 目录下的所有文本文件
 
 ### 配置示例
 
 ```python
 source = LocalSource(
     directory='./documents',           # 相对路径
-    pattern='**/*.{pdf,docx}'          # 递归匹配所有 PDF 和 Word 文件
+    pattern='*.pdf'                     # 只匹配 PDF 文件
 )
 ```
 
@@ -54,7 +52,7 @@ from xparse_client import LocalSource, Pipeline
 
 source = LocalSource(
     directory='./documents',
-    pattern='**/*.{pdf,docx,txt}'  # 递归处理所有 PDF、Word 和文本文件
+    pattern='**/*.pdf'  # 递归处理所有 PDF 文件
 )
 
 # ... 其他配置
