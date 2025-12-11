@@ -230,8 +230,7 @@ destination = LocalDestination(
 # 创建解析配置
 parse_config = ParseConfig(
     provider='textin',
-    parse_mode='auto',
-    apply_document_tree=1
+    parse_mode='auto'
 )
 
 # 创建 Pipeline
@@ -262,9 +261,7 @@ from xparse_client import ParseConfig
 # 创建解析配置，包含 PDF 密码
 parse_config = ParseConfig(
     provider='textin',
-    pdf_pwd='your-password',  # 提供 PDF 密码
-    page_start=1,
-    page_count=10
+    pdf_pwd='your-password'  # 提供 PDF 密码
 )
 
 # 在 Pipeline 中使用
@@ -278,54 +275,7 @@ parse_config = ParseConfig(
 # )
 ```
 
-### 示例 3：提取图片和表格
-
-```python
-from xparse_client import ParseConfig
-
-# 创建解析配置，开启图片和表格提取
-parse_config = ParseConfig(
-    provider='textin',
-    get_image='both',  # 获取整页图像和子图像
-    table_flavor='html',  # 表格以 HTML 格式输出
-    apply_chart=1  # 开启图表识别
-)
-
-# 在 Pipeline 中使用
-# pipeline = Pipeline(
-#     source=source,
-#     destination=destination,
-#     stages=[
-#         Stage(type='parse', config=parse_config)
-#     ],
-#     # ... 其他配置
-# )
-```
-
-### 示例 4：公式识别
-
-```python
-from xparse_client import ParseConfig
-
-# 创建解析配置，开启公式识别
-parse_config = ParseConfig(
-    provider='textin',
-    formula_level=0,  # 识别行间公式和行内公式
-    apply_merge=1
-)
-
-# 在 Pipeline 中使用
-# pipeline = Pipeline(
-#     source=source,
-#     destination=destination,
-#     stages=[
-#         Stage(type='parse', config=parse_config)
-#     ],
-#     # ... 其他配置
-# )
-```
-
-### 示例 5：仅解析特定页面
+### 示例 3：仅解析特定页面
 
 ```python
 from xparse_client import ParseConfig
@@ -333,8 +283,7 @@ from xparse_client import ParseConfig
 # 创建解析配置，指定解析页面范围
 parse_config = ParseConfig(
     provider='textin',
-    page_start=5,  # 从第 5 页开始
-    page_count=3  # 解析 3 页
+    page_ranges='5-7'  # 解析第 5 页到第 7 页
 )
 
 # 在 Pipeline 中使用
