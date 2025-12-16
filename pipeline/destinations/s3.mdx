@@ -61,27 +61,19 @@ xParse 支持以下 S3 兼容服务，点击查看具体配置指南：
 JSON 文件包含以下内容：
 
 ```json
-{
-    "file_name": "example.pdf",
-    "elements": [
-        {
-            "element_id": "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
-            "type": "NarrativeText",
-            "text": "文档内容...",
-            "metadata": {
-                "filename": "example.pdf",
-                "filetype": "application/pdf",
-                ...
-            },
-            "embeddings": [0.1, 0.2, 0.3, ...]
-        }
-    ],
-    "statistics": {
-        "total_elements": 100,
-        "chunked_elements": 50,
-        "embedded_elements": 50
+[
+    {
+        "element_id": "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc",
+        "type": "NarrativeText",
+        "text": "文档内容...",
+        "metadata": {
+            "filename": "example.pdf",
+            "filetype": "application/pdf",
+            ...
+        },
+        "embeddings": [0.1, 0.2, 0.3, ...]
     }
-}
+]
 ```
 
 ### 使用示例
