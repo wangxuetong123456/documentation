@@ -14,15 +14,11 @@ xParse支持 Qdrant Local、 Qdrant client-sever 以及 Qdrant Cloud的连接。
 | 参数 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `type` | `string` | 是 | 固定为 `"qdrant"` |
-| `url` | `string` | 是 | Qdrant 的连接地址 |
+| `url` | `string` | 是 | Qdrant 的连接地址，如`http://localhost:6333` |
 | `collection_name` | `string` | 是 | 集合（Collection）名称 |
 | `dimension` | `integer` | 是 | 向量维度，必须与 embed 模型维度一致（当前为 1024） |
 | `api_key` | `string` | 否 | Qdrant Cloud API Key |
 | `prefer_grpc` | `boolean` | 否 | 是否优先使用 gRPC（默认 False） |
-
-- url 参数配置：
-    - 对于 Qdrant 本地安装，需要指定本地 Qdrant 安装路径，例如： `/qdrant/local`
-    - 对于 Qdrant client-server 或 Qdrant Cloud，需要指定服务url，例如：`http://localhost:6333`
 
 ### 如何获取 Qdrant Cloud 鉴权参数
 
