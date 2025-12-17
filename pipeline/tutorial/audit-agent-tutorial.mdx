@@ -54,12 +54,12 @@ description: "使用 xParse + LangChain 构建智能财务审计Agent，实现�
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install "xparse-client>=0.2.5" langchain langchain-community langchain-core \
-            pymilvus qianfan openai python-dotenv
-export XTI_APP_ID=your-app-id
-export XTI_SECRET_CODE=your-secret-code
-export MILVUS_URI=./audit_vectors.db
-export OPENAI_API_KEY=your-openai-key
+pip install "xparse-client>=0.2.5" langchain langchain-core \
+            langchain_milvus langchain-community \
+            pymilvus python-dotenv
+export XTI_APP_ID=your-app-id # 在 TextIn 官网注册获取
+export XTI_SECRET_CODE=your-secret-code # 在 TextIn 官网注册获取
+export DASHSCOPE_API_KEY=your-dashscope-api-key # 本教程使用通义千问大模型，也可以替换成其他大模型
 ```
 
 ## Step 1：配置 xParse Pipeline
@@ -81,7 +81,7 @@ AUDIT_PIPELINE_CONFIG = {
     "source": {
         "type": "local",
         "directory": "./audit_documents",
-        "pattern": ["*.pdf", "*.xlsx", "*.xls", "*.png", "*.jpg"]  # 支持多种财务文档格式
+        "pattern": ["*.pdf", "*.xlsx", "*.xls", "*.png", "*.jpg", "*.txt", "*.docx", "*.doc"]  # 支持多种财务文档格式
     },
     "destination": {
         "type": "milvus",
@@ -114,22 +114,16 @@ AUDIT_PIPELINE_CONFIG = {
             "type": "embed",
             "config": {
                 "provider": "qwen",
-                "model_name": "text-embedding-v4"  # 使用高精度模型
+                "model_name": "text-embedding-v3"
             }
         }
     ]
 }
 
-def run_audit_pipeline(job_name: str = None) -> dict:
+def run_audit_pipeline() -> None:
     """运行审计文档处理Pipeline"""
     pipeline = create_pipeline_from_config(AUDIT_PIPELINE_CONFIG)
-    stats = pipeline.run(job_name=job_name or f"audit-job-{int(time.time())}")
-    return {
-        "job_name": job_name,
-        "file_count": stats.processed_files if hasattr(stats, 'processed_files') else 0,
-        "chunk_count": stats.chunked_elements if hasattr(stats, 'chunked_elements') else 0,
-        "duration": stats.duration_seconds if hasattr(stats, 'duration_seconds') else 0
-    }
+    pipeline.run()
 ```
 
 ## Step 2：构建 LangChain Tools
@@ -138,16 +132,24 @@ def run_audit_pipeline(job_name: str = None) -> dict:
 
 ```python
 from langchain.tools import Tool
-from langchain_community.vectorstores import Milvus
-from langchain.embeddings import QianfanEmbeddings
+from langchain_milvus import Milvus
+from langchain_community.embeddings import DashScopeEmbeddings
 import re
 import json
+import os
 
-embedding = QianfanEmbeddings(model_name="text-embedding-v4")
+embedding = DashScopeEmbeddings(
+    model="text-embedding-v3",
+    dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
+)
 vector_store = Milvus(
     embedding_function=embedding,
     collection_name="audit_documents",
-    connection_args={"uri": os.getenv("MILVUS_URI", "./audit_vectors.db")}
+    connection_args={"uri": "./audit_vectors.db"},
+    primary_field="element_id",
+    text_field="text",
+    vector_field="embeddings",
+    enable_dynamic_field=True,
 )
 
 def extract_financial_data(query: str) -> str:
@@ -182,12 +184,12 @@ def extract_financial_data(query: str) -> str:
             contract_info["parties"] = dict(parties)
         
         results.append({
-            "source": metadata.get("file_name", "unknown"),
+            "file": metadata.get("filename", "unknown"),
             "page": metadata.get("page_number", "unknown"),
             "amounts": amounts[:5],  # 限制数量
             "dates": dates[:5],
             "contract_info": contract_info,
-            "text_snippet": text[:200] + "..."
+            "snippet": text[:200]
         })
     
     return json.dumps(results, ensure_ascii=False, indent=2)
@@ -217,7 +219,7 @@ def check_compliance(query: str) -> str:
         metadata = doc.metadata
         
         checks = {
-            "file": metadata.get("file_name", "unknown"),
+            "file": metadata.get("filename", "unknown"),
             "page": metadata.get("page_number", "unknown"),
             "issues": []
         }
@@ -284,7 +286,7 @@ def detect_anomalies(query: str) -> str:
                 amount = float(amount_str.replace(',', ''))
                 all_amounts.append({
                     "value": amount,
-                    "source": metadata.get("file_name", "unknown"),
+                    "source": metadata.get("filename", "unknown"),
                     "page": metadata.get("page_number", "unknown")
                 })
             except:
@@ -294,23 +296,30 @@ def detect_anomalies(query: str) -> str:
         dates = re.findall(r'\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?', text)
         all_dates.extend([{
             "value": date,
-            "source": metadata.get("file_name", "unknown"),
+            "source": metadata.get("filename", "unknown"),
             "page": metadata.get("page_number", "unknown")
         } for date in dates])
     
     # 检测异常
     # 1. 金额异常
     if all_amounts:
-        amounts_values = [a["value"] for a in all_amounts]
-        max_amount = max(amounts_values)
-        min_amount = min(amounts_values)
+        # 过滤掉0值和负数，只保留正数金额
+        positive_amounts = [a for a in all_amounts if a["value"] > 0]
         
-        if max_amount / min_amount > 1000:  # 金额差异过大
-            anomalies.append({
-                "type": "金额差异异常",
-                "description": f"最大金额 {max_amount} 与最小金额 {min_amount} 差异过大",
-                "details": [a for a in all_amounts if a["value"] in [max_amount, min_amount]]
-            })
+        if len(positive_amounts) >= 2:
+            amounts_values = [a["value"] for a in positive_amounts]
+            max_amount = max(amounts_values)
+            min_amount = min(amounts_values)
+            
+            # 确保最小值不为0，避免除以零
+            if min_amount > 0:
+                ratio = max_amount / min_amount
+                if ratio > 1000:  # 金额差异过大
+                    anomalies.append({
+                        "type": "金额差异异常",
+                        "description": f"金额差异异常：最大金额 {max_amount:,.2f} 元与最小金额 {min_amount:,.2f} 元的比例达到 {ratio:.2f}，超过1000倍",
+                        "details": [a for a in positive_amounts if a["value"] in [max_amount, min_amount]]
+                    })
     
     # 2. 负数金额（可能是错误）
     negative_amounts = [a for a in all_amounts if a["value"] < 0]
@@ -338,7 +347,7 @@ def search_historical_cases(query: str) -> str:
     for i, doc in enumerate(docs, 1):
         results.append({
             f"案例 {i}": {
-                "文件": doc.metadata.get("file_name", "unknown"),
+                "文件": doc.metadata.get("filename", "unknown"),
                 "页码": doc.metadata.get("page_number", "unknown"),
                 "内容": doc.page_content[:300] + "...",
                 "相似度": "高" if i <= 2 else "中"
@@ -376,7 +385,7 @@ tools = [
         name="vector_search",
         description="基于语义检索相关文档片段。输入应为自然语言查询。",
         func=lambda q: "\n\n".join([
-            f"[{i+1}] {doc.metadata.get('file_name', 'unknown')} (页{doc.metadata.get('page_number', '?')})\n{doc.page_content[:300]}..."
+            f"[{i+1}] {doc.metadata.get('filename', 'unknown')}\n{doc.page_content[:300]}..."
             for i, doc in enumerate(vector_store.similarity_search(q, k=3))
         ])
     )
@@ -387,13 +396,13 @@ tools = [
 
 ```python
 from langchain.agents import initialize_agent, AgentType
-from langchain.chat_models import ChatOpenAI
-import time
+from langchain_community.llms.tongyi import Tongyi
+import os
 
-llm = ChatOpenAI(
-    model_name="gpt-4o-mini",
-    temperature=0.2,
-    api_key=os.getenv("OPENAI_API_KEY")
+llm = Tongyi(
+    model="qwen-max",
+    dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
+    temperature=0,  # 使用较低温度以获得更确定性的输出
 )
 
 agent = initialize_agent(
@@ -421,7 +430,7 @@ agent = initialize_agent(
 
 ## Step 4：完整示例代码
 
-```python
+```python expandable
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
@@ -429,17 +438,15 @@ agent = initialize_agent(
 """
 
 import os
-import time
 import re
 import json
 from dotenv import load_dotenv
 from xparse_client import create_pipeline_from_config
 from langchain.tools import Tool
 from langchain.agents import initialize_agent, AgentType
-from langchain.chat_models import ChatOpenAI
-from langchain_community.vectorstores import Milvus
-from langchain.embeddings import QianfanEmbeddings
-from pymilvus import MilvusClient
+from langchain_community.llms.tongyi import Tongyi
+from langchain_milvus import Milvus
+from langchain_community.embeddings import DashScopeEmbeddings
 
 load_dotenv()
 
@@ -457,7 +464,7 @@ class AuditAgent:
             "source": {
                 "type": "local",
                 "directory": "./audit_documents",
-                "pattern": ["*.pdf", "*.xlsx", "*.xls", "*.png", "*.jpg"]
+                "pattern": ["*.pdf", "*.xlsx", "*.xls", "*.png", "*.jpg", "*.txt", "*.docx", "*.doc"]
             },
             "destination": {
                 "type": "milvus",
@@ -488,7 +495,7 @@ class AuditAgent:
                     "type": "embed",
                     "config": {
                         "provider": "qwen",
-                        "model_name": "text-embedding-v4"
+                        "model_name": "text-embedding-v3"
                     }
                 }
             ]
@@ -496,11 +503,18 @@ class AuditAgent:
     
     def setup_vector_store(self):
         """配置向量数据库"""
-        self.embedding = QianfanEmbeddings(model_name="text-embedding-v4")
+        self.embedding = DashScopeEmbeddings(
+            model="text-embedding-v3",
+            dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
+        )
         self.vector_store = Milvus(
             embedding_function=self.embedding,
             collection_name="audit_documents",
-            connection_args={"uri": os.getenv("MILVUS_URI", "./audit_vectors.db")}
+            connection_args={"uri": self.pipeline_config["destination"]["db_path"]},
+            primary_field="element_id",
+            text_field="text",
+            vector_field="embeddings",
+            enable_dynamic_field=True,
         )
     
     def setup_agent(self):
@@ -526,16 +540,16 @@ class AuditAgent:
                 name="vector_search",
                 description="语义检索相关文档",
                 func=lambda q: "\n\n".join([
-                    f"[{i+1}] {doc.metadata.get('file_name', 'unknown')}\n{doc.page_content[:300]}..."
+                    f"[{i+1}] {doc.metadata.get('filename', 'unknown')}\n{doc.page_content[:300]}..."
                     for i, doc in enumerate(self.vector_store.similarity_search(q, k=3))
                 ])
             )
         ]
         
-        llm = ChatOpenAI(
-            model_name="gpt-4o-mini",
-            temperature=0.2,
-            api_key=os.getenv("OPENAI_API_KEY")
+        llm = Tongyi(
+            model="qwen-max",
+            dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
+            temperature=0,  # 使用较低温度以获得更确定性的输出
         )
         
         self.agent = initialize_agent(
@@ -555,7 +569,7 @@ class AuditAgent:
             amounts = re.findall(r'[¥$€]\s*[\d,]+\.?\d*|[\d,]+\.?\d*\s*[元美元欧元]', text)
             dates = re.findall(r'\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?', text)
             results.append({
-                "file": doc.metadata.get("file_name", "unknown"),
+                "file": doc.metadata.get("filename", "unknown"),
                 "page": doc.metadata.get("page_number", "unknown"),
                 "amounts": amounts[:5],
                 "dates": dates[:5],
@@ -575,7 +589,7 @@ class AuditAgent:
                     amount = float(amount_str.replace(',', ''))
                     if amount > 1000000:
                         issues.append({
-                            "file": doc.metadata.get("file_name", "unknown"),
+                            "file": doc.metadata.get("filename", "unknown"),
                             "page": doc.metadata.get("page_number", "unknown"),
                             "issue": f"金额 {amount_str} 超过100万，需要特殊审批"
                         })
@@ -593,11 +607,25 @@ class AuditAgent:
             for amount_str in amounts:
                 try:
                     amount = float(amount_str.replace(',', ''))
-                    all_amounts.append(amount)
+                    # 过滤掉0值和负数，只保留正数金额
+                    if amount > 0:
+                        all_amounts.append(amount)
                 except:
                     pass
-        if all_amounts and max(all_amounts) / min(all_amounts) > 1000:
-            anomalies.append("金额差异异常")
+        
+        # 检查是否有足够的金额数据进行比较，并避免除以零
+        if len(all_amounts) >= 2:
+            min_amount = min(all_amounts)
+            max_amount = max(all_amounts)
+            # 确保最小值不为0，避免除以零
+            if min_amount > 0:
+                ratio = max_amount / min_amount
+                if ratio > 1000:
+                    anomalies.append(f"金额差异异常：最大金额 {max_amount:,.2f} 元与最小金额 {min_amount:,.2f} 元的比例达到 {ratio:.2f}，超过1000倍")
+            elif max_amount > 0:
+                # 如果最小值为0但最大值不为0，这也是一种异常
+                anomalies.append(f"发现零金额异常：存在金额为0的记录，同时存在金额为 {max_amount:,.2f} 元的记录")
+        
         return json.dumps(anomalies, ensure_ascii=False, indent=2) if anomalies else "✅ 未发现异常"
     
     def process_documents(self):
@@ -621,7 +649,7 @@ def main():
     agent = AuditAgent()
     
     # 1. 处理文档（首次运行）
-    # agent.process_documents()
+    agent.process_documents()
     
     # 2. 查询示例
     questions = [
@@ -681,7 +709,7 @@ print(response)
 A: 在Parse配置中添加 `pdf_pwd` 参数，或在Pipeline运行前先解密文档。
 
 **Q: 如何提高提取准确率？**  
-A: 1) 使用 `text-embedding-v4` 高精度模型；2) 优化分块策略；3) 增加检索的文档数量（k值）。
+A: 1) 使用 `text-embedding-v3` 模型；2) 优化分块策略；3) 增加检索的文档数量（k值）。
 
 **Q: 如何集成到现有审计系统？**  
 A: 可以将Agent封装为REST API，通过HTTP接口调用，或集成到现有的审计工作流中。
