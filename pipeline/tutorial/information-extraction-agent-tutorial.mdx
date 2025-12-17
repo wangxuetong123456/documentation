@@ -38,12 +38,10 @@ description: "使用 xParse + LangChain 构建信息提取Agent，实现从发�
 ```
 文档（PDF/Word/Excel/图片）
     ↓
-[xParse Pipeline]
-    ├─ Parse: 解析文档，提取结构化内容
-    ├─ Chunk: 基础分块（快速处理）
-    └─ Embed: 向量化
+[xParse Pipeline - Parse]
+    └─ 解析文档，提取结构化元素（elements）
     ↓
-向量数据库（Milvus/Zilliz）
+聚合元素文本（elements[].text）
     ↓
 [LangChain Agent]
     ├─ Tool 1: extract_invoice_info（提取发票信息）
@@ -57,25 +55,28 @@ description: "使用 xParse + LangChain 构建信息提取Agent，实现从发�
 结构化数据（JSON/CSV）
 ```
 
+**核心流程**：
+1. 使用 xParse 解析文档，获得 elements 列表
+2. 聚合所有 elements 的 text 字段，形成完整文档文本
+3. 将完整文本直接输入大模型，通过精心设计的 prompt 提取结构化信息
+
 ## 环境准备
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install "xparse-client>=0.2.5" langchain langchain-community langchain-core \
-            pymilvus qianfan openai python-dotenv pandas
-export XTI_APP_ID=your-app-id
-export XTI_SECRET_CODE=your-secret-code
-export MILVUS_URI=./extraction_vectors.db
-export OPENAI_API_KEY=your-openai-key
+            python-dotenv pandas
+export XTI_APP_ID=your-app-id # 在 TextIn 官网注册获取
+export XTI_SECRET_CODE=your-secret-code # 在 TextIn 官网注册获取
+export DASHSCOPE_API_KEY=your-dashscope-api-key # 本教程使用通义千问大模型，也可以替换成其他大模型
 ```
 
 ## Step 1：配置 xParse Pipeline
 
-针对信息提取场景，我们使用以下配置：
+针对信息提取场景，我们只需要解析模块，无需分块和向量化：
 
-- **分块策略**：`basic` - 快速处理，适合信息提取
-- **表格优化**：确保表格结构完整提取（HTML格式）
-- **列表识别**：识别和保留列表结构
+- **解析配置**：解析文档，提取结构化元素，使用 textin 解析引擎提升精度和速度
+- **表格优化**：确保表格结构完整提取（HTML格式-默认）
 
 ```python
 from xparse_client import create_pipeline_from_config
@@ -88,13 +89,11 @@ EXTRACTION_PIPELINE_CONFIG = {
     "source": {
         "type": "local",
         "directory": "./extraction_documents",
-        "pattern": ["*.pdf", "*.docx", "*.xlsx", "*.xls", "*.png", "*.jpg"]  # 支持多种文档格式
+        "pattern": ["*.pdf", "*.docx", "*.xlsx", "*.xls", "*.png", "*.jpg"]
     },
     "destination": {
-        "type": "milvus",
-        "db_path": "./extraction_vectors.db",
-        "collection_name": "extraction_documents",
-        "dimension": 1024
+        "type": "local",  # 使用本地存储，保存解析结果
+        "output_dir": "./extraction_results"
     },
     "api_base_url": "https://api.textin.com/api/xparse",
     "api_headers": {
@@ -107,60 +106,131 @@ EXTRACTION_PIPELINE_CONFIG = {
             "config": {
                 "provider": "textin"  # 使用TextIn解析引擎，对表格和列表识别效果好
             }
-        },
-        {
-            "type": "chunk",
-            "config": {
-                "strategy": "basic",  # 基础分块，快速处理
-                "include_orig_elements": False,  # 信息提取场景不需要原始元素
-                "new_after_n_chars": 512,
-                "max_characters": 1024,
-                "overlap": 50  # 适度的重叠
-            }
-        },
-        {
-            "type": "embed",
-            "config": {
-                "provider": "qwen",
-                "model_name": "text-embedding-v3"  # 使用标准模型，速度快
-            }
         }
     ]
 }
+```
+调用 xParse 得到解析后的结构化元素，聚合成完整文档文本，作为大模型信息提取的上下文：
 
-def run_extraction_pipeline(job_name: str = None) -> dict:
-    """运行信息提取文档处理Pipeline"""
-    pipeline = create_pipeline_from_config(EXTRACTION_PIPELINE_CONFIG)
-    stats = pipeline.run(job_name=job_name or f"extraction-job-{int(time.time())}")
-    return {
-        "job_name": job_name,
-        "file_count": stats.processed_files if hasattr(stats, 'processed_files') else 0,
-        "chunk_count": stats.chunked_elements if hasattr(stats, 'chunked_elements') else 0,
-        "duration": stats.duration_seconds if hasattr(stats, 'duration_seconds') else 0
+```python
+def parse_document(file_path: str) -> list:
+    """
+    解析单个文档，返回 elements 列表
+    
+    Args:
+        file_path: 文档路径
+        
+    Returns:
+        list: elements 列表，每个元素包含 text、type、metadata 等字段
+    """
+    import os
+    import json
+    from xparse_client import Pipeline, LocalSource
+    
+    # 创建临时配置，使用包含该文件的目录作为source
+    file_dir = os.path.dirname(os.path.abspath(file_path))
+    file_name_pattern = os.path.basename(file_path)
+    
+    # 创建临时Pipeline配置
+    temp_config = EXTRACTION_PIPELINE_CONFIG.copy()
+    temp_config["source"] = {
+        "type": "local",
+        "directory": file_dir,
+        "pattern": [file_name_pattern]  # 只处理指定的文件
     }
+    
+    # 创建Pipeline并运行（pipeline.run() 没有返回值，结果会保存到destination）
+    pipeline = create_pipeline_from_config(temp_config)
+    pipeline.run()
+    
+    # 从destination配置的输出目录读取解析结果
+    output_dir = EXTRACTION_PIPELINE_CONFIG["destination"]["output_dir"]
+    
+    # 确保输出目录存在
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # 获取文件名（不含路径和扩展名）
+    file_name = os.path.splitext(os.path.basename(file_path))[0]
+    result_file = os.path.join(output_dir, f"{file_name}.json")
+    
+    # 读取JSON文件
+    if not os.path.exists(result_file):
+        raise FileNotFoundError(
+            f"解析结果文件不存在: {result_file}\n"
+            f"请检查输出目录: {output_dir}\n"
+            f"原始文件路径: {file_path}"
+        )
+    
+    with open(result_file, 'r', encoding='utf-8') as f:
+        elements = json.load(f)
+    
+    return elements
+
+def aggregate_text_from_elements(elements: list) -> str:
+    """
+    聚合 elements 中的 text 字段，形成完整文档文本
+    
+    Args:
+        elements: elements 列表
+        
+    Returns:
+        str: 聚合后的完整文本
+    """
+    texts = []
+    for element in elements:
+        if isinstance(element, dict):
+            text = element.get('text', '')
+        else:
+            text = getattr(element, 'text', '')
+        
+        if text and text.strip():
+            texts.append(text.strip())
+    
+    return "\n\n".join(texts)
+
 ```
 
 ## Step 2：构建 LangChain Tools
 
-### Tool 1: 提取发票信息
+首先，我们需要一个全局的文档文本存储，用于存储当前处理的文档内容：
 
 ```python
 from langchain.tools import Tool
-from langchain_community.vectorstores import Milvus
-from langchain.embeddings import QianfanEmbeddings
-import re
+from langchain_community.llms.tongyi import Tongyi
+import os
 import json
 
-embedding = QianfanEmbeddings(model_name="text-embedding-v3")
-vector_store = Milvus(
-    embedding_function=embedding,
-    collection_name="extraction_documents",
-    connection_args={"uri": os.getenv("MILVUS_URI", "./extraction_vectors.db")}
+# 全局文档文本存储（实际应用中可以使用更持久化的存储）
+_document_texts = {}
+
+# 初始化 qwen-max 大模型
+llm = Tongyi(
+    model="qwen-max",
+    dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
+    temperature=0,  # 使用较低温度以获得更确定性的输出
 )
 
-def extract_invoice_info(query: str) -> str:
+def set_document_text(file_path: str, text: str):
+    """设置文档文本内容"""
+    _document_texts[file_path] = text
+
+def get_document_text(file_path: str = None) -> str:
+    """获取文档文本内容"""
+    if not _document_texts:
+        return ""  # 如果没有加载任何文档，返回空字符串
+    
+    if file_path not in ("None", "none", None, "", "null"):
+        return _document_texts.get(file_path, "")
+    # 如果没有指定文件，返回第一个文档的文本
+    return next(iter(_document_texts.values()), "")
+```
+
+### Tool 1: 提取发票信息
+
+```python
+def extract_invoice_info(file_path: str = None) -> str:
     """
-    从发票中提取结构化信息
+    从发票中提取结构化信息（使用 qwen-max 大模型）
     
     提取内容包括：
     - 发票基本信息（发票代码、发票号码、开票日期）
@@ -169,105 +239,98 @@ def extract_invoice_info(query: str) -> str:
     - 商品明细（名称、规格、单位、数量、单价、金额、税率、税额）
     - 金额信息（合计金额、合计税额、价税合计）
     - 其他信息（备注、收款人、复核人、开票人等）
+    
+    Args:
+        file_path: 文档路径（可选），如果不提供则使用当前已加载的文档
     """
-    docs = vector_store.similarity_search(query, k=5)
+    # 获取文档文本
+    context_text = get_document_text(file_path)
     
-    invoice_data = {
-        "invoice_info": {},
-        "seller": {},
-        "buyer": {},
-        "items": [],
-        "amounts": {},
-        "other_info": {}
-    }
+    # 如果没有文档文本，返回提示信息
+    if not context_text:
+        return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
     
-    for doc in docs:
-        text = doc.page_content
-        metadata = doc.metadata
+    # 构建 prompt，指导模型提取结构化信息
+    prompt = f"""请从以下发票文本中提取结构化信息，并以 JSON 格式返回。
+
+            要求提取的信息包括：
+            1. 发票基本信息：invoice_code（发票代码）、invoice_number（发票号码）、date（开票日期）
+            2. 销售方信息：name（名称）、tax_id（纳税人识别号）、address（地址电话）、bank_account（开户行及账号）
+            3. 购买方信息：name（名称）、tax_id（纳税人识别号）、address（地址电话）、bank_account（开户行及账号）
+            4. 商品明细（数组）：name、specification、unit、quantity、unit_price、amount、tax_rate、tax_amount
+            5. 金额信息：total_amount（合计金额）、tax_amount（合计税额）、total_with_tax（价税合计）
+            6. 其他信息：remark（备注）、payee（收款人）、reviewer（复核人）、drawer（开票人）
+
+            请严格按照以下 JSON 格式返回，如果某个字段不存在，请使用空字符串 "" 或空对象 {{}} 或空数组 []：
+
+            {{
+            "invoice_info": {{"invoice_code": "", "invoice_number": "", "date": ""}},
+            "seller": {{"name": "", "tax_id": "", "address": "", "bank_account": ""}},
+            "buyer": {{"name": "", "tax_id": "", "address": "", "bank_account": ""}},
+            "items": [{{"name": "", "specification": "", "unit": "", "quantity": "", "unit_price": "", "amount": "", "tax_rate": "", "tax_amount": ""}}],
+            "amounts": {{"total_amount": "", "tax_amount": "", "total_with_tax": ""}},
+            "other_info": {{"remark": "", "payee": "", "reviewer": "", "drawer": ""}}
+            }}
+
+            发票文本内容：
+            {context_text}
+
+            请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+
+    # 调用大模型提取信息
+    response_text = ""
+    try:
+        response = llm(prompt)
         
-        # 提取发票代码和号码
-        invoice_code_match = re.search(r'发票代码[：:]\s*([0-9]+)', text)
-        if invoice_code_match:
-            invoice_data["invoice_info"]["invoice_code"] = invoice_code_match.group(1)
+        # 尝试从响应中提取 JSON（可能包含 markdown 代码块）
+        response_text = response.strip() if response else ""
         
-        invoice_number_match = re.search(r'发票号码[：:]\s*([0-9]+)', text)
-        if invoice_number_match:
-            invoice_data["invoice_info"]["invoice_number"] = invoice_number_match.group(1)
+        # 如果响应包含 markdown 代码块，提取其中的 JSON
+        if "```json" in response_text:
+            json_start = response_text.find("```json") + 7
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
+        elif "```" in response_text:
+            json_start = response_text.find("```") + 3
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
         
-        # 提取开票日期
-        date_patterns = [
-            r'开票日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)',
-            r'日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)',
-            r'(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)'
-        ]
-        for pattern in date_patterns:
-            match = re.search(pattern, text)
-            if match and not invoice_data["invoice_info"].get("date"):
-                invoice_data["invoice_info"]["date"] = match.group(1)
-                break
+        # 解析 JSON
+        invoice_data = json.loads(response_text)
         
-        # 提取销售方信息
-        seller_name_match = re.search(r'销售方[：:]\s*名称[：:]\s*([^\n]+)', text)
-        if seller_name_match:
-            invoice_data["seller"]["name"] = seller_name_match.group(1).strip()
+        # 返回格式化的 JSON
+        return json.dumps(invoice_data, ensure_ascii=False, indent=2)
         
-        seller_tax_id_match = re.search(r'销售方[：:].*?纳税人识别号[：:]\s*([0-9A-Z]+)', text, re.DOTALL)
-        if seller_tax_id_match:
-            invoice_data["seller"]["tax_id"] = seller_tax_id_match.group(1).strip()
-        
-        # 提取购买方信息
-        buyer_name_match = re.search(r'购买方[：:]\s*名称[：:]\s*([^\n]+)', text)
-        if buyer_name_match:
-            invoice_data["buyer"]["name"] = buyer_name_match.group(1).strip()
-        
-        buyer_tax_id_match = re.search(r'购买方[：:].*?纳税人识别号[：:]\s*([0-9A-Z]+)', text, re.DOTALL)
-        if buyer_tax_id_match:
-            invoice_data["buyer"]["tax_id"] = buyer_tax_id_match.group(1).strip()
-        
-        # 提取商品明细（简化版，实际应该解析表格）
-        # 查找商品相关的行
-        item_lines = re.findall(r'([^\n]+商品[^\n]+)', text)
-        for line in item_lines[:10]:
-            # 尝试提取商品信息
-            item_match = re.search(r'([^\s]+)\s+(\d+\.?\d*)\s+([\d,]+\.?\d*)', line)
-            if item_match:
-                invoice_data["items"].append({
-                    "name": item_match.group(1),
-                    "quantity": item_match.group(2),
-                    "amount": item_match.group(3)
-                })
-        
-        # 提取金额信息
-        total_amount_match = re.search(r'合计[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
-        if total_amount_match:
-            invoice_data["amounts"]["total_amount"] = total_amount_match.group(1)
-        
-        tax_amount_match = re.search(r'税额[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
-        if tax_amount_match:
-            invoice_data["amounts"]["tax_amount"] = tax_amount_match.group(1)
-        
-        total_with_tax_match = re.search(r'价税合计[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
-        if total_with_tax_match:
-            invoice_data["amounts"]["total_with_tax"] = total_with_tax_match.group(1)
-        
-        # 提取其他信息
-        remark_match = re.search(r'备注[：:]\s*([^\n]+)', text)
-        if remark_match:
-            invoice_data["other_info"]["remark"] = remark_match.group(1).strip()
-        
-        drawer_match = re.search(r'开票人[：:]\s*([^\n]+)', text)
-        if drawer_match:
-            invoice_data["other_info"]["drawer"] = drawer_match.group(1).strip()
-    
-    return json.dumps(invoice_data, ensure_ascii=False, indent=2)
+    except json.JSONDecodeError as e:
+        # 如果 JSON 解析失败，返回错误信息
+        error_msg = f"JSON 解析失败：{str(e)}\n模型返回的原始内容：\n{response_text}"
+        print(error_msg)
+        return json.dumps({
+            "error": "JSON 解析失败",
+            "raw_response": response_text if response_text else "无响应",
+            "error_detail": str(e)
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        # 其他错误
+        error_msg = f"提取信息时发生错误：{str(e)}"
+        print(error_msg)
+        if response_text:
+            print(f"模型返回的原始内容：\n{response_text}")
+        return json.dumps({
+            "error": "提取信息失败",
+            "error_detail": str(e),
+            "raw_response": response_text if response_text else "无响应"
+        }, ensure_ascii=False, indent=2)
 ```
 
 ### Tool 2: 提取医疗票据信息
 
 ```python
-def extract_medical_bill_info(query: str) -> str:
+def extract_medical_bill_info(file_path: str = None) -> str:
     """
-    从医疗票据中提取结构化信息
+    从医疗票据中提取结构化信息（使用 qwen-max 大模型）
     
     提取内容包括：
     - 患者信息（姓名、性别、年龄、身份证号、医保卡号）
@@ -276,121 +339,66 @@ def extract_medical_bill_info(query: str) -> str:
     - 费用明细（项目名称、数量、单价、金额、医保类型）
     - 费用汇总（总费用、自费金额、医保支付、个人支付）
     - 其他信息（发票号码、结算方式等）
+    
+    Args:
+        file_path: 文档路径（可选），如果不提供则使用当前已加载的文档
     """
-    docs = vector_store.similarity_search(query, k=5)
+    # 获取文档文本
+    context_text = get_document_text(file_path)
     
-    medical_bill_data = {
-        "patient_info": {},
-        "hospital_info": {},
-        "visit_info": {},
-        "fee_items": [],
-        "fee_summary": {},
-        "other_info": {}
-    }
+    # 如果没有文档文本，返回提示信息
+    if not context_text:
+        return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
     
-    for doc in docs:
-        text = doc.page_content
-        metadata = doc.metadata
+    # 构建 prompt
+    prompt = f"""请从以下医疗票据文本中提取结构化信息，包括患者信息、医疗机构信息、就诊信息、费用明细、费用汇总等，并以 JSON 格式返回。
+
+            医疗票据文本内容：
+            {context_text}
+
+            请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+
+    # 调用大模型提取信息
+    response_text = ""
+    try:
+        response = llm(prompt)
+        response_text = response.strip() if response else ""
         
-        # 提取患者姓名
-        patient_name_patterns = [
-            r'患者姓名[：:]\s*([^\n]+)',
-            r'姓名[：:]\s*([^\n]+)',
-            r'病人姓名[：:]\s*([^\n]+)'
-        ]
-        for pattern in patient_name_patterns:
-            match = re.search(pattern, text)
-            if match and not medical_bill_data["patient_info"].get("name"):
-                medical_bill_data["patient_info"]["name"] = match.group(1).strip()
-                break
+        # 提取 JSON（处理 markdown 代码块）
+        if "```json" in response_text:
+            json_start = response_text.find("```json") + 7
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
+        elif "```" in response_text:
+            json_start = response_text.find("```") + 3
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
         
-        # 提取性别
-        gender_match = re.search(r'性别[：:]\s*([男女])', text)
-        if gender_match:
-            medical_bill_data["patient_info"]["gender"] = gender_match.group(1)
+        medical_bill_data = json.loads(response_text)
+        return json.dumps(medical_bill_data, ensure_ascii=False, indent=2)
         
-        # 提取年龄
-        age_match = re.search(r'年龄[：:]\s*(\d+)', text)
-        if age_match:
-            medical_bill_data["patient_info"]["age"] = age_match.group(1)
-        
-        # 提取身份证号
-        id_card_match = re.search(r'身份证[：:]\s*([0-9X]{15,18})', text)
-        if id_card_match:
-            medical_bill_data["patient_info"]["id_card"] = id_card_match.group(1)
-        
-        # 提取医保卡号
-        medical_card_match = re.search(r'医保卡号[：:]\s*([0-9]+)', text)
-        if medical_card_match:
-            medical_bill_data["patient_info"]["medical_card"] = medical_card_match.group(1)
-        
-        # 提取医院信息
-        hospital_name_match = re.search(r'医院[：:]\s*([^\n]+)|医疗机构[：:]\s*([^\n]+)', text)
-        if hospital_name_match:
-            medical_bill_data["hospital_info"]["name"] = (hospital_name_match.group(1) or hospital_name_match.group(2)).strip()
-        
-        department_match = re.search(r'科室[：:]\s*([^\n]+)', text)
-        if department_match:
-            medical_bill_data["hospital_info"]["department"] = department_match.group(1).strip()
-        
-        doctor_match = re.search(r'医生[：:]\s*([^\n]+)|医师[：:]\s*([^\n]+)', text)
-        if doctor_match:
-            medical_bill_data["hospital_info"]["doctor"] = (doctor_match.group(1) or doctor_match.group(2)).strip()
-        
-        # 提取就诊信息
-        visit_date_match = re.search(r'就诊日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)', text)
-        if visit_date_match:
-            medical_bill_data["visit_info"]["date"] = visit_date_match.group(1)
-        
-        diagnosis_match = re.search(r'诊断[：:]\s*([^\n]+)|诊断结果[：:]\s*([^\n]+)', text)
-        if diagnosis_match:
-            medical_bill_data["visit_info"]["diagnosis"] = (diagnosis_match.group(1) or diagnosis_match.group(2)).strip()
-        
-        # 提取费用明细（简化版）
-        fee_item_patterns = [
-            r'([^\n]+)\s+(\d+)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)',
-            r'项目[：:]\s*([^\n]+).*?金额[：:]\s*([\d,]+\.?\d*)'
-        ]
-        for pattern in fee_item_patterns:
-            matches = re.findall(pattern, text)
-            for match in matches[:10]:
-                if len(match) >= 2:
-                    medical_bill_data["fee_items"].append({
-                        "item_name": match[0] if len(match) > 0 else "",
-                        "amount": match[-1] if len(match) > 0 else ""
-                    })
-        
-        # 提取费用汇总
-        total_fee_match = re.search(r'总费用[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
-        if total_fee_match:
-            medical_bill_data["fee_summary"]["total_fee"] = total_fee_match.group(1)
-        
-        self_pay_match = re.search(r'自费[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
-        if self_pay_match:
-            medical_bill_data["fee_summary"]["self_pay"] = self_pay_match.group(1)
-        
-        medical_pay_match = re.search(r'医保支付[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
-        if medical_pay_match:
-            medical_bill_data["fee_summary"]["medical_pay"] = medical_pay_match.group(1)
-        
-        personal_pay_match = re.search(r'个人支付[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
-        if personal_pay_match:
-            medical_bill_data["fee_summary"]["personal_pay"] = personal_pay_match.group(1)
-        
-        # 提取发票号码
-        invoice_number_match = re.search(r'发票号码[：:]\s*([0-9]+)', text)
-        if invoice_number_match:
-            medical_bill_data["other_info"]["invoice_number"] = invoice_number_match.group(1)
-    
-    return json.dumps(medical_bill_data, ensure_ascii=False, indent=2)
+    except json.JSONDecodeError as e:
+        return json.dumps({
+            "error": "JSON 解析失败",
+            "raw_response": response_text if response_text else "无响应",
+            "error_detail": str(e)
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({
+            "error": "提取信息失败",
+            "error_detail": str(e),
+            "raw_response": response_text if response_text else "无响应"
+        }, ensure_ascii=False, indent=2)
 ```
 
 ### Tool 3: 提取合同信息
 
 ```python
-def extract_contract_info(query: str) -> str:
+def extract_contract_info(file_path: str = None) -> str:
     """
-    从合同中提取结构化信息
+    从合同中提取结构化信息（使用 qwen-max 大模型）
     
     提取内容包括：
     - 合同基本信息（合同编号、合同名称、签订日期、生效日期、到期日期）
@@ -399,275 +407,198 @@ def extract_contract_info(query: str) -> str:
     - 关键条款（付款方式、交付方式、违约责任、争议解决）
     - 金额信息（合同总金额、付款计划、保证金等）
     - 其他信息（签署地点、签署人、附件等）
+    
+    Args:
+        file_path: 文档路径（可选），如果不提供则使用当前已加载的文档
     """
-    docs = vector_store.similarity_search(query, k=5)
+    # 获取文档文本
+    context_text = get_document_text(file_path)
     
-    contract_data = {
-        "contract_info": {},
-        "party_a": {},
-        "party_b": {},
-        "subject_matter": {},
-        "key_terms": {},
-        "amounts": {},
-        "other_info": {}
-    }
+    # 如果没有文档文本，返回提示信息
+    if not context_text:
+        return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
     
-    for doc in docs:
-        text = doc.page_content
-        metadata = doc.metadata
+    # 构建 prompt
+    prompt = f"""请从以下合同文本中提取结构化信息，包括合同基本信息、合同双方信息、合同标的、关键条款、金额信息等，并以 JSON 格式返回。
+
+            合同文本内容：
+            {context_text}
+
+            请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+
+    # 调用大模型提取信息
+    response_text = ""
+    try:
+        response = llm(prompt)
+        response_text = response.strip() if response else ""
         
-        # 提取合同编号
-        contract_number_match = re.search(r'合同编号[：:]\s*([^\n]+)', text)
-        if contract_number_match:
-            contract_data["contract_info"]["contract_number"] = contract_number_match.group(1).strip()
+        # 提取 JSON（处理 markdown 代码块）
+        if "```json" in response_text:
+            json_start = response_text.find("```json") + 7
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
+        elif "```" in response_text:
+            json_start = response_text.find("```") + 3
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
         
-        # 提取合同名称
-        contract_name_match = re.search(r'合同名称[：:]\s*([^\n]+)|([^\n]+)合同', text)
-        if contract_name_match:
-            contract_data["contract_info"]["contract_name"] = (contract_name_match.group(1) or contract_name_match.group(2)).strip()
+        contract_data = json.loads(response_text)
+        return json.dumps(contract_data, ensure_ascii=False, indent=2)
         
-        # 提取签订日期
-        sign_date_match = re.search(r'签订日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)', text)
-        if sign_date_match:
-            contract_data["contract_info"]["sign_date"] = sign_date_match.group(1)
-        
-        # 提取生效日期和到期日期
-        effective_date_match = re.search(r'生效日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)', text)
-        if effective_date_match:
-            contract_data["contract_info"]["effective_date"] = effective_date_match.group(1)
-        
-        expiry_date_match = re.search(r'到期日期[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)|有效期至[：:]\s*(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?)', text)
-        if expiry_date_match:
-            contract_data["contract_info"]["expiry_date"] = expiry_date_match.group(1) or expiry_date_match.group(2)
-        
-        # 提取甲方信息
-        party_a_name_match = re.search(r'甲方[：:].*?名称[：:]\s*([^\n]+)', text, re.DOTALL)
-        if party_a_name_match:
-            contract_data["party_a"]["name"] = party_a_name_match.group(1).strip()
-        
-        party_a_address_match = re.search(r'甲方[：:].*?地址[：:]\s*([^\n]+)', text, re.DOTALL)
-        if party_a_address_match:
-            contract_data["party_a"]["address"] = party_a_address_match.group(1).strip()
-        
-        party_a_legal_rep_match = re.search(r'甲方[：:].*?法定代表人[：:]\s*([^\n]+)', text, re.DOTALL)
-        if party_a_legal_rep_match:
-            contract_data["party_a"]["legal_representative"] = party_a_legal_rep_match.group(1).strip()
-        
-        # 提取乙方信息
-        party_b_name_match = re.search(r'乙方[：:].*?名称[：:]\s*([^\n]+)', text, re.DOTALL)
-        if party_b_name_match:
-            contract_data["party_b"]["name"] = party_b_name_match.group(1).strip()
-        
-        party_b_address_match = re.search(r'乙方[：:].*?地址[：:]\s*([^\n]+)', text, re.DOTALL)
-        if party_b_address_match:
-            contract_data["party_b"]["address"] = party_b_address_match.group(1).strip()
-        
-        party_b_legal_rep_match = re.search(r'乙方[：:].*?法定代表人[：:]\s*([^\n]+)', text, re.DOTALL)
-        if party_b_legal_rep_match:
-            contract_data["party_b"]["legal_representative"] = party_b_legal_rep_match.group(1).strip()
-        
-        # 提取合同标的
-        subject_matter_match = re.search(r'标的[：:]\s*([^\n]+)|标的物[：:]\s*([^\n]+)', text)
-        if subject_matter_match:
-            contract_data["subject_matter"]["description"] = (subject_matter_match.group(1) or subject_matter_match.group(2)).strip()
-        
-        # 提取合同金额
-        contract_amount_match = re.search(r'合同总金额[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)|合同金额[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
-        if contract_amount_match:
-            contract_data["amounts"]["total_amount"] = contract_amount_match.group(1) or contract_amount_match.group(2)
-        
-        # 提取付款方式
-        payment_method_match = re.search(r'付款方式[：:]\s*([^\n]+)', text)
-        if payment_method_match:
-            contract_data["key_terms"]["payment_method"] = payment_method_match.group(1).strip()
-        
-        # 提取交付方式
-        delivery_method_match = re.search(r'交付方式[：:]\s*([^\n]+)|交货方式[：:]\s*([^\n]+)', text)
-        if delivery_method_match:
-            contract_data["key_terms"]["delivery_method"] = (delivery_method_match.group(1) or delivery_method_match.group(2)).strip()
-        
-        # 提取违约责任
-        breach_match = re.search(r'违约责任[：:]\s*([^\n]+)', text)
-        if breach_match:
-            contract_data["key_terms"]["breach_of_contract"] = breach_match.group(1).strip()[:200]
-        
-        # 提取争议解决方式
-        dispute_resolution_match = re.search(r'争议解决[：:]\s*([^\n]+)|争议处理[：:]\s*([^\n]+)', text)
-        if dispute_resolution_match:
-            contract_data["key_terms"]["dispute_resolution"] = (dispute_resolution_match.group(1) or dispute_resolution_match.group(2)).strip()[:200]
-        
-        # 提取签署地点
-        sign_location_match = re.search(r'签署地点[：:]\s*([^\n]+)', text)
-        if sign_location_match:
-            contract_data["other_info"]["sign_location"] = sign_location_match.group(1).strip()
-    
-    return json.dumps(contract_data, ensure_ascii=False, indent=2)
+    except json.JSONDecodeError as e:
+        return json.dumps({
+            "error": "JSON 解析失败",
+            "raw_response": response_text if response_text else "无响应",
+            "error_detail": str(e)
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({
+            "error": "提取信息失败",
+            "error_detail": str(e),
+            "raw_response": response_text if response_text else "无响应"
+        }, ensure_ascii=False, indent=2)
 ```
 
 ### Tool 4: 提取简历信息
 
 ```python
-def extract_resume_info(query: str) -> str:
+def extract_resume_info(file_path: str = None) -> str:
     """
-    从简历中提取结构化信息
+    从简历中提取结构化信息（使用 qwen-max 大模型）
     
     提取内容包括：
     - 个人信息（姓名、性别、年龄、联系方式）
     - 教育经历（学校、专业、学历、时间）
     - 工作经历（公司、职位、时间、工作内容）
     - 技能（专业技能、语言能力、证书等）
+    
+    Args:
+        file_path: 文档路径（可选），如果不提供则使用当前已加载的文档
     """
-    # 检索相关文档片段
-    docs = vector_store.similarity_search(query, k=3)
+    # 获取文档文本
+    context_text = get_document_text(file_path)
     
-    resume_data = {
-        "personal_info": {},
-        "education": [],
-        "work_experience": [],
-        "skills": []
-    }
+    # 如果没有文档文本，返回提示信息
+    if not context_text:
+        return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
     
-    for doc in docs:
-        text = doc.page_content
-        metadata = doc.metadata
+    # 构建 prompt
+    prompt = f"""请从以下简历文本中提取结构化信息，包括个人信息、教育经历、工作经历、技能等，并以 JSON 格式返回。
+
+            简历文本内容：
+            {context_text}
+
+            请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+
+    # 调用大模型提取信息
+    response_text = ""
+    try:
+        response = llm(prompt)
+        response_text = response.strip() if response else ""
         
-        # 提取姓名
-        name_patterns = [
-            r'姓名[：:]\s*([^\n]+)',
-            r'名字[：:]\s*([^\n]+)',
-            r'^([\u4e00-\u9fa5]{2,4})\s*',  # 文档开头的中文姓名
-        ]
-        for pattern in name_patterns:
-            match = re.search(pattern, text)
-            if match and not resume_data["personal_info"].get("name"):
-                resume_data["personal_info"]["name"] = match.group(1).strip()
-                break
+        # 提取 JSON（处理 markdown 代码块）
+        if "```json" in response_text:
+            json_start = response_text.find("```json") + 7
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
+        elif "```" in response_text:
+            json_start = response_text.find("```") + 3
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
         
-        # 提取联系方式
-        phone_match = re.search(r'1[3-9]\d{9}', text)
-        if phone_match:
-            resume_data["personal_info"]["phone"] = phone_match.group(0)
+        resume_data = json.loads(response_text)
+        return json.dumps(resume_data, ensure_ascii=False, indent=2)
         
-        email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
-        if email_match:
-            resume_data["personal_info"]["email"] = email_match.group(0)
-        
-        # 提取教育经历
-        education_pattern = r'(\d{4}[-年]\d{1,2}[-月]?)\s*[-至到]\s*(\d{4}[-年]\d{1,2}[-月]?)?\s*([^\n]+)'
-        education_matches = re.findall(education_pattern, text)
-        for match in education_matches[:3]:  # 限制数量
-            resume_data["education"].append({
-                "start_date": match[0],
-                "end_date": match[1] if match[1] else "至今",
-                "description": match[2][:200]
-            })
-        
-        # 提取工作经历
-        work_pattern = r'(\d{4}[-年]\d{1,2}[-月]?)\s*[-至到]\s*(\d{4}[-年]\d{1,2}[-月]?)?\s*([^\n]+)'
-        work_matches = re.findall(work_pattern, text)
-        for match in work_matches[:5]:  # 限制数量
-            resume_data["work_experience"].append({
-                "start_date": match[0],
-                "end_date": match[1] if match[1] else "至今",
-                "description": match[2][:200]
-            })
-        
-        # 提取技能（常见技能关键词）
-        skill_keywords = ["Python", "Java", "JavaScript", "SQL", "Linux", "Docker", "Kubernetes", 
-                         "机器学习", "深度学习", "数据分析", "项目管理", "团队协作"]
-        found_skills = [skill for skill in skill_keywords if skill in text]
-        resume_data["skills"].extend(found_skills)
-    
-    # 去重
-    resume_data["skills"] = list(set(resume_data["skills"]))
-    
-    return json.dumps(resume_data, ensure_ascii=False, indent=2)
+    except json.JSONDecodeError as e:
+        return json.dumps({
+            "error": "JSON 解析失败",
+            "raw_response": response_text if response_text else "无响应",
+            "error_detail": str(e)
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({
+            "error": "提取信息失败",
+            "error_detail": str(e),
+            "raw_response": response_text if response_text else "无响应"
+        }, ensure_ascii=False, indent=2)
 ```
 
 ### Tool 5: 提取产品规格
 
 ```python
-def extract_product_specs(query: str) -> str:
+def extract_product_specs(file_path: str = None) -> str:
     """
-    从产品文档中提取产品规格和技术参数
+    从产品文档中提取产品规格和技术参数（使用 qwen-max 大模型）
     
     提取内容包括：
     - 产品名称和型号
     - 技术参数（尺寸、重量、性能指标等）
     - 功能特性
     - 价格信息
+    
+    Args:
+        file_path: 文档路径（可选），如果不提供则使用当前已加载的文档
     """
-    docs = vector_store.similarity_search(query, k=3)
+    # 获取文档文本
+    context_text = get_document_text(file_path)
     
-    product_specs = {
-        "product_name": "",
-        "model": "",
-        "specifications": {},
-        "features": [],
-        "price": ""
-    }
+    # 如果没有文档文本，返回提示信息
+    if not context_text:
+        return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
     
-    for doc in docs:
-        text = doc.page_content
+    # 构建 prompt
+    prompt = f"""请从以下产品文档文本中提取产品规格和技术参数，包括产品名称、型号、技术参数、功能特性、价格等，并以 JSON 格式返回。
+
+            产品文档文本内容：
+            {context_text}
+
+            请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+
+    # 调用大模型提取信息
+    response_text = ""
+    try:
+        response = llm(prompt)
+        response_text = response.strip() if response else ""
         
-        # 提取产品名称
-        name_patterns = [
-            r'产品名称[：:]\s*([^\n]+)',
-            r'产品[：:]\s*([^\n]+)',
-            r'型号[：:]\s*([^\n]+)'
-        ]
-        for pattern in name_patterns:
-            match = re.search(pattern, text)
-            if match:
-                if "型号" in pattern:
-                    product_specs["model"] = match.group(1).strip()
-                else:
-                    product_specs["product_name"] = match.group(1).strip()
+        # 提取 JSON（处理 markdown 代码块）
+        if "```json" in response_text:
+            json_start = response_text.find("```json") + 7
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
+        elif "```" in response_text:
+            json_start = response_text.find("```") + 3
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
         
-        # 提取技术参数（常见参数格式）
-        spec_patterns = [
-            r'([^\n：:]+)[：:]\s*([^\n]+)',
-            r'([^\n]+)\s*[:：]\s*([^\n]+)'
-        ]
-        for pattern in spec_patterns:
-            matches = re.findall(pattern, text)
-            for match in matches[:10]:  # 限制数量
-                key = match[0].strip()
-                value = match[1].strip()
-                # 过滤掉明显不是规格的项
-                if len(key) < 20 and len(value) < 100:
-                    product_specs["specifications"][key] = value
+        product_specs = json.loads(response_text)
+        return json.dumps(product_specs, ensure_ascii=False, indent=2)
         
-        # 提取价格
-        price_patterns = [
-            r'价格[：:]\s*[¥$€]?\s*([\d,]+\.?\d*)',
-            r'[¥$€]\s*([\d,]+\.?\d*)',
-            r'([\d,]+\.?\d*)\s*[元美元欧元]'
-        ]
-        for pattern in price_patterns:
-            match = re.search(pattern, text)
-            if match:
-                product_specs["price"] = match.group(1)
-                break
-        
-        # 提取功能特性（列表形式）
-        feature_keywords = ["支持", "具备", "特性", "功能", "特点"]
-        for keyword in feature_keywords:
-            if keyword in text:
-                # 提取列表项
-                list_items = re.findall(r'[•·\-\d+\.]\s*([^\n]+)', text)
-                product_specs["features"].extend([item.strip() for item in list_items[:10]])
-                break
-    
-    return json.dumps(product_specs, ensure_ascii=False, indent=2)
+    except json.JSONDecodeError as e:
+        return json.dumps({
+            "error": "JSON 解析失败",
+            "raw_response": response_text if response_text else "无响应",
+            "error_detail": str(e)
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({
+            "error": "提取信息失败",
+            "error_detail": str(e),
+            "raw_response": response_text if response_text else "无响应"
+        }, ensure_ascii=False, indent=2)
 ```
 
 ### Tool 6: 提取API信息
 
 ```python
-def extract_api_info(query: str) -> str:
+def extract_api_info(file_path: str = None) -> str:
     """
-    从技术文档中提取API接口信息
+    从技术文档中提取API接口信息（使用 qwen-max 大模型）
     
     提取内容包括：
     - API端点（URL路径）
@@ -675,55 +606,58 @@ def extract_api_info(query: str) -> str:
     - 请求参数
     - 响应格式
     - 认证方式
+    
+    Args:
+        file_path: 文档路径（可选），如果不提供则使用当前已加载的文档
     """
-    docs = vector_store.similarity_search(query, k=5)
+    # 获取文档文本
+    context_text = get_document_text(file_path)
     
-    api_info = []
+    # 如果没有文档文本，返回提示信息
+    if not context_text:
+        return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
     
-    for doc in docs:
-        text = doc.page_content
-        metadata = doc.metadata
+    # 构建 prompt
+    prompt = f"""请从以下技术文档文本中提取API接口信息，包括API端点、请求方法、请求参数、响应格式、认证方式等，并以 JSON 格式返回。
+
+                技术文档文本内容：
+                {context_text}
+
+                请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+
+    # 调用大模型提取信息
+    response_text = ""
+    try:
+        response = llm(prompt)
+        response_text = response.strip() if response else ""
         
-        # 提取API端点
-        endpoint_patterns = [
-            r'POST\s+([/\w\-{}]+)',
-            r'GET\s+([/\w\-{}]+)',
-            r'PUT\s+([/\w\-{}]+)',
-            r'DELETE\s+([/\w\-{}]+)',
-            r'端点[：:]\s*([/\w\-{}]+)',
-            r'URL[：:]\s*([/\w\-{}]+)'
-        ]
+        # 提取 JSON（处理 markdown 代码块）
+        if "```json" in response_text:
+            json_start = response_text.find("```json") + 7
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
+        elif "```" in response_text:
+            json_start = response_text.find("```") + 3
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
         
-        api_endpoints = []
-        for pattern in endpoint_patterns:
-            matches = re.findall(pattern, text, re.IGNORECASE)
-            api_endpoints.extend(matches)
+        api_info = json.loads(response_text)
+        return json.dumps(api_info, ensure_ascii=False, indent=2)
         
-        # 提取请求方法
-        methods = re.findall(r'\b(GET|POST|PUT|DELETE|PATCH)\b', text, re.IGNORECASE)
-        
-        # 提取参数（简化版）
-        param_patterns = [
-            r'参数[：:]\s*([^\n]+)',
-            r'请求参数[：:]\s*([^\n]+)',
-            r'(\w+)\s*[:：]\s*(string|int|boolean|array)'
-        ]
-        params = []
-        for pattern in param_patterns:
-            matches = re.findall(pattern, text)
-            params.extend(matches)
-        
-        if api_endpoints or methods:
-            api_info.append({
-                "file": metadata.get("file_name", "unknown"),
-                "page": metadata.get("page_number", "unknown"),
-                "endpoints": list(set(api_endpoints))[:5],
-                "methods": list(set(methods)),
-                "parameters": params[:10],
-                "snippet": text[:300]
-            })
-    
-    return json.dumps(api_info, ensure_ascii=False, indent=2)
+    except json.JSONDecodeError as e:
+        return json.dumps({
+            "error": "JSON 解析失败",
+            "raw_response": response_text if response_text else "无响应",
+            "error_detail": str(e)
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({
+            "error": "提取信息失败",
+            "error_detail": str(e),
+            "raw_response": response_text if response_text else "无响应"
+        }, ensure_ascii=False, indent=2)
 ```
 
 ### Tool 7: 数据格式化
@@ -731,7 +665,7 @@ def extract_api_info(query: str) -> str:
 ```python
 import pandas as pd
 
-def format_data(query: str) -> str:
+def format_data(file_path: str = None) -> str:
     """
     将提取的数据格式化为标准格式（JSON、CSV等）
     
@@ -739,37 +673,73 @@ def format_data(query: str) -> str:
     - JSON格式
     - CSV格式
     - 表格格式
+    
+    Args:
+        file_path: 文档路径（可选），如果不提供则使用当前已加载的文档
     """
-    # 这里简化处理，实际应该接收提取的数据
-    docs = vector_store.similarity_search(query, k=3)
+    # 获取文档文本
+    context_text = get_document_text(file_path)
     
-    # 提取数据（简化示例）
-    data_list = []
-    for doc in docs:
-        text = doc.page_content
-        # 提取键值对
-        kv_pairs = re.findall(r'([^\n：:]+)[：:]\s*([^\n]+)', text)
-        for key, value in kv_pairs[:5]:
-            data_list.append({
-                "key": key.strip(),
-                "value": value.strip(),
-                "source": doc.metadata.get("file_name", "unknown")
-            })
+    # 如果没有文档文本，返回提示信息
+    if not context_text:
+        return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
     
-    if not data_list:
-        return "未找到可格式化的数据"
-    
-    # 格式化为JSON
-    json_output = json.dumps(data_list, ensure_ascii=False, indent=2)
-    
-    # 格式化为CSV（使用pandas）
+    # 使用大模型提取结构化数据
+    prompt = f"""请从以下文本中提取所有键值对信息，并以 JSON 格式返回。
+
+                要求：
+                1. 提取所有形如"键：值"或"键:值"的键值对
+                2. 返回格式为数组，每个元素包含 key、value、source（来源文件名）
+
+                文本内容：
+                {context_text}
+
+                请返回 JSON 格式的数组，格式如下：
+                [
+                {{
+                    "key": "键名",
+                    "value": "值",
+                    "source": "文件名"
+                }}
+                ]
+
+                请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+
     try:
-        df = pd.DataFrame(data_list)
-        csv_output = df.to_csv(index=False)
-    except:
-        csv_output = "CSV格式化失败"
-    
-    return f"JSON格式：\n{json_output}\n\nCSV格式：\n{csv_output}"
+        response = llm(prompt)
+        response_text = response.strip() if response else ""
+        
+        # 提取 JSON（处理 markdown 代码块）
+        if "```json" in response_text:
+            json_start = response_text.find("```json") + 7
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
+        elif "```" in response_text:
+            json_start = response_text.find("```") + 3
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
+        
+        data_list = json.loads(response_text)
+        
+        if not data_list:
+            return "未找到可格式化的数据"
+        
+        # 格式化为JSON
+        json_output = json.dumps(data_list, ensure_ascii=False, indent=2)
+        
+        # 格式化为CSV（使用pandas）
+        try:
+            df = pd.DataFrame(data_list)
+            csv_output = df.to_csv(index=False)
+        except:
+            csv_output = "CSV格式化失败"
+        
+        return f"JSON格式：\n{json_output}\n\nCSV格式：\n{csv_output}"
+        
+    except Exception as e:
+        return f"数据格式化失败：{str(e)}"
 ```
 
 ### 组装所有Tools
@@ -778,46 +748,38 @@ def format_data(query: str) -> str:
 tools = [
     Tool(
         name="extract_invoice_info",
-        description="从发票中提取结构化信息，包括发票基本信息、销售方/购买方信息、商品明细、金额信息等。输入应为发票相关查询。",
+        description="从发票中提取结构化信息，包括发票基本信息、销售方/购买方信息、商品明细、金额信息等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
         func=extract_invoice_info
     ),
     Tool(
         name="extract_medical_bill_info",
-        description="从医疗票据中提取结构化信息，包括患者信息、医疗机构信息、就诊信息、费用明细、费用汇总等。输入应为医疗票据相关查询。",
+        description="从医疗票据中提取结构化信息，包括患者信息、医疗机构信息、就诊信息、费用明细、费用汇总等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
         func=extract_medical_bill_info
     ),
     Tool(
         name="extract_contract_info",
-        description="从合同中提取结构化信息，包括合同基本信息、合同双方信息、合同标的、关键条款、金额信息等。输入应为合同相关查询。",
+        description="从合同中提取结构化信息，包括合同基本信息、合同双方信息、合同标的、关键条款、金额信息等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
         func=extract_contract_info
     ),
     Tool(
         name="extract_resume_info",
-        description="从简历中提取结构化信息，包括个人信息、教育经历、工作经历、技能等。输入应为'提取简历信息'或类似描述。",
+        description="从简历中提取结构化信息，包括个人信息、教育经历、工作经历、技能等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
         func=extract_resume_info
     ),
     Tool(
         name="extract_product_specs",
-        description="从产品文档中提取产品规格和技术参数，包括产品名称、型号、技术参数、功能特性、价格等。输入应为产品相关查询。",
+        description="从产品文档中提取产品规格和技术参数，包括产品名称、型号、技术参数、功能特性、价格等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
         func=extract_product_specs
     ),
     Tool(
         name="extract_api_info",
-        description="从技术文档中提取API接口信息，包括API端点、请求方法、请求参数、响应格式等。输入应为API相关查询。",
+        description="从技术文档中提取API接口信息，包括API端点、请求方法、请求参数、响应格式等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
         func=extract_api_info
     ),
     Tool(
         name="format_data",
-        description="将提取的数据格式化为标准格式（JSON、CSV等）。输入应为要格式化的数据类型描述。",
+        description="将提取的数据格式化为标准格式（JSON、CSV等）。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
         func=format_data
-    ),
-    Tool(
-        name="vector_search",
-        description="基于语义检索相关文档片段。输入应为自然语言查询。",
-        func=lambda q: "\n\n".join([
-            f"[{i+1}] {doc.metadata.get('file_name', 'unknown')} (页{doc.metadata.get('page_number', '?')})\n{doc.page_content[:300]}..."
-            for i, doc in enumerate(vector_store.similarity_search(q, k=3))
-        ])
     )
 ]
 ```
@@ -826,12 +788,12 @@ tools = [
 
 ```python
 from langchain.agents import initialize_agent, AgentType
-from langchain.chat_models import ChatOpenAI
+from langchain_community.llms.tongyi import Tongyi
 
-llm = ChatOpenAI(
-    model_name="gpt-4o-mini",
-    temperature=0.2,
-    api_key=os.getenv("OPENAI_API_KEY")
+llm = Tongyi(
+    model="qwen-max",
+    dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
+    temperature=0.2,  # 使用较低温度以获得更确定性的输出
 )
 
 agent = initialize_agent(
@@ -842,25 +804,25 @@ agent = initialize_agent(
     handle_parsing_errors=True,
     agent_kwargs={
         "prefix": """你是一个专业的信息提取助手。你的任务是帮助用户：
-1. 从文档中提取结构化信息（发票、医疗票据、合同、简历、产品规格、API接口等）
-2. 将提取的信息格式化为标准格式（JSON、CSV等）
-3. 验证提取数据的完整性和准确性
+                    1. 从文档中提取结构化信息（发票、医疗票据、合同、简历、产品规格、API接口等）
+                    2. 将提取的信息格式化为标准格式（JSON、CSV等）
+                    3. 验证提取数据的完整性和准确性
 
-在回答时，请：
-- 提供结构化的提取结果
-- 使用JSON或表格格式展示数据
-- 如果数据不完整，说明缺失的部分
-- 使用工具获取准确的信息，不要猜测
-- 对于财务类文档（发票、医疗票据），确保金额和税务信息的准确性
-- 对于合同文档，重点关注关键条款和风险点
-"""
+                    在回答时，请：
+                    - 提供结构化的提取结果
+                    - 使用JSON或表格格式展示数据
+                    - 如果数据不完整，说明缺失的部分
+                    - 使用工具获取准确的信息，不要猜测
+                    - 对于财务类文档（发票、医疗票据），确保金额和税务信息的准确性
+                    - 对于合同文档，重点关注关键条款和风险点
+                    """
     }
 )
 ```
 
 ## Step 4：完整示例代码
 
-```python
+```python expandable
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
@@ -868,15 +830,12 @@ agent = initialize_agent(
 """
 
 import os
-import re
 import json
 from dotenv import load_dotenv
-from xparse_client import create_pipeline_from_config
+from xparse_client import create_pipeline_from_config, Pipeline, LocalSource
 from langchain.tools import Tool
 from langchain.agents import initialize_agent, AgentType
-from langchain.chat_models import ChatOpenAI
-from langchain_community.vectorstores import Milvus
-from langchain.embeddings import QianfanEmbeddings
+from langchain_community.llms.tongyi import Tongyi
 
 load_dotenv()
 
@@ -885,8 +844,10 @@ class InformationExtractionAgent:
     
     def __init__(self):
         self.setup_pipeline()
-        self.setup_vector_store()
+        self.setup_llm()
         self.setup_agent()
+        # 文档文本存储（实际应用中可以使用更持久化的存储）
+        self._document_texts = {}
     
     def setup_pipeline(self):
         """配置Pipeline"""
@@ -897,10 +858,8 @@ class InformationExtractionAgent:
                 "pattern": ["*.pdf", "*.docx", "*.xlsx", "*.xls", "*.png", "*.jpg"]
             },
             "destination": {
-                "type": "milvus",
-                "db_path": "./extraction_vectors.db",
-                "collection_name": "extraction_documents",
-                "dimension": 1024
+                "type": "local",
+                "output_dir": "./extraction_results"
             },
             "api_base_url": "https://api.textin.com/api/xparse",
             "api_headers": {
@@ -911,243 +870,404 @@ class InformationExtractionAgent:
                 {
                     "type": "parse",
                     "config": {"provider": "textin"}
-                },
-                {
-                    "type": "chunk",
-                    "config": {
-                        "strategy": "basic",
-                        "max_characters": 1024,
-                        "overlap": 50
-                    }
-                },
-                {
-                    "type": "embed",
-                    "config": {
-                        "provider": "qwen",
-                        "model_name": "text-embedding-v3"
-                    }
                 }
             ]
         }
     
-    def setup_vector_store(self):
-        """配置向量数据库"""
-        self.embedding = QianfanEmbeddings(model_name="text-embedding-v3")
-        self.vector_store = Milvus(
-            embedding_function=self.embedding,
-            collection_name="extraction_documents",
-            connection_args={"uri": os.getenv("MILVUS_URI", "./extraction_vectors.db")}
+    def setup_llm(self):
+        """初始化大模型"""
+        self.llm = Tongyi(
+            model="qwen-max",
+            dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
+            temperature=0,  # 使用较低温度以获得更确定性的输出
         )
+    
+    def parse_document(self, file_path: str) -> list:
+        """
+        解析单个文档，返回 elements 列表
+        
+        Args:
+            file_path: 文档路径
+            
+        Returns:
+            list: elements 列表
+        """
+        import json
+        import os
+        from copy import deepcopy
+        
+        # 创建临时配置，使用包含该文件的目录作为source
+        file_dir = os.path.dirname(os.path.abspath(file_path))
+        file_name_pattern = os.path.basename(file_path)
+        
+        # 创建临时Pipeline配置
+        temp_config = deepcopy(self.pipeline_config)
+        temp_config["source"] = {
+            "type": "local",
+            "directory": file_dir,
+            "pattern": [file_name_pattern]  # 只处理指定的文件
+        }
+        
+        # 创建Pipeline并运行（pipeline.run() 没有返回值，结果会保存到destination）
+        pipeline = create_pipeline_from_config(temp_config)
+        pipeline.run()
+        
+        # 从destination配置的输出目录读取解析结果
+        output_dir = self.pipeline_config["destination"]["output_dir"]
+        
+        # 确保输出目录存在
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # 获取文件名（不含路径和扩展名）
+        file_name = os.path.splitext(os.path.basename(file_path))[0]
+        result_file = os.path.join(output_dir, f"{file_name}.json")
+        
+        # 读取JSON文件
+        if not os.path.exists(result_file):
+            raise FileNotFoundError(
+                f"解析结果文件不存在: {result_file}\n"
+                f"请检查输出目录: {output_dir}\n"
+                f"原始文件路径: {file_path}"
+            )
+        
+        with open(result_file, 'r', encoding='utf-8') as f:
+            elements = json.load(f)
+        
+        return elements
+    
+    def aggregate_text_from_elements(self, elements: list) -> str:
+        """
+        聚合 elements 中的 text 字段，形成完整文档文本
+        
+        Args:
+            elements: elements 列表
+            
+        Returns:
+            str: 聚合后的完整文本
+        """
+        texts = []
+        for element in elements:
+            if isinstance(element, dict):
+                text = element.get('text', '')
+            else:
+                text = getattr(element, 'text', '')
+            
+            if text and text.strip():
+                texts.append(text.strip())
+        
+        return "\n\n".join(texts)
+    
+    def load_document(self, file_path: str):
+        """
+        加载并解析文档，将文本内容存储到内存中
+        
+        Args:
+            file_path: 文档路径
+        """
+        print(f"正在解析文档: {file_path}")
+        elements = self.parse_document(file_path)
+        text = self.aggregate_text_from_elements(elements)
+        self._document_texts[file_path] = text
+        print(f"文档解析完成，文本长度: {len(text)} 字符")
+    
+    def get_document_text(self, file_path: str = None) -> str:
+        """
+        获取文档文本内容
+        
+        Args:
+            file_path: 文档路径（可选），如果不提供则返回第一个文档的文本
+            
+        Returns:
+            str: 文档文本内容
+        """
+        if not self._document_texts:
+            return ""  # 如果没有加载任何文档，返回空字符串
+        
+        if file_path not in ("None", "none", None, "", "null"):
+            return self._document_texts.get(file_path, "")
+        # 如果没有指定文件，返回第一个文档的文本
+        return next(iter(self._document_texts.values()), "")
     
     def setup_agent(self):
         """配置Agent和Tools"""
         tools = [
             Tool(
                 name="extract_invoice_info",
-                description="提取发票信息",
+                description="从发票中提取结构化信息，包括发票基本信息、销售方/购买方信息、商品明细、金额信息等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
                 func=self.extract_invoice_info
             ),
             Tool(
                 name="extract_medical_bill_info",
-                description="提取医疗票据信息",
+                description="从医疗票据中提取结构化信息，包括患者信息、医疗机构信息、就诊信息、费用明细、费用汇总等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
                 func=self.extract_medical_bill_info
             ),
             Tool(
                 name="extract_contract_info",
-                description="提取合同信息",
+                description="从合同中提取结构化信息，包括合同基本信息、合同双方信息、合同标的、关键条款、金额信息等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
                 func=self.extract_contract_info
             ),
             Tool(
                 name="extract_resume_info",
-                description="提取简历信息",
+                description="从简历中提取结构化信息，包括个人信息、教育经历、工作经历、技能等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
                 func=self.extract_resume_info
             ),
             Tool(
                 name="extract_product_specs",
-                description="提取产品规格",
+                description="从产品文档中提取产品规格和技术参数，包括产品名称、型号、技术参数、功能特性、价格等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
                 func=self.extract_product_specs
             ),
             Tool(
                 name="extract_api_info",
-                description="提取API信息",
+                description="从技术文档中提取API接口信息，包括API端点、请求方法、请求参数、响应格式等。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
                 func=self.extract_api_info
             ),
             Tool(
-                name="vector_search",
-                description="语义检索",
-                func=lambda q: "\n\n".join([
-                    f"[{i+1}] {doc.metadata.get('file_name', 'unknown')}\n{doc.page_content[:300]}..."
-                    for i, doc in enumerate(self.vector_store.similarity_search(q, k=3))
-                ])
+                name="format_data",
+                description="将提取的数据格式化为标准格式（JSON、CSV等）。如果已加载文档，可以直接调用无需参数；否则需要提供文档路径。",
+                func=self.format_data
             )
         ]
         
-        llm = ChatOpenAI(
-            model_name="gpt-4o-mini",
-            temperature=0.2,
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
-        
         self.agent = initialize_agent(
             tools,
-            llm,
+            self.llm,
             agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
             verbose=True,
-            handle_parsing_errors=True
+            handle_parsing_errors=True,
+            agent_kwargs={
+                "prefix": """你是一个专业的信息提取助手。你的任务是帮助用户：
+                            1. 从文档中提取结构化信息（发票、医疗票据、合同、简历、产品规格、API接口等）
+                            2. 将提取的信息格式化为标准格式（JSON、CSV等）
+                            3. 验证提取数据的完整性和准确性
+
+                            重要提示：
+                            - 在使用提取工具之前，确保文档已经通过 load_document() 方法加载
+                            - 如果工具返回"未找到文档内容"的错误，说明需要先加载文档
+                            - 可以直接调用提取工具，无需提供文档路径（如果文档已加载）
+
+                            在回答时，请：
+                            - 提供结构化的提取结果
+                            - 使用JSON或表格格式展示数据
+                            - 如果数据不完整，说明缺失的部分
+                            - 使用工具获取准确的信息，不要猜测
+                            - 对于财务类文档（发票、医疗票据），确保金额和税务信息的准确性
+                            - 对于合同文档，重点关注关键条款和风险点
+                            """
+            }
         )
     
-    def extract_invoice_info(self, query: str) -> str:
-        """提取发票信息"""
-        docs = self.vector_store.similarity_search(query, k=5)
-        invoice_data = {
-            "invoice_info": {},
-            "seller": {},
-            "buyer": {},
-            "items": [],
-            "amounts": {}
-        }
+    def extract_invoice_info(self, file_path: str = None) -> str:
+        """提取发票信息（使用 qwen-max 大模型）"""
+        context_text = self.get_document_text(file_path)
         
-        for doc in docs:
-            text = doc.page_content
-            invoice_code_match = re.search(r'发票代码[：:]\s*([0-9]+)', text)
-            if invoice_code_match:
-                invoice_data["invoice_info"]["invoice_code"] = invoice_code_match.group(1)
-            
-            invoice_number_match = re.search(r'发票号码[：:]\s*([0-9]+)', text)
-            if invoice_number_match:
-                invoice_data["invoice_info"]["invoice_number"] = invoice_number_match.group(1)
-            
-            seller_name_match = re.search(r'销售方[：:]\s*名称[：:]\s*([^\n]+)', text)
-            if seller_name_match:
-                invoice_data["seller"]["name"] = seller_name_match.group(1).strip()
-            
-            buyer_name_match = re.search(r'购买方[：:]\s*名称[：:]\s*([^\n]+)', text)
-            if buyer_name_match:
-                invoice_data["buyer"]["name"] = buyer_name_match.group(1).strip()
-            
-            total_amount_match = re.search(r'合计[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
-            if total_amount_match:
-                invoice_data["amounts"]["total_amount"] = total_amount_match.group(1)
+        # 如果没有文档文本，返回提示信息
+        if not context_text:
+            return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
         
-        return json.dumps(invoice_data, ensure_ascii=False, indent=2)
+        prompt = f"""请从以下发票文本中提取结构化信息，并以 JSON 格式返回。
+
+                    要求提取的信息包括：
+                    1. 发票基本信息：invoice_code（发票代码）、invoice_number（发票号码）、date（开票日期）
+                    2. 销售方信息：name（名称）、tax_id（纳税人识别号）、address（地址电话）、bank_account（开户行及账号）
+                    3. 购买方信息：name（名称）、tax_id（纳税人识别号）、address（地址电话）、bank_account（开户行及账号）
+                    4. 商品明细（数组）：name、specification、unit、quantity、unit_price、amount、tax_rate、tax_amount
+                    5. 金额信息：total_amount（合计金额）、tax_amount（合计税额）、total_with_tax（价税合计）
+                    6. 其他信息：remark（备注）、payee（收款人）、reviewer（复核人）、drawer（开票人）
+
+                    请严格按照以下 JSON 格式返回，如果某个字段不存在，请使用空字符串 "" 或空对象 {{}} 或空数组 []：
+
+                    {{
+                    "invoice_info": {{"invoice_code": "", "invoice_number": "", "date": ""}},
+                    "seller": {{"name": "", "tax_id": "", "address": "", "bank_account": ""}},
+                    "buyer": {{"name": "", "tax_id": "", "address": "", "bank_account": ""}},
+                    "items": [{{"name": "", "specification": "", "unit": "", "quantity": "", "unit_price": "", "amount": "", "tax_rate": "", "tax_amount": ""}}],
+                    "amounts": {{"total_amount": "", "tax_amount": "", "total_with_tax": ""}},
+                    "other_info": {{"remark": "", "payee": "", "reviewer": "", "drawer": ""}}
+                    }}
+
+                    发票文本内容：
+                    {context_text}
+
+                    请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+        
+        return self._extract_with_llm(prompt)
     
-    def extract_resume_info(self, query: str) -> str:
-        """提取简历信息"""
-        docs = self.vector_store.similarity_search(query, k=3)
-        resume_data = {"personal_info": {}, "education": [], "work_experience": []}
+    def _extract_with_llm(self, prompt: str) -> str:
+        """
+        通用的大模型提取方法，处理JSON解析和错误处理
         
-        for doc in docs:
-            text = doc.page_content
-            name_match = re.search(r'姓名[：:]\s*([^\n]+)', text)
-            if name_match:
-                resume_data["personal_info"]["name"] = name_match.group(1).strip()
+        Args:
+            prompt: 发送给大模型的prompt
             
-            email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
-            if email_match:
-                resume_data["personal_info"]["email"] = email_match.group(0)
-        
-        return json.dumps(resume_data, ensure_ascii=False, indent=2)
+        Returns:
+            str: JSON格式的提取结果
+        """
+        try:
+            response = self.llm(prompt)
+            response_text = response.strip() if response else ""
+            
+            # 提取 JSON（处理 markdown 代码块）
+            if "```json" in response_text:
+                json_start = response_text.find("```json") + 7
+                json_end = response_text.find("```", json_start)
+                if json_end != -1:
+                    response_text = response_text[json_start:json_end].strip()
+            elif "```" in response_text:
+                json_start = response_text.find("```") + 3
+                json_end = response_text.find("```", json_start)
+                if json_end != -1:
+                    response_text = response_text[json_start:json_end].strip()
+            
+            # 验证是否为有效JSON
+            data = json.loads(response_text)
+            return json.dumps(data, ensure_ascii=False, indent=2)
+        except json.JSONDecodeError as e:
+            return json.dumps({
+                "error": "JSON 解析失败",
+                "raw_response": response_text if 'response_text' in locals() else "无响应",
+                "error_detail": str(e)
+            }, ensure_ascii=False, indent=2)
+        except Exception as e:
+            return json.dumps({
+                "error": "提取信息失败",
+                "error_detail": str(e),
+                "raw_response": response_text if 'response_text' in locals() else "无响应"
+            }, ensure_ascii=False, indent=2)
     
-    def extract_product_specs(self, query: str) -> str:
-        """提取产品规格"""
-        docs = self.vector_store.similarity_search(query, k=3)
-        specs = {"product_name": "", "specifications": {}}
+    def extract_resume_info(self, file_path: str = None) -> str:
+        """提取简历信息（使用 qwen-max 大模型）"""
+        context_text = self.get_document_text(file_path)
         
-        for doc in docs:
-            text = doc.page_content
-            name_match = re.search(r'产品名称[：:]\s*([^\n]+)', text)
-            if name_match:
-                specs["product_name"] = name_match.group(1).strip()
+        # 如果没有文档文本，返回提示信息
+        if not context_text:
+            return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
         
-        return json.dumps(specs, ensure_ascii=False, indent=2)
+        prompt = f"""请从以下简历文本中提取结构化信息，包括个人信息、教育经历、工作经历、技能等，并以 JSON 格式返回。
+
+                    简历文本内容：
+                    {context_text}
+
+                    请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+        
+        return self._extract_with_llm(prompt)
     
-    def extract_api_info(self, query: str) -> str:
-        """提取API信息"""
-        docs = self.vector_store.similarity_search(query, k=3)
-        api_info = []
+    def extract_product_specs(self, file_path: str = None) -> str:
+        """提取产品规格（使用 qwen-max 大模型）"""
+        context_text = self.get_document_text(file_path)
         
-        for doc in docs:
-            text = doc.page_content
-            endpoints = re.findall(r'POST\s+([/\w\-{}]+)|GET\s+([/\w\-{}]+)', text)
-            if endpoints:
-                api_info.append({
-                    "file": doc.metadata.get("file_name", "unknown"),
-                    "endpoints": [e[0] or e[1] for e in endpoints[:5]]
-                })
+        # 如果没有文档文本，返回提示信息
+        if not context_text:
+            return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
         
-        return json.dumps(api_info, ensure_ascii=False, indent=2)
+        prompt = f"""请从以下产品文档文本中提取产品规格和技术参数，包括产品名称、型号、技术参数、功能特性、价格等，并以 JSON 格式返回。
+
+                    产品文档文本内容：
+                    {context_text}
+
+                    请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+        
+        return self._extract_with_llm(prompt)
     
-    def extract_medical_bill_info(self, query: str) -> str:
-        """提取医疗票据信息"""
-        docs = self.vector_store.similarity_search(query, k=5)
-        medical_bill_data = {
-            "patient_info": {},
-            "hospital_info": {},
-            "visit_info": {},
-            "fee_summary": {}
-        }
+    def extract_api_info(self, file_path: str = None) -> str:
+        """提取API信息（使用 qwen-max 大模型）"""
+        context_text = self.get_document_text(file_path)
         
-        for doc in docs:
-            text = doc.page_content
-            patient_name_match = re.search(r'患者姓名[：:]\s*([^\n]+)|姓名[：:]\s*([^\n]+)', text)
-            if patient_name_match:
-                medical_bill_data["patient_info"]["name"] = (patient_name_match.group(1) or patient_name_match.group(2)).strip()
-            
-            hospital_name_match = re.search(r'医院[：:]\s*([^\n]+)', text)
-            if hospital_name_match:
-                medical_bill_data["hospital_info"]["name"] = hospital_name_match.group(1).strip()
-            
-            diagnosis_match = re.search(r'诊断[：:]\s*([^\n]+)', text)
-            if diagnosis_match:
-                medical_bill_data["visit_info"]["diagnosis"] = diagnosis_match.group(1).strip()
-            
-            total_fee_match = re.search(r'总费用[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
-            if total_fee_match:
-                medical_bill_data["fee_summary"]["total_fee"] = total_fee_match.group(1)
+        # 如果没有文档文本，返回提示信息
+        if not context_text:
+            return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
         
-        return json.dumps(medical_bill_data, ensure_ascii=False, indent=2)
+        prompt = f"""请从以下技术文档文本中提取API接口信息，包括API端点、请求方法、请求参数、响应格式、认证方式等，并以 JSON 格式返回。
+
+                    技术文档文本内容：
+                    {context_text}
+
+                    请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+        
+        return self._extract_with_llm(prompt)
     
-    def extract_contract_info(self, query: str) -> str:
-        """提取合同信息"""
-        docs = self.vector_store.similarity_search(query, k=5)
-        contract_data = {
-            "contract_info": {},
-            "party_a": {},
-            "party_b": {},
-            "amounts": {},
-            "key_terms": {}
-        }
+    def extract_medical_bill_info(self, file_path: str = None) -> str:
+        """提取医疗票据信息（使用 qwen-max 大模型）"""
+        context_text = self.get_document_text(file_path)
         
-        for doc in docs:
-            text = doc.page_content
-            contract_number_match = re.search(r'合同编号[：:]\s*([^\n]+)', text)
-            if contract_number_match:
-                contract_data["contract_info"]["contract_number"] = contract_number_match.group(1).strip()
-            
-            party_a_name_match = re.search(r'甲方[：:].*?名称[：:]\s*([^\n]+)', text, re.DOTALL)
-            if party_a_name_match:
-                contract_data["party_a"]["name"] = party_a_name_match.group(1).strip()
-            
-            party_b_name_match = re.search(r'乙方[：:].*?名称[：:]\s*([^\n]+)', text, re.DOTALL)
-            if party_b_name_match:
-                contract_data["party_b"]["name"] = party_b_name_match.group(1).strip()
-            
-            contract_amount_match = re.search(r'合同总金额[：:]\s*[¥￥]?\s*([\d,]+\.?\d*)', text)
-            if contract_amount_match:
-                contract_data["amounts"]["total_amount"] = contract_amount_match.group(1)
+        # 如果没有文档文本，返回提示信息
+        if not context_text:
+            return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
         
-        return json.dumps(contract_data, ensure_ascii=False, indent=2)
+        prompt = f"""请从以下医疗票据文本中提取结构化信息，包括患者信息、医疗机构信息、就诊信息、费用明细、费用汇总等，并以 JSON 格式返回。
+
+                    医疗票据文本内容：
+                    {context_text}
+
+                    请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+        
+        return self._extract_with_llm(prompt)
     
-    def process_documents(self):
-        """处理文档"""
-        print("=" * 60)
-        print("开始处理文档...")
-        print("=" * 60)
+    def extract_contract_info(self, file_path: str = None) -> str:
+        """提取合同信息（使用 qwen-max 大模型）"""
+        context_text = self.get_document_text(file_path)
         
-        pipeline = create_pipeline_from_config(self.pipeline_config)
-        pipeline.run()
+        # 如果没有文档文本，返回提示信息
+        if not context_text:
+            return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
         
-        print("\n文档处理完成！")
+        prompt = f"""请从以下合同文本中提取结构化信息，包括合同基本信息、合同双方信息、合同标的、关键条款、金额信息等，并以 JSON 格式返回。
+
+                    合同文本内容：
+                    {context_text}
+
+                    请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+        
+        return self._extract_with_llm(prompt)
+    
+    def format_data(self, file_path: str = None) -> str:
+        """数据格式化"""
+        import pandas as pd
+        
+        context_text = self.get_document_text(file_path)
+        
+        # 如果没有文档文本，返回提示信息
+        if not context_text:
+            return "错误：未找到文档内容。请先使用 load_document() 方法加载文档，或提供文档路径。"
+        
+        prompt = f"""请从以下文本中提取所有键值对信息，并以 JSON 格式返回。
+
+                    要求：
+                    1. 提取所有形如"键：值"或"键:值"的键值对
+                    2. 返回格式为数组，每个元素包含 key、value、source（来源文件名）
+
+                    文本内容：
+                    {context_text}
+
+                    请返回 JSON 格式的数组，格式如下：
+                    [
+                    {{
+                        "key": "键名",
+                        "value": "值",
+                        "source": "文件名"
+                    }}
+                    ]
+
+                    请只返回 JSON 格式的数据，不要包含任何其他解释或说明文字。"""
+        
+        try:
+            result_json = self._extract_with_llm(prompt)
+            data_list = json.loads(result_json)
+            
+            if isinstance(data_list, dict) and "error" in data_list:
+                return result_json
+            
+            if not data_list:
+                return "未找到可格式化的数据"
+            
+            # 格式化为CSV
+            try:
+                df = pd.DataFrame(data_list)
+                csv_output = df.to_csv(index=False)
+                return f"JSON格式：\n{result_json}\n\nCSV格式：\n{csv_output}"
+            except Exception as e:
+                return f"JSON格式：\n{result_json}\n\nCSV格式化失败：{str(e)}"
+        except Exception as e:
+            return f"数据格式化失败：{str(e)}"
     
     def query(self, question: str) -> str:
         """查询Agent"""
@@ -1158,8 +1278,10 @@ def main():
     """主函数"""
     agent = InformationExtractionAgent()
     
-    # 1. 处理文档（首次运行）
-    # agent.process_documents()
+    # 1. 加载文档
+    document_path = "./extraction_documents/invoice.pdf"  # 示例路径
+    if os.path.exists(document_path):
+        agent.load_document(document_path)
     
     # 2. 查询示例
     questions = [
@@ -1189,6 +1311,11 @@ if __name__ == "__main__":
 
 ```python
 agent = InformationExtractionAgent()
+
+# 1. 加载文档
+agent.load_document("./extraction_documents/invoice.pdf")
+
+# 2. 提取信息
 response = agent.query("从发票中提取发票代码、发票号码、销售方和购买方信息、商品明细和金额")
 print(response)
 ```
@@ -1196,6 +1323,10 @@ print(response)
 ### 示例2：提取医疗票据信息
 
 ```python
+# 加载医疗票据文档
+agent.load_document("./extraction_documents/medical_bill.pdf")
+
+# 提取信息
 response = agent.query("从医疗票据中提取患者姓名、医院名称、诊断结果、总费用和医保支付金额")
 print(response)
 ```
@@ -1203,6 +1334,10 @@ print(response)
 ### 示例3：提取合同信息
 
 ```python
+# 加载合同文档
+agent.load_document("./extraction_documents/contract.pdf")
+
+# 提取信息
 response = agent.query("从合同中提取合同编号、甲方和乙方信息、合同金额、付款方式和违约责任")
 print(response)
 ```
@@ -1210,6 +1345,10 @@ print(response)
 ### 示例4：提取简历信息
 
 ```python
+# 加载简历文档
+agent.load_document("./extraction_documents/resume.pdf")
+
+# 提取信息
 response = agent.query("从简历中提取姓名、联系方式、教育经历和工作经历")
 print(response)
 ```
@@ -1217,6 +1356,10 @@ print(response)
 ### 示例5：提取产品规格
 
 ```python
+# 加载产品文档
+agent.load_document("./extraction_documents/product_spec.pdf")
+
+# 提取信息
 response = agent.query("从产品文档中提取产品名称、型号、技术参数和价格")
 print(response)
 ```
@@ -1224,48 +1367,54 @@ print(response)
 ### 示例6：提取API信息
 
 ```python
+# 加载技术文档
+agent.load_document("./extraction_documents/api_docs.pdf")
+
+# 提取信息
 response = agent.query("从技术文档中提取所有API端点、请求方法和参数")
 print(response)
 ```
 
 ## 最佳实践
 
-1. **文档预处理**：确保文档格式统一，命名规范
-2. **分块策略**：使用 `basic` 策略快速处理，适合信息提取场景
-3. **表格识别**：确保表格结构完整提取，使用HTML格式保留结构
-4. **数据验证**：提取后验证数据完整性和准确性
-5. **批量处理**：支持批量处理，提高效率
-6. **格式标准化**：将提取的数据转换为标准格式（JSON、CSV），便于后续处理
-7. **财务文档处理**：
+1. **解析优化**：使用 TextIn 解析引擎，对表格和列表识别效果好
+2. **批量处理**：支持批量处理多个文档，提高效率
+3. **格式标准化**：将提取的数据转换为标准格式（JSON、CSV），便于后续处理
+4. **财务文档处理**：
    - 发票提取时重点关注发票代码、号码、金额等关键信息
    - 医疗票据提取时注意区分自费、医保支付等不同费用类型
    - 确保金额计算的准确性，支持财务系统对接
-8. **合同文档处理**：
+5. **合同文档处理**：
    - 重点关注合同双方信息、合同金额、关键条款
    - 识别违约责任、争议解决等重要条款
    - 提取合同有效期，便于合同管理
-9. **场景适配**：根据不同文档类型调整提取策略和正则表达式模式
-10. **错误处理**：对提取失败的情况进行记录和人工复核
+6. **Prompt 优化**：针对不同文档类型优化 prompt，明确提取字段和格式要求，提高提取准确率
+7. **错误处理**：对提取失败的情况进行记录和人工复核，处理 JSON 解析错误
+8. **文档管理**：在实际应用中，建议使用持久化存储（如数据库）管理文档文本，而不是内存字典
+9. **性能优化**：对于长文档，可以考虑分段处理或使用流式处理，避免一次性加载过大的文本
 
 ## 常见问题
 
 **Q: 如何提高提取准确率？**  
-A: 1) 优化文档格式，确保结构清晰；2) 使用更精确的正则表达式；3) 结合大模型进行后处理。
+A: 1) 优化文档格式，确保结构清晰；2) 优化 prompt，明确提取字段和格式要求；3) 使用 qwen-max 大模型进行提取，能更好地理解文档语义；4) 对提取结果进行验证和校验。
 
 **Q: 如何处理格式不统一的文档？**  
 A: 1) 先统一文档格式；2) 使用多种提取策略；3) 人工校验和修正。
 
 **Q: 如何批量处理大量文档？**  
-A: 1) 使用Pipeline的批量处理功能；2) 并行处理多个文档；3) 使用队列管理任务。
+A: 1) 遍历文档目录，逐个调用 `load_document()` 加载文档；2) 并行处理多个文档（使用多线程或异步）；3) 使用队列管理任务，避免内存溢出。
 
 **Q: 发票信息提取不准确怎么办？**  
-A: 1) 确保发票图片清晰，OCR识别准确；2) 优化正则表达式匹配模式；3) 对于特殊格式的发票，可以添加自定义提取规则。
+A: 1) 确保发票图片清晰，OCR识别准确；2) 优化 prompt，明确发票字段的提取要求；3) 对于特殊格式的发票，可以在 prompt 中添加示例或特殊说明；4) 检查解析结果，确保 elements 中的文本完整。
 
 **Q: 医疗票据的费用明细如何提取？**  
-A: 1) 优先使用表格识别功能提取费用明细表；2) 结合正则表达式匹配费用项目；3) 区分医保支付、自费等不同费用类型。
+A: 1) 优先使用表格识别功能提取费用明细表；2) 在 prompt 中明确费用明细的字段要求（项目名称、数量、单价、金额、医保类型等）；3) 使用大模型提取，能更好地理解表格结构和语义；4) 区分医保支付、自费等不同费用类型。
 
 **Q: 合同关键条款如何识别？**  
-A: 1) 使用语义检索找到相关条款；2) 结合关键词匹配（如"违约责任"、"争议解决"等）；3) 提取完整条款内容，不要截断。
+A: 1) 在 prompt 中明确要求提取关键条款（如"违约责任"、"争议解决"等）；2) 使用大模型理解合同语义，识别重要条款；3) 提取完整条款内容，不要截断。
+
+**Q: 文档太长导致大模型无法处理怎么办？**  
+A: 1) 对于超长文档，可以按页面或章节分段处理；2) 只提取关键部分的信息；3) 使用支持更长上下文的模型；4) 考虑使用流式处理或分块提取策略。
 
 ## 相关文档
 
