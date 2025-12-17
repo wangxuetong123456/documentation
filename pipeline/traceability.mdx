@@ -272,7 +272,6 @@ print(json.dumps(trace_info, indent=2, ensure_ascii=False))
 
 ```python
 from PIL import Image, ImageDraw, ImageFont
-import json
 
 def visualize_elements_on_page(page_image_path, elements, output_path):
     """
@@ -373,7 +372,7 @@ visualize_elements_on_page(
 在 RAG 应用中，当用户查询得到结果时，可以在原始文档上高亮显示匹配的元素：
 
 ```python
-def highlight_search_results(page_image_path, matched_elements, query_text, output_path):
+def highlight_search_results(page_image_path, matched_elements, output_path):
     """
     在原始页面上高亮显示检索结果
     
