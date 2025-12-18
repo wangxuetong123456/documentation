@@ -85,6 +85,7 @@
                       "pipeline/tutorial/agent-tutorial"
                     ]
                   },
+                  "pipeline/tutorial/agentic-rag-tutorial",
                   "pipeline/tutorial/rag-tutorial"
                 ]
               },
