@@ -198,8 +198,8 @@ def aggregate_text_from_elements(elements: list) -> str:
 首先，我们需要一个全局的文档文本存储，用于存储当前处理的文档内容：
 
 ```python
-from langchain.tools import Tool
-from langchain_community.llms.tongyi import Tongyi
+from langchain_core.tools import Tool
+from langchain_community.chat_models import ChatTongyi
 import os
 import json
 
@@ -207,7 +207,7 @@ import json
 _document_texts = {}
 
 # 初始化 qwen-max 大模型
-llm = Tongyi(
+llm = ChatTongyi(
     model="qwen-max",
     dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
     temperature=0,  # 使用较低温度以获得更确定性的输出
@@ -283,10 +283,11 @@ def extract_invoice_info(file_path: str = None) -> str:
     # 调用大模型提取信息
     response_text = ""
     try:
-        response = llm(prompt)
+        from langchain_core.messages import HumanMessage
+        response = llm.invoke([HumanMessage(content=prompt)])
         
         # 尝试从响应中提取 JSON（可能包含 markdown 代码块）
-        response_text = response.strip() if response else ""
+        response_text = response.content.strip() if response.content else ""
         
         # 如果响应包含 markdown 代码块，提取其中的 JSON
         if "```json" in response_text:
@@ -790,23 +791,20 @@ tools = [
 ## Step 3：配置 LangChain Agent
 
 ```python
-from langchain.agents import initialize_agent, AgentType
-from langchain_community.llms.tongyi import Tongyi
+from langchain.agents import create_agent
+from langchain_community.chat_models import ChatTongyi
 
-llm = Tongyi(
+llm = ChatTongyi(
     model="qwen-max",
     dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
     temperature=0.2,  # 使用较低温度以获得更确定性的输出
 )
 
-agent = initialize_agent(
-    tools,
-    llm,
-    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True,
-    handle_parsing_errors=True,
-    agent_kwargs={
-        "prefix": """你是一个专业的信息提取助手。你的任务是帮助用户：
+agent = create_agent(
+    model=llm,
+    tools=tools,
+    debug=True,
+    system_prompt="""你是一个专业的信息提取助手。你的任务是帮助用户：
                     1. 从文档中提取结构化信息（发票、医疗票据、合同、简历、产品规格、API接口等）
                     2. 将提取的信息格式化为标准格式（JSON、CSV等）
                     3. 验证提取数据的完整性和准确性
@@ -819,7 +817,6 @@ agent = initialize_agent(
                     - 对于财务类文档（发票、医疗票据），确保金额和税务信息的准确性
                     - 对于合同文档，重点关注关键条款和风险点
                     """
-    }
 )
 ```
 
@@ -836,9 +833,9 @@ import os
 import json
 from dotenv import load_dotenv
 from xparse_client import create_pipeline_from_config, Pipeline, LocalSource
-from langchain.tools import Tool
-from langchain.agents import initialize_agent, AgentType
-from langchain_community.llms.tongyi import Tongyi
+from langchain_core.tools import Tool
+from langchain.agents import create_agent
+from langchain_community.chat_models import ChatTongyi
 
 load_dotenv()
 
@@ -879,7 +876,7 @@ class InformationExtractionAgent:
     
     def setup_llm(self):
         """初始化大模型"""
-        self.llm = Tongyi(
+        self.llm = ChatTongyi(
             model="qwen-max",
             dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
             temperature=0,  # 使用较低温度以获得更确定性的输出
@@ -1031,14 +1028,11 @@ class InformationExtractionAgent:
             )
         ]
         
-        self.agent = initialize_agent(
-            tools,
-            self.llm,
-            agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-            verbose=True,
-            handle_parsing_errors=True,
-            agent_kwargs={
-                "prefix": """你是一个专业的信息提取助手。你的任务是帮助用户：
+        self.agent = create_agent(
+            model=self.llm,
+            tools=tools,
+            debug=True,
+            system_prompt="""你是一个专业的信息提取助手。你的任务是帮助用户：
                             1. 从文档中提取结构化信息（发票、医疗票据、合同、简历、产品规格、API接口等）
                             2. 将提取的信息格式化为标准格式（JSON、CSV等）
                             3. 验证提取数据的完整性和准确性
@@ -1056,7 +1050,6 @@ class InformationExtractionAgent:
                             - 对于财务类文档（发票、医疗票据），确保金额和税务信息的准确性
                             - 对于合同文档，重点关注关键条款和风险点
                             """
-            }
         )
     
     def extract_invoice_info(self, file_path: str = None) -> str:
@@ -1106,8 +1099,9 @@ class InformationExtractionAgent:
             str: JSON格式的提取结果
         """
         try:
-            response = self.llm(prompt)
-            response_text = response.strip() if response else ""
+            from langchain_core.messages import HumanMessage
+            response = self.llm.invoke([HumanMessage(content=prompt)])
+            response_text = response.content.strip() if response.content else ""
             
             # 提取 JSON（处理 markdown 代码块）
             if "```json" in response_text:
@@ -1274,8 +1268,11 @@ class InformationExtractionAgent:
     
     def query(self, question: str) -> str:
         """查询Agent"""
-        response = self.agent.invoke({"input": question})
-        return response["output"]
+        from langchain_core.messages import HumanMessage
+        response = self.agent.invoke({
+            "messages": [HumanMessage(content=question)]
+        })
+        return response["messages"][-1].content
 
 def main():
     """主函数"""
@@ -1289,11 +1286,11 @@ def main():
     # 2. 查询示例
     questions = [
         "从发票中提取发票代码、发票号码、销售方和购买方信息、商品明细和金额",
-        "从医疗票据中提取患者信息、医院信息、诊断结果和费用明细",
-        "从合同中提取合同编号、合同双方信息、合同金额和关键条款",
-        "从简历中提取所有个人信息、教育经历和工作经历",
-        "从产品文档中提取产品规格和技术参数",
-        "从技术文档中提取所有API接口信息",
+        # "从医疗票据中提取患者信息、医院信息、诊断结果和费用明细",
+        # "从合同中提取合同编号、合同双方信息、合同金额和关键条款",
+        # "从简历中提取所有个人信息、教育经历和工作经历",
+        # "从产品文档中提取产品规格和技术参数",
+        # "从技术文档中提取所有API接口信息",
         "将提取的数据格式化为JSON格式"
     ]
     

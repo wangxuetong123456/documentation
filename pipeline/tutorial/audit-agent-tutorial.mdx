@@ -133,7 +133,7 @@ def run_audit_pipeline() -> None:
 ### Tool 1: 提取财务数据
 
 ```python
-from langchain.tools import Tool
+from langchain_core.tools import Tool
 from langchain_milvus import Milvus
 from langchain_community.embeddings import DashScopeEmbeddings
 import re
@@ -397,24 +397,21 @@ tools = [
 ## Step 3：配置 LangChain Agent
 
 ```python
-from langchain.agents import initialize_agent, AgentType
-from langchain_community.llms.tongyi import Tongyi
+from langchain.agents import create_agent
+from langchain_community.chat_models import ChatTongyi
 import os
 
-llm = Tongyi(
+llm = ChatTongyi(
     model="qwen-max",
     dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
     temperature=0,  # 使用较低温度以获得更确定性的输出
 )
 
-agent = initialize_agent(
-    tools,
-    llm,
-    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True,
-    handle_parsing_errors=True,
-    agent_kwargs={
-        "prefix": """你是一个专业的财务审计助手。你的任务是帮助审计人员：
+agent = create_agent(
+    model=llm,
+    tools=tools,
+    debug=True,
+    system_prompt="""你是一个专业的财务审计助手。你的任务是帮助审计人员：
 1. 从财务文档中提取关键信息
 2. 检查文档的合规性
 3. 检测数据异常
@@ -426,7 +423,6 @@ agent = initialize_agent(
 - 如果发现问题，说明问题的严重程度和建议的处理方式
 - 使用工具获取准确的信息，不要猜测
 """
-    }
 )
 ```
 
@@ -444,9 +440,9 @@ import re
 import json
 from dotenv import load_dotenv
 from xparse_client import create_pipeline_from_config
-from langchain.tools import Tool
-from langchain.agents import initialize_agent, AgentType
-from langchain_community.llms.tongyi import Tongyi
+from langchain_core.tools import Tool
+from langchain.agents import create_agent
+from langchain_community.chat_models import ChatTongyi
 from langchain_milvus import Milvus
 from langchain_community.embeddings import DashScopeEmbeddings
 
@@ -548,18 +544,16 @@ class AuditAgent:
             )
         ]
         
-        llm = Tongyi(
+        llm = ChatTongyi(
             model="qwen-max",
             dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
             temperature=0,  # 使用较低温度以获得更确定性的输出
         )
         
-        self.agent = initialize_agent(
-            tools,
-            llm,
-            agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-            verbose=True,
-            handle_parsing_errors=True
+        self.agent = create_agent(
+            model=llm,
+            tools=tools,
+            debug=True
         )
     
     def extract_financial_data(self, query: str) -> str:
@@ -643,8 +637,11 @@ class AuditAgent:
     
     def query(self, question: str) -> str:
         """查询Agent"""
-        response = self.agent.invoke({"input": question})
-        return response["output"]
+        from langchain_core.messages import HumanMessage
+        response = self.agent.invoke({
+            "messages": [HumanMessage(content=question)]
+        })
+        return response["messages"][-1].content
 
 def main():
     """主函数"""
