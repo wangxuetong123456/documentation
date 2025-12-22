@@ -436,7 +436,7 @@ def extract_contract_info(file_path: str = None) -> str:
     try:
         from langchain_core.messages import HumanMessage
         response = llm.invoke([HumanMessage(content=prompt)])
-        response_text = response.strip() if response else ""
+        response_text = response.content.strip() if response.content else ""
         
         # 提取 JSON（处理 markdown 代码块）
         if "```json" in response_text:
