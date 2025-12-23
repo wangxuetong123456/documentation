@@ -344,18 +344,27 @@ Agent 会自动判断：
 
 ```python
 from collections import defaultdict
+from langchain_core.messages import HumanMessage, AIMessage
 
 # 存储每个会话的历史
 chat_history = defaultdict(list)
 
 def chat_with_agent(query: str, session_id: str = "default"):
+    # 构建消息列表：先添加历史消息，再添加当前用户消息
+    messages = chat_history[session_id].copy()
+    messages.append(HumanMessage(content=query))
+    
     response = agent.invoke({
-        "input": query,
-        "chat_history": chat_history[session_id]
+        "messages": messages
     })
-    # 保存对话历史
-    chat_history[session_id].append((query, response["output"]))
-    return response["output"]
+    
+    # 保存对话历史：添加用户消息和 AI 回复
+    chat_history[session_id].append(HumanMessage(content=query))
+    # 从响应中获取最后一条消息（AI 的回复）
+    ai_response = response["messages"][-1].content
+    chat_history[session_id].append(AIMessage(content=ai_response))
+    
+    return ai_response
 ```
 
 ### 2. 添加限流保护
