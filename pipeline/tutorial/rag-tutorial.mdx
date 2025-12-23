@@ -19,6 +19,29 @@ RAG 的核心流程包括：
 
 xParse 专注于解决第一步和第二步，为您提供端到端的文档处理能力。
 
+## 环境准备
+
+首先安装必要的依赖：
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install xparse-client langchain langchain-community langchain-core \
+            langchain-milvus python-dotenv
+```
+
+创建 `.env` 文件存储配置：
+
+```bash
+# .env
+XTI_APP_ID=your-app-id
+XTI_SECRET_CODE=your-secret-code
+DASHSCOPE_API_KEY=your-dashscope-key
+```
+
+> 提示：`XTI_APP_ID` 与 `XTI_SECRET_CODE` 参考 [API Key](/pipeline/api-key)，请登录 [Textin 工作台](https://www.textin.com/console/dashboard/setting) 获取。示例中使用 `通义千问` 的大模型能力，其他模型用法类似。
+
+下面我们将通过三个实际场景，展示如何构建 RAG 应用。
+
 ## RAG 完整流程
 
 ```
@@ -62,6 +85,10 @@ xParse 专注于解决第一步和第二步，为您提供端到端的文档处�
 
 ```python
 from xparse_client import create_pipeline_from_config
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 config = {
     # 数据源：本地文档目录
@@ -82,8 +109,8 @@ config = {
     # API 配置
     'api_base_url': 'https://api.textin.com/api/xparse',
     'api_headers': {
-        'x-ti-app-id': 'your-app-id',
-        'x-ti-secret-code': 'your-secret-code'
+        'x-ti-app-id': os.getenv('XTI_APP_ID'),
+        'x-ti-secret-code': os.getenv('XTI_SECRET_CODE')
     },
     
     # Stages 配置：定义处理流程
@@ -129,8 +156,12 @@ pipeline.run()
 """
 
 from xparse_client import create_pipeline_from_config
-from pymilvus import MilvusClient
-import json
+from langchain_milvus import Milvus
+from langchain_community.embeddings import DashScopeEmbeddings
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def build_knowledge_base():
     """构建知识库"""
@@ -153,8 +184,8 @@ def build_knowledge_base():
         },
         'api_base_url': 'https://api.textin.com/api/xparse',
         'api_headers': {
-            'x-ti-app-id': 'your-app-id',
-            'x-ti-secret-code': 'your-secret-code'
+            'x-ti-app-id': os.getenv('XTI_APP_ID'),
+            'x-ti-secret-code': os.getenv('XTI_SECRET_CODE')
         },
         'stages': [
             {
@@ -189,28 +220,29 @@ def build_knowledge_base():
 
 def query_knowledge_base(question: str, top_k: int = 5):
     """查询知识库"""
-    # 连接 Milvus
-    client = MilvusClient(uri='./kb_vectors.db')
+    # 使用与 Pipeline 相同的 embedding 配置
+    embedding = DashScopeEmbeddings(model="text-embedding-v4")
     
-    # 将问题向量化（这里需要调用 embed API，简化示例）
-    # 实际使用时，需要调用相同的 embed API 将问题转换为向量
-    query_vector = [0.1] * 1024  # 示例向量，实际需要调用 API
-    
-    # 检索相似文档
-    results = client.search(
-        collection_name='knowledge_base',
-        data=[query_vector],
-        limit=top_k,
-        search_params={"metric_type": "COSINE", "params": {"nprobe": 10}}
+    # 连接 Milvus 向量存储
+    vector_store = Milvus(
+        embedding_function=embedding,
+        collection_name="knowledge_base",
+        connection_args={"uri": "./kb_vectors.db"},
+        vector_field="embeddings",
+        primary_field="element_id",
+        text_field="text",
+        enable_dynamic_field=True
     )
     
-    print(f"\n问题: {question}")
-    print(f"\n找到 {len(results[0])} 个相关文档片段:\n")
+    # 检索相似文档
+    docs = vector_store.similarity_search(question, k=top_k)
     
-    for i, result in enumerate(results[0], 1):
-        print(f"{i}. 相似度: {result['distance']:.4f}")
-        print(f"   文档: {result['entity'].get('metadata', {}).get('file_name', 'N/A')}")
-        print(f"   内容: {result['entity'].get('text', '')[:200]}...")
+    print(f"\n问题: {question}")
+    print(f"\n找到 {len(docs)} 个相关文档片段:\n")
+    
+    for i, doc in enumerate(docs, 1):
+        print(f"{i}. 文档: {doc.metadata.get('filename', 'N/A')}")
+        print(f"   内容: {doc.page_content[:200]}...")
         print()
 
 if __name__ == '__main__':
@@ -244,33 +276,32 @@ if __name__ == '__main__':
 
 ```python
 from xparse_client import create_pipeline_from_config
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 config = {
-    # 数据源：S3 存储的法律文档
+    # 数据源：本地法律文档
     'source': {
-        'type': 's3',
-        'endpoint': 'https://your-s3-endpoint.com',
-        'access_key': 'your-access-key',
-        'secret_key': 'your-secret-key',
-        'bucket': 'legal-documents',
-        'prefix': 'cases/',
-        'region': 'us-east-1'
+        'type': 'local',
+        'directory': './legal_documents',
+        'pattern': ['*.pdf']
     },
     
-    # 目标存储：Zilliz 云端向量数据库
+    # 目标存储：本地 Milvus 向量数据库
     'destination': {
-        'type': 'zilliz',
-        'db_path': 'https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
+        'type': 'milvus',
+        'db_path': './legal_vectors.db',
         'collection_name': 'legal_documents',
-        'dimension': 1024,
-        'api_key': 'your-zilliz-api-key'
+        'dimension': 1024
     },
     
     # API 配置
     'api_base_url': 'https://api.textin.com/api/xparse',
     'api_headers': {
-        'x-ti-app-id': 'your-app-id',
-        'x-ti-secret-code': 'your-secret-code'
+        'x-ti-app-id': os.getenv('XTI_APP_ID'),
+        'x-ti-secret-code': os.getenv('XTI_SECRET_CODE')
     },
     
     # Stages 配置：定义处理流程
@@ -315,8 +346,13 @@ pipeline.run()
 """
 
 from xparse_client import create_pipeline_from_config
-from pymilvus import MilvusClient
+from langchain_milvus import Milvus
+from langchain_community.embeddings import DashScopeEmbeddings
 from typing import List, Dict
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def build_legal_document_index():
     """构建法律文档索引"""
@@ -326,25 +362,20 @@ def build_legal_document_index():
     
     config = {
         'source': {
-            'type': 's3',
-            'endpoint': 'https://your-s3-endpoint.com',
-            'access_key': 'your-access-key',
-            'secret_key': 'your-secret-key',
-            'bucket': 'legal-documents',
-            'prefix': 'cases/',
-            'region': 'us-east-1'
+            'type': 'local',
+            'directory': './legal_documents',
+            'pattern': ['*.pdf']
         },
         'destination': {
-            'type': 'zilliz',
-            'db_path': 'https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
+            'type': 'milvus',
+            'db_path': './legal_vectors.db',
             'collection_name': 'legal_documents',
-            'dimension': 1024,
-            'api_key': 'your-zilliz-api-key'
+            'dimension': 1024
         },
         'api_base_url': 'https://api.textin.com/api/xparse',
         'api_headers': {
-            'x-ti-app-id': 'your-app-id',
-            'x-ti-secret-code': 'your-secret-code'
+            'x-ti-app-id': os.getenv('XTI_APP_ID'),
+            'x-ti-secret-code': os.getenv('XTI_SECRET_CODE')
         },
         'stages': [
             {
@@ -379,41 +410,41 @@ def build_legal_document_index():
 
 def search_legal_documents(query: str, case_type: str = None, top_k: int = 10) -> List[Dict]:
     """检索法律文档"""
-    # 连接 Zilliz
-    client = MilvusClient(
-        uri='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
-        token='your-zilliz-api-key'
+    # 使用与 Pipeline 相同的 embedding 配置
+    embedding = DashScopeEmbeddings(model="text-embedding-v4")
+    
+    # 连接本地 Milvus 向量存储
+    vector_store = Milvus(
+        embedding_function=embedding,
+        collection_name="legal_documents",
+        connection_args={"uri": "./legal_vectors.db"},
+        vector_field="embeddings",
+        primary_field="element_id",
+        text_field="text",
+        enable_dynamic_field=True
     )
     
-    # 将查询向量化（需要调用 embed API）
-    query_vector = [0.1] * 1024  # 示例，实际需要调用 API
+    # 检索相似文档
+    docs = vector_store.similarity_search(query, k=top_k)
     
-    # 构建过滤条件
-    expr = None
-    if case_type:
-        expr = f'metadata["case_type"] == "{case_type}"'
+    # 格式化结果
+    results = []
+    for doc in docs:
+        results.append({
+            'content': doc.page_content,
+            'metadata': doc.metadata
+        })
     
-    # 检索
-    results = client.search(
-        collection_name='legal_documents',
-        data=[query_vector],
-        limit=top_k,
-        expr=expr,
-        search_params={"metric_type": "COSINE", "params": {"nprobe": 10}},
-        output_fields=['text', 'metadata', 'record_id']
-    )
-    
-    return results[0]
+    return results
 
 def format_search_results(results: List[Dict]) -> str:
     """格式化检索结果"""
     output = []
     for i, result in enumerate(results, 1):
-        metadata = result['entity'].get('metadata', {})
-        output.append(f"{i}. 【相似度: {1 - result['distance']:.2%}】")
-        output.append(f"   文档: {metadata.get('file_name', 'N/A')}")
+        metadata = result.get('metadata', {})
+        output.append(f"{i}. 文档: {metadata.get('filename', 'N/A')}")
         output.append(f"   页码: {metadata.get('page_number', 'N/A')}")
-        output.append(f"   内容: {result['entity'].get('text', '')[:300]}...")
+        output.append(f"   内容: {result.get('content', '')[:300]}...")
         output.append("")
     return "\n".join(output)
 
@@ -452,6 +483,10 @@ if __name__ == '__main__':
 
 ```python
 from xparse_client import create_pipeline_from_config
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 config = {
     # 数据源：本地技术文档
@@ -472,8 +507,8 @@ config = {
     # API 配置
     'api_base_url': 'https://api.textin.com/api/xparse',
     'api_headers': {
-        'x-ti-app-id': 'your-app-id',
-        'x-ti-secret-code': 'your-secret-code'
+        'x-ti-app-id': os.getenv('XTI_APP_ID'),
+        'x-ti-secret-code': os.getenv('XTI_SECRET_CODE')
     },
     
     # Stages 配置：定义处理流程
@@ -519,17 +554,42 @@ pipeline.run()
 """
 
 from xparse_client import create_pipeline_from_config
-from pymilvus import MilvusClient
-import requests
-import json
+from langchain_milvus import Milvus
+from langchain_community.embeddings import DashScopeEmbeddings
+from langchain_community.chat_models import ChatTongyi
+from langchain_core.messages import HumanMessage
+from typing import List, Dict
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class APIDocQASystem:
     """API 文档问答系统"""
     
-    def __init__(self, milvus_path: str, collection_name: str, llm_api_url: str):
-        self.client = MilvusClient(uri=milvus_path)
+    def __init__(self, milvus_path: str, collection_name: str):
+        self.milvus_path = milvus_path
         self.collection_name = collection_name
-        self.llm_api_url = llm_api_url
+        
+        # 使用与 Pipeline 相同的 embedding 配置
+        self.embedding = DashScopeEmbeddings(model="text-embedding-v3")
+        
+        # 初始化向量存储
+        self.vector_store = Milvus(
+            embedding_function=self.embedding,
+            collection_name=collection_name,
+            connection_args={"uri": milvus_path},
+            vector_field="embeddings",
+            primary_field="element_id",
+            text_field="text",
+            enable_dynamic_field=True
+        )
+        
+        # 初始化大模型
+        self.llm = ChatTongyi(
+            model="qwen-max",
+            dashscope_api_key=os.getenv("DASHSCOPE_API_KEY")
+        )
     
     def build_index(self):
         """构建文档索引"""
@@ -547,58 +607,50 @@ class APIDocQASystem:
             },
             'api_base_url': 'https://api.textin.com/api/xparse',
             'api_headers': {
-                'x-ti-app-id': 'your-app-id',
-                'x-ti-secret-code': 'your-secret-code'
+                'x-ti-app-id': os.getenv('XTI_APP_ID'),
+                'x-ti-secret-code': os.getenv('XTI_SECRET_CODE')
             },
-            'chunk_config': {
-                'strategy': 'basic',
-                'max_characters': 1024,
-                'overlap': 50
-            },
-            'embed_config': {
-                'provider': 'qwen',
-                'model_name': 'text-embedding-v3'
-            }
+            'stages': [
+                {
+                    'type': 'parse',
+                    'config': {'provider': 'textin'}
+                },
+                {
+                    'type': 'chunk',
+                    'config': {
+                        'strategy': 'basic',
+                        'max_characters': 1024,
+                        'overlap': 50
+                    }
+                },
+                {
+                    'type': 'embed',
+                    'config': {
+                        'provider': 'qwen',
+                        'model_name': 'text-embedding-v3'
+                    }
+                }
+            ]
         }
         
         pipeline = create_pipeline_from_config(config)
         pipeline.run()
         print("文档索引构建完成！")
     
-    def _embed_query(self, query: str) -> list:
-        """将查询转换为向量（需要调用 embed API）"""
-        # 这里需要调用相同的 embed API
-        # 简化示例，实际需要调用 API
-        response = requests.post(
-            'https://api.textin.com/api/xparse/embed',
-            headers={
-                'x-ti-app-id': 'your-app-id',
-                'x-ti-secret-code': 'your-secret-code'
-            },
-            json={
-                'texts': [query],
-                'provider': 'qwen',
-                'model_name': 'text-embedding-v3'
-            }
-        )
-        result = response.json()
-        return result['data']['embeddings'][0]
-    
     def retrieve(self, query: str, top_k: int = 3) -> List[Dict]:
         """检索相关文档"""
-        # 向量化查询
-        query_vector = self._embed_query(query)
+        # 使用向量存储进行检索
+        docs = self.vector_store.similarity_search(query, k=top_k)
         
-        # 检索
-        results = self.client.search(
-            collection_name=self.collection_name,
-            data=[query_vector],
-            limit=top_k,
-            search_params={"metric_type": "COSINE", "params": {"nprobe": 10}},
-            output_fields=['text', 'metadata']
-        )
+        # 格式化结果
+        results = []
+        for doc in docs:
+            results.append({
+                'content': doc.page_content,
+                'metadata': doc.metadata
+            })
         
-        return results[0]
+        return results
     
     def answer(self, question: str) -> str:
         """基于检索结果生成答案"""
@@ -607,34 +659,28 @@ class APIDocQASystem:
         
         # 构建上下文
         context = "\n\n".join([
-            f"文档片段 {i+1}:\n{result['entity']['text']}"
+            f"文档片段 {i+1}:\n{result['content']}"
             for i, result in enumerate(results)
         ])
         
         # 调用大模型生成答案
         prompt = f"""基于以下文档内容回答用户问题。
 
-文档内容：
-{context}
+                文档内容：
+                {context}
 
-用户问题：{question}
+                用户问题：{question}
 
-请基于文档内容回答问题，如果文档中没有相关信息，请说明。"""
+                请基于文档内容回答问题，如果文档中没有相关信息，请说明。"""
         
-        # 调用大模型 API（示例，实际需要替换为真实 API）
-        response = requests.post(
-            self.llm_api_url,
-            json={'prompt': prompt}
-        )
-        
-        return response.json()['answer']
+        response = self.llm.invoke([HumanMessage(content=prompt)])
+        return response.content
 
 def main():
     # 创建问答系统
     qa_system = APIDocQASystem(
         milvus_path='./api_docs.db',
-        collection_name='api_documentation',
-        llm_api_url='https://your-llm-api.com/chat'
+        collection_name='api_documentation'
     )
     
     # 构建索引（首次运行）
@@ -660,97 +706,115 @@ if __name__ == '__main__':
 
 ### Milvus 使用说明
 
-Milvus 是一个开源的向量数据库，xParse 会自动创建集合和索引：
+Milvus 是一个开源的向量数据库，xParse 会自动创建集合和索引。使用 LangChain 可以更方便地进行向量检索：
 
 ```python
-from pymilvus import MilvusClient
+from langchain_milvus import Milvus
+from langchain_community.embeddings import DashScopeEmbeddings
+import os
+from dotenv import load_dotenv
 
-# 连接 Milvus
-client = MilvusClient(uri='./vectors.db')
+load_dotenv()
 
-# 查看集合
-collections = client.list_collections()
-print(f"集合列表: {collections}")
+# 使用与 Pipeline 相同的 embedding 配置
+embedding = DashScopeEmbeddings(model="text-embedding-v4")
 
-# 查询向量
-results = client.search(
-    collection_name='documents',
-    data=[[0.1] * 1024],  # 查询向量
-    limit=5,
-    search_params={"metric_type": "COSINE", "params": {"nprobe": 10}},
-    output_fields=['text', 'metadata']
+# 连接 Milvus 向量存储
+vector_store = Milvus(
+    embedding_function=embedding,
+    collection_name="documents",
+    connection_args={"uri": "./vectors.db"},
+    vector_field="embeddings",
+    primary_field="element_id",
+    text_field="text",
+    enable_dynamic_field=True
 )
 
-for result in results[0]:
-    print(f"相似度: {result['distance']}")
-    print(f"文本: {result['entity']['text'][:100]}...")
+# 语义检索
+docs = vector_store.similarity_search("用户认证", k=5)
+
+for doc in docs:
+    print(f"文档: {doc.metadata.get('filename', 'N/A')}")
+    print(f"内容: {doc.page_content[:100]}...")
+    print()
 ```
 
 ### Zilliz 使用说明
 
-Zilliz 是 Milvus 的云端托管版本，使用方式类似：
+Zilliz 是 Milvus 的云端托管版本，使用 LangChain 集成方式类似：
 
 ```python
-from pymilvus import MilvusClient
+from langchain_milvus import Milvus
+from langchain_community.embeddings import DashScopeEmbeddings
 
-# 连接 Zilliz
-client = MilvusClient(
-    uri='https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn',
-    token='your-api-key'
+# 使用与 Pipeline 相同的 embedding 配置
+embedding = DashScopeEmbeddings(model="text-embedding-v4")
+
+# 连接 Zilliz 向量存储
+vector_store = Milvus(
+    embedding_function=embedding,
+    collection_name="documents",
+    connection_args={
+        "uri": "https://xxxxxxx.serverless.xxxxxxx.cloud.zilliz.com.cn",
+        "token": "your-api-key"
+    },
+    vector_field="embeddings",
+    primary_field="element_id",
+    text_field="text",
+    enable_dynamic_field=True
 )
 
-# 使用方式与 Milvus 相同
-results = client.search(
-    collection_name='documents',
-    data=[[0.1] * 1024],
-    limit=5
-)
+# 语义检索
+docs = vector_store.similarity_search("用户认证", k=5)
 ```
 
 ## 检索和查询最佳实践
 
-### 1. 查询向量化
+### 1. 使用 LangChain 进行检索
 
-查询时需要将用户问题转换为向量，使用与 Pipeline 相同的 embed 配置：
+使用 LangChain 的向量存储可以自动处理查询向量化，无需手动调用 embed API：
 
 ```python
-import requests
+from langchain_milvus import Milvus
+from langchain_community.embeddings import DashScopeEmbeddings
+import os
+from dotenv import load_dotenv
 
-def embed_query(query: str, provider: str = 'qwen', model_name: str = 'text-embedding-v3'):
-    """将查询转换为向量"""
-    response = requests.post(
-        'https://api.textin.com/api/xparse/embed',
-        headers={
-            'x-ti-app-id': 'your-app-id',
-            'x-ti-secret-code': 'your-secret-code'
-        },
-        json={
-            'texts': [query],
-            'provider': provider,
-            'model_name': model_name
-        }
-    )
-    result = response.json()
-    return result['data']['embeddings'][0]
+load_dotenv()
+
+# 使用与 Pipeline 相同的 embedding 配置
+embedding = DashScopeEmbeddings(model="text-embedding-v4")
+
+# 连接向量存储
+vector_store = Milvus(
+    embedding_function=embedding,
+    collection_name="documents",
+    connection_args={"uri": "./vectors.db"},
+    vector_field="embeddings",
+    primary_field="element_id",
+    text_field="text",
+    enable_dynamic_field=True
+)
+
+# 直接使用自然语言查询，无需手动向量化
+docs = vector_store.similarity_search("用户认证", k=5)
 ```
 
 ### 2. 相似度阈值
 
-设置合适的相似度阈值，过滤低质量结果：
+使用 LangChain 的 `similarity_search_with_score` 可以获取相似度分数：
 
 ```python
-def search_with_threshold(query_vector, threshold=0.7):
+def search_with_threshold(query: str, threshold: float = 0.7, top_k: int = 10):
     """带阈值的检索"""
-    results = client.search(
-        collection_name='documents',
-        data=[query_vector],
-        limit=10
-    )
+    # 获取带分数的检索结果
+    docs_with_scores = vector_store.similarity_search_with_score(query, k=top_k)
     
     # 过滤低相似度结果
+    # 注意：LangChain 返回的分数是距离（越小越相似），需要转换为相似度
     filtered = [
-        r for r in results[0] 
-        if (1 - r['distance']) >= threshold  # COSINE 距离转换为相似度
+        (doc, score) for doc, score in docs_with_scores
+        if (1 - score) >= threshold  # COSINE 距离转换为相似度
     ]
     
     return filtered
@@ -761,24 +825,81 @@ def search_with_threshold(query_vector, threshold=0.7):
 结合向量检索和关键词检索：
 
 ```python
-def hybrid_search(query: str, query_vector: list):
+def hybrid_search(query: str, vector_store, milvus_path, top_k: int = 5):
     """混合检索：向量 + 关键词"""
+    from pymilvus import MilvusClient
+    from langchain_core.documents import Document
+    
     # 向量检索
-    vector_results = client.search(
-        collection_name='documents',
-        data=[query_vector],
-        limit=5
-    )
+    vector_docs = vector_store.similarity_search(query, k=top_k)
     
-    # 关键词检索（需要 Milvus 支持）
-    keyword_results = client.query(
-        collection_name='documents',
-        expr=f'text like "%{query}%"',
-        limit=5
-    )
+    # 从 vector_store 获取 collection 信息
+    collection_name = vector_store.collection_name
     
-    # 合并结果
-    return combine_results(vector_results, keyword_results)
+    # 关键词检索（使用 Milvus 的查询功能）
+    keyword_results = []
+    try:
+        client = MilvusClient(uri=milvus_path)
+        
+        # 检查 collection 是否存在
+        collections = client.list_collections()
+        if collection_name not in collections:
+            print(f"Collection '{collection_name}' 不存在，跳过关键词检索")
+            return vector_docs
+        
+        # 构建关键词查询表达式（使用 LIKE 进行模糊匹配）
+        # 将查询字符串拆分为多个关键词
+        keywords = query.split()
+        
+        if not keywords:
+            return vector_docs
+        
+        # 构建查询表达式：匹配包含任一关键词的文档
+        expr_parts = []
+        for keyword in keywords:
+            # 转义特殊字符，避免 SQL 注入风险
+            escaped_keyword = keyword.replace("'", "''").replace("%", "\\%").replace("_", "\\_")
+            expr_parts.append(f"text like '%{escaped_keyword}%'")
+        
+        # 使用 OR 连接多个关键词条件
+        expr = " or ".join(expr_parts)
+        
+        # 执行查询
+        keyword_data = client.query(
+            collection_name=collection_name,
+            filter=expr,
+            limit=top_k,
+            output_fields=["text", "metadata", "element_id"]
+        )
+        
+        # 将查询结果转换为 Document 格式
+        for item in keyword_data:
+            doc = Document(
+                page_content=item.get("text", ""),
+                metadata=item.get("metadata", {}) if isinstance(item.get("metadata"), dict) else {}
+            )
+            # 确保 element_id 在 metadata 中
+            if "element_id" in item:
+                doc.metadata["element_id"] = item["element_id"]
+            keyword_results.append(doc)
+    except Exception as e:
+        # 如果查询失败，记录错误但不中断程序
+        print(f"关键词检索失败: {e}")
+        keyword_results = []
+    
+    # 合并结果（去重）
+    all_docs = {}
+    for doc in vector_docs:
+        doc_id = doc.metadata.get('element_id')
+        if doc_id:
+            all_docs[doc_id] = doc
+    
+    for doc in keyword_results:
+        doc_id = doc.metadata.get('element_id')
+        if doc_id and doc_id not in all_docs:
+            all_docs[doc_id] = doc
+    
+    return list(all_docs.values())
 ```
 
 ## 性能优化建议
