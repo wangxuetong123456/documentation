@@ -181,6 +181,7 @@ class GraphState(TypedDict):
     documents: list  # 检索到的文档
     generation: str  # 生成的答案
     next: str  # 下一步操作
+    retrieval_count: int  # 检索次数
 ```
 
 状态字段说明：
@@ -189,6 +190,7 @@ class GraphState(TypedDict):
 - `documents`：检索到的相关文档片段
 - `generation`：最终生成的答案
 - `next`：指示下一步应该执行哪个节点
+- `retrieval_count`：检索次数（用于防止无限循环）
 
 ### Step 4: 定义节点函数
 
@@ -232,6 +234,7 @@ def should_retrieve(state: GraphState) -> GraphState:
 def retrieve(state: GraphState) -> GraphState:
     """检索相关文档"""
     question = state.get("rewritten_question") or state["question"]
+    retrieval_count = state.get("retrieval_count", 0)
     
     # 向量检索
     docs = vector_store.similarity_search(question, k=5)
@@ -246,11 +249,12 @@ def retrieve(state: GraphState) -> GraphState:
     
     return {
         **state,
-        "documents": documents
+        "documents": documents,
+        "retrieval_count": retrieval_count + 1  # 增加检索计数
     }
 ```
 
-注意：这里优先使用 `rewritten_question`（如果存在），否则使用原始问题。
+注意：这里优先使用 `rewritten_question`（如果存在），否则使用原始问题。每次检索后，`retrieval_count` 会增加 1。
 
 #### 4.3 评估检索结果的相关性
 
@@ -261,6 +265,14 @@ def grade_documents(state: GraphState) -> GraphState:
     """评估检索结果的相关性"""
     question = state.get("rewritten_question") or state["question"]
     documents = state["documents"]
+    retrieval_count = state.get("retrieval_count", 0)
+    
+    # 限制最多重写 2 次（即最多检索 3 次）
+    if retrieval_count >= 2:
+        return {
+            **state,
+            "next": "generate"
+        }
     
     if not documents:
         return {
@@ -297,7 +309,7 @@ def grade_documents(state: GraphState) -> GraphState:
     }
 ```
 
-如果文档不相关，将触发问题重写。
+如果文档不相关，将触发问题重写。为了避免无限循环，当检索次数达到 2 次时，即使文档不相关也会强制生成答案。
 
 #### 4.4 重写问题
 
@@ -451,7 +463,8 @@ def ask_question(question: str) -> str:
         "rewritten_question": "",
         "documents": [],
         "generation": "",
-        "next": ""
+        "next": "",
+        "retrieval_count": 0  # 初始化检索计数
     }
     
     # 运行工作流
@@ -584,6 +597,7 @@ class GraphState(TypedDict):
     documents: list  # 检索到的文档
     generation: str  # 生成的答案
     next: str  # 下一步操作
+    retrieval_count: int  # 检索次数
 
 # ========== Step 4: 定义节点函数 ==========
 
@@ -614,6 +628,7 @@ def should_retrieve(state: GraphState) -> GraphState:
 def retrieve(state: GraphState) -> GraphState:
     """检索相关文档"""
     question = state.get("rewritten_question") or state["question"]
+    retrieval_count = state.get("retrieval_count", 0)
     
     # 向量检索
     docs = vector_store.similarity_search(question, k=5)
@@ -628,13 +643,22 @@ def retrieve(state: GraphState) -> GraphState:
     
     return {
         **state,
-        "documents": documents
+        "documents": documents,
+        "retrieval_count": retrieval_count + 1  # 增加检索计数
     }
 
 def grade_documents(state: GraphState) -> GraphState:
     """评估检索结果的相关性"""
     question = state.get("rewritten_question") or state["question"]
     documents = state["documents"]
+    retrieval_count = state.get("retrieval_count", 0)
+    
+    # 限制最多重写 2 次（即最多检索 3 次）
+    if retrieval_count >= 2:
+        return {
+            **state,
+            "next": "generate"
+        }
     
     if not documents:
         return {
@@ -800,7 +824,8 @@ def ask_question(question: str) -> str:
         "rewritten_question": "",
         "documents": [],
         "generation": "",
-        "next": ""
+        "next": "",
+        "retrieval_count": 0  # 初始化检索计数
     }
     
     # 运行工作流
