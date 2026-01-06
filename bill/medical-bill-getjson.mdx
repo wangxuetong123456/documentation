@@ -292,7 +292,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>invoice_code 票据代码<br/>invoice_number 票据号码<br/>electronic_invoice_code 电子票据代码<br/>electronic_invoice_number 电子票据号码<br/>business_serial_number 业务流水号<br/>bill_verification_code 票据校验码<br/>payer_social_credit_code 交款人统一社会信用代码<br/>invoice_date 开票日期<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_insurance_number 医保编号<br/>medical_insurance_type 医保类型<br/>social_security_card_number 社会保障号码<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>medical_treatment_date 就诊日期<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>total_amount_in_words 大写金额合计<br/>total_expense_amount 发票金额合计<br/>personal_account_balance 个人账户余额<br/>personal_self_payment_amount 个人自付金额<br/>personal_self_bear_amount 个人自负金额<br/>category_self_payment_amount 分类自付金额<br/>personal_self_funded_amount 个人自费金额<br/>prepaid_amount 预缴金额<br/>supplementary_payment_amount 补缴金额<br/>refund_amount 退费金额<br/>rounding_amount 抹零金额<br/>medical_insurance_payment 医保统筹基金支付<br/>additional_fund_payment 附加基金支付<br/>personal_account_payment 个人账户支付<br/>personal_cash_payment 个人现金支付<br/>other_payments 其他支付<br/>payee_organization 收款单位<br/>payee 收款人<br/>reviewer 复核人<br/>payer 交款人<br/>current_year_balance 医保当年账户余额<br/>cumulative_balance 医保历年账户余额<br/>cumulative_insurance_payment 累计统筹报销金额<br/>cumulative_deductible_amount 累计起付线金额 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>invoice_code 票据代码<br/>invoice_number 票据号码<br/>electronic_invoice_code 电子票据代码<br/>electronic_invoice_number 电子票据号码<br/>business_serial_number 业务流水号<br/>bill_verification_code 票据校验码<br/>payer_social_credit_code 交款人统一社会信用代码<br/>invoice_date 开票日期<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_insurance_number 医保编号<br/>medical_insurance_type 医保类型<br/>social_security_card_number 社会保障号码<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>medical_treatment_date 就诊日期<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>total_amount_in_words 大写金额合计<br/>total_expense_amount 发票金额合计<br/>personal_account_balance 个人账户余额<br/>personal_self_payment_amount 个人自付金额<br/>personal_self_bear_amount 个人自负金额<br/>category_self_payment_amount 分类自付金额<br/>personal_self_funded_amount 个人自费金额<br/>prepaid_amount 预缴金额<br/>supplementary_payment_amount 补缴金额<br/>refund_amount 退费金额<br/>rounding_amount 抹零金额<br/>medical_insurance_payment 医保统筹基金支付<br/>additional_fund_payment 附加基金支付<br/>personal_account_payment 个人账户支付<br/>personal_cash_payment 个人现金支付<br/>other_payments 其他支付<br/>payee_organization 收款单位<br/>payee 收款人<br/>reviewer 复核人<br/>payer 交款人<br/>current_year_balance 医保当年账户余额<br/>cumulative_balance 医保历年账户余额<br/>cumulative_insurance_payment 累计统筹报销金额<br/>cumulative_deductible_amount 累计起付线金额 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -301,12 +301,12 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
 | tables | array | 票据表格识别结果 |
 | + name | string | 表格名称 |
 | + label | string | 表格名称中文描述 |
 | + items | array | 表格所有行数据 |
-| ++ key | string | 费目金额汇总表字段key<br/><br/>project_name 项目名称<br/>amount 金额<br/>personal_payment_amount 个人支付金额<br/>remarks 备注 |
+| ++ key | string | 费目金额汇总表字段key：<br/>project_name 项目名称<br/>amount 金额<br/>personal_payment_amount 个人支付金额<br/>remarks 备注 |
 | ++ value | string | 字段识别结果 |
 | ++ label | string | 字段中文描述 |
 | ++ bounding_regions | array | 字段坐标 |
@@ -325,7 +325,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>invoice_code 票据代码<br/>invoice_number 票据号码<br/>electronic_invoice_code 电子票据代码<br/>electronic_invoice_number 电子票据号码<br/>business_serial_number 业务流水号<br/>bill_verification_code 票据校验码<br/>payer_social_credit_code 交款人统一社会信用代码<br/>invoice_date 开票日期<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>outpatient_number 门诊号<br/>medical_insurance_number 医保编号<br/>medical_insurance_type 医保类型<br/>social_security_card_number 社会保障号码<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>medical_treatment_date 就诊日期<br/>total_amount_in_words 大写金额合计<br/>total_expense_amount 发票金额合计<br/>personal_account_balance 个人账户余额<br/>personal_self_payment_amount 个人自付金额<br/>personal_self_bear_amount 个人自负金额<br/>category_self_payment_amount 分类自付金额<br/>personal_self_funded_amount 个人自费金额<br/>prepaid_amount 预缴金额<br/>supplementary_payment_amount 补缴金额<br/>refund_amount 退费金额<br/>rounding_amount 抹零金额<br/>medical_insurance_payment 医保统筹基金支付<br/>additional_fund_payment 附加基金支付<br/>personal_account_payment 个人账户支付<br/>personal_cash_payment 个人现金支付<br/>other_payments 其他支付<br/>payee_organization 收款单位<br/>payee 收款人<br/>reviewer 复核人<br/>payer 交款人<br/>current_year_balance 医保当年账户余额<br/>cumulative_balance 医保历年账户余额<br/>cumulative_insurance_payment 累计统筹报销金额<br/>cumulative_deductible_amount 累计起付线金额 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>invoice_code 票据代码<br/>invoice_number 票据号码<br/>electronic_invoice_code 电子票据代码<br/>electronic_invoice_number 电子票据号码<br/>business_serial_number 业务流水号<br/>bill_verification_code 票据校验码<br/>payer_social_credit_code 交款人统一社会信用代码<br/>invoice_date 开票日期<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>outpatient_number 门诊号<br/>medical_insurance_number 医保编号<br/>medical_insurance_type 医保类型<br/>social_security_card_number 社会保障号码<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>medical_treatment_date 就诊日期<br/>total_amount_in_words 大写金额合计<br/>total_expense_amount 发票金额合计<br/>personal_account_balance 个人账户余额<br/>personal_self_payment_amount 个人自付金额<br/>personal_self_bear_amount 个人自负金额<br/>category_self_payment_amount 分类自付金额<br/>personal_self_funded_amount 个人自费金额<br/>prepaid_amount 预缴金额<br/>supplementary_payment_amount 补缴金额<br/>refund_amount 退费金额<br/>rounding_amount 抹零金额<br/>medical_insurance_payment 医保统筹基金支付<br/>additional_fund_payment 附加基金支付<br/>personal_account_payment 个人账户支付<br/>personal_cash_payment 个人现金支付<br/>other_payments 其他支付<br/>payee_organization 收款单位<br/>payee 收款人<br/>reviewer 复核人<br/>payer 交款人<br/>current_year_balance 医保当年账户余额<br/>cumulative_balance 医保历年账户余额<br/>cumulative_insurance_payment 累计统筹报销金额<br/>cumulative_deductible_amount 累计起付线金额 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -334,12 +334,12 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
 | tables | array | 票据表格识别结果 |
 | + name | string | 表格名称 |
 | + label | string | 表格名称中文描述 |
 | + items | array | 表格所有行数据 |
-| ++ key | string | 项目明细汇总表字段key<br/><br/>project_name 项目名称<br/>specification 规格<br/>amount 金额<br/>remarks 备注<br/>quantity 数量<br/>unit 单位<br/>reimbursement_type 医保报销类别<br/><br/>费目金额汇总表字段key<br/><br/>expense_item 费目<br/>amount 金额<br/>remarks 备注 |
+| ++ key | string | 项目明细汇总表字段key：<br/>project_name 项目名称<br/>specification 规格<br/>amount 金额<br/>remarks 备注<br/>quantity 数量<br/>unit 单位<br/>reimbursement_type 医保报销类别<br/><br/>费目金额汇总表字段key：<br/>expense_item 费目<br/>amount 金额<br/>remarks 备注 |
 | ++ value | string | 字段识别结果 |
 | ++ label | string | 字段中文描述 |
 | ++ bounding_regions | array | 字段坐标 |
@@ -358,7 +358,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>invoice_code 票据代码<br/>invoice_number 票据号码<br/>business_serial_number 业务流水号<br/>bill_verification_code 票据校验码<br/>payer_social_credit_code 交款人统一社会信用代码<br/>invoice_date 开票日期<br/>gender 性别<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_insurance_number 医保编号<br/>medical_insurance_type 医保类型<br/>social_security_card_number 社会保障号码<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>total_amount_in_words 大写金额合计<br/>total_expense_amount 发票金额合计<br/>personal_account_balance 个人账户余额<br/>personal_self_payment_amount 个人自付金额<br/>personal_self_bear_amount 个人自负金额<br/>category_self_payment_amount 分类自付金额<br/>personal_self_funded_amount 个人自费金额<br/>prepaid_amount 预缴金额<br/>supplementary_payment_amount 补缴金额<br/>refund_amount 退费金额<br/>rounding_amount 抹零金额<br/>medical_insurance_payment 医保统筹基金支付<br/>additional_fund_payment 附加基金支付<br/>personal_account_payment 个人账户支付<br/>personal_cash_payment 个人现金支付<br/>other_payments 其他支付<br/>payee_organization 收款单位<br/>payee 收款人<br/>reviewer 复核人<br/>payer 交款人<br/>current_year_balance 医保当年账户余额<br/>cumulative_balance 医保历年账户余额<br/>cumulative_insurance_payment 累计统筹报销金额<br/>cumulative_deductible_amount 累计起付线金额 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>invoice_code 票据代码<br/>invoice_number 票据号码<br/>business_serial_number 业务流水号<br/>bill_verification_code 票据校验码<br/>payer_social_credit_code 交款人统一社会信用代码<br/>invoice_date 开票日期<br/>gender 性别<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_insurance_number 医保编号<br/>medical_insurance_type 医保类型<br/>social_security_card_number 社会保障号码<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>total_amount_in_words 大写金额合计<br/>total_expense_amount 发票金额合计<br/>personal_account_balance 个人账户余额<br/>personal_self_payment_amount 个人自付金额<br/>personal_self_bear_amount 个人自负金额<br/>category_self_payment_amount 分类自付金额<br/>personal_self_funded_amount 个人自费金额<br/>prepaid_amount 预缴金额<br/>supplementary_payment_amount 补缴金额<br/>refund_amount 退费金额<br/>rounding_amount 抹零金额<br/>medical_insurance_payment 医保统筹基金支付<br/>additional_fund_payment 附加基金支付<br/>personal_account_payment 个人账户支付<br/>personal_cash_payment 个人现金支付<br/>other_payments 其他支付<br/>payee_organization 收款单位<br/>payee 收款人<br/>reviewer 复核人<br/>payer 交款人<br/>current_year_balance 医保当年账户余额<br/>cumulative_balance 医保历年账户余额<br/>cumulative_insurance_payment 累计统筹报销金额<br/>cumulative_deductible_amount 累计起付线金额 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -367,12 +367,12 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
 | tables | array | 票据表格识别结果 |
 | + name | string | 表格名称 |
 | + label | string | 表格名称中文描述 |
 | + items | array | 表格所有行数据 |
-| ++ key | string | 费目金额汇总表字段key<br/><br/>project_name 项目名称<br/>amount 金额<br/>personal_payment_amount 个人支付金额<br/>remarks 备注 |
+| ++ key | string | 费目金额汇总表字段key：<br/>project_name 项目名称<br/>amount 金额<br/>personal_payment_amount 个人支付金额<br/>remarks 备注 |
 | ++ value | string | 字段识别结果 |
 | ++ label | string | 字段中文描述 |
 | ++ bounding_regions | array | 字段坐标 |
@@ -391,7 +391,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>invoice_code 票据代码<br/>invoice_number 票据号码<br/>business_serial_number 业务流水号<br/>bill_verification_code 票据校验码<br/>payer_social_credit_code 交款人统一社会信用代码<br/>invoice_date 开票日期<br/>gender 性别<br/>outpatient_number 门诊号<br/>medical_record_number 病历号<br/>medical_insurance_number 医保编号<br/>medical_insurance_type 医保类型<br/>social_security_card_number 社会保障号码<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>medical_treatment_date 就诊日期<br/>total_amount_in_words 大写金额合计<br/>total_expense_amount 发票金额合计<br/>personal_account_balance 个人账户余额<br/>personal_self_payment_amount 个人自付金额<br/>personal_self_bear_amount 个人自负金额<br/>category_self_payment_amount 分类自付金额<br/>personal_self_funded_amount 个人自费金额<br/>prepaid_amount 预缴金额<br/>supplementary_payment_amount 补缴金额<br/>refund_amount 退费金额<br/>rounding_amount 抹零金额<br/>medical_insurance_payment 医保统筹基金支付<br/>additional_fund_payment 附加基金支付<br/>personal_account_payment 个人账户支付<br/>personal_cash_payment 个人现金支付<br/>other_payments 其他支付<br/>payee_organization 收款单位<br/>payee 收款人<br/>reviewer 复核人<br/>payer 交款人<br/>current_year_balance 医保当年账户余额<br/>cumulative_balance 医保历年账户余额<br/>cumulative_insurance_payment 累计统筹报销金额<br/>cumulative_deductible_amount 累计起付线金额 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>invoice_code 票据代码<br/>invoice_number 票据号码<br/>business_serial_number 业务流水号<br/>bill_verification_code 票据校验码<br/>payer_social_credit_code 交款人统一社会信用代码<br/>invoice_date 开票日期<br/>gender 性别<br/>outpatient_number 门诊号<br/>medical_record_number 病历号<br/>medical_insurance_number 医保编号<br/>medical_insurance_type 医保类型<br/>social_security_card_number 社会保障号码<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>medical_treatment_date 就诊日期<br/>total_amount_in_words 大写金额合计<br/>total_expense_amount 发票金额合计<br/>personal_account_balance 个人账户余额<br/>personal_self_payment_amount 个人自付金额<br/>personal_self_bear_amount 个人自负金额<br/>category_self_payment_amount 分类自付金额<br/>personal_self_funded_amount 个人自费金额<br/>prepaid_amount 预缴金额<br/>supplementary_payment_amount 补缴金额<br/>refund_amount 退费金额<br/>rounding_amount 抹零金额<br/>medical_insurance_payment 医保统筹基金支付<br/>additional_fund_payment 附加基金支付<br/>personal_account_payment 个人账户支付<br/>personal_cash_payment 个人现金支付<br/>other_payments 其他支付<br/>payee_organization 收款单位<br/>payee 收款人<br/>reviewer 复核人<br/>payer 交款人<br/>current_year_balance 医保当年账户余额<br/>cumulative_balance 医保历年账户余额<br/>cumulative_insurance_payment 累计统筹报销金额<br/>cumulative_deductible_amount 累计起付线金额 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -400,12 +400,12 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
 | tables | array | 票据表格识别结果 |
 | + name | string | 表格名称 |
 | + label | string | 表格名称中文描述 |
 | + items | array | 表格所有行数据 |
-| ++ key | string | 项目明细汇总表字段key<br/><br/>project_name 项目名称<br/>specification 规格<br/>amount 金额<br/>remarks 备注<br/>quantity 数量<br/>unit 单位<br/>reimbursement_type 医保报销类别<br/><br/>费目金额汇总表字段key<br/><br/>expense_item 费目<br/>amount 金额<br/>remarks 备注 |
+| ++ key | string | 项目明细汇总表字段key：<br/>project_name 项目名称<br/>specification 规格<br/>amount 金额<br/>remarks 备注<br/>quantity 数量<br/>unit 单位<br/>reimbursement_type 医保报销类别<br/><br/>费目金额汇总表字段key：<br/>expense_item 费目<br/>amount 金额<br/>remarks 备注 |
 | ++ value | string | 字段识别结果 |
 | ++ label | string | 字段中文描述 |
 | ++ bounding_regions | array | 字段坐标 |
@@ -424,7 +424,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>total_pages_of_invoice 票据总页数<br/>current_page_number 当前页码<br/>settlement_time 结算时间<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>medical_insurance_type 医保类型<br/>social_security_card_number 社会保障号码<br/>insurance_location 参保地<br/>treatment_location 就医地<br/>visit_type 业务类别<br/>insurance_type 险种类型<br/>personnel_category 人员类别<br/>affiliated_unit 所属单位<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>medical_treatment_date 就诊日期<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>main_diagnosis 主要诊断<br/>secondary_diagnosis 次要诊断<br/>total_expense_amount 费用合计金额<br/>deductible_amount 起付线金额<br/>paid_deductible_amount 已付起付线<br/>personal_self_payment_amount 个人自付金额<br/>personal_self_funded_amount 个人自费金额<br/>medical_insurance_payment 医保统筹基金支付<br/>cumulative_insurance_payment 本年医保统筹基金累计支付<br/>insurance_reimbursement_rate 医保统筹报销比例<br/>personal_account_payment 个人账户支付<br/>personal_cash_payment 个人现金支付<br/>other_payments 其他支付<br/>current_year_balance 医保当年账户余额<br/>category_b_prepaid_total 乙类先行自付总额<br/>over_limit_self_payment_total_amount 超限价自付总额 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>total_pages_of_invoice 票据总页数<br/>current_page_number 当前页码<br/>settlement_time 结算时间<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>medical_insurance_type 医保类型<br/>social_security_card_number 社会保障号码<br/>insurance_location 参保地<br/>treatment_location 就医地<br/>visit_type 业务类别<br/>insurance_type 险种类型<br/>personnel_category 人员类别<br/>affiliated_unit 所属单位<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>medical_treatment_date 就诊日期<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>main_diagnosis 主要诊断<br/>secondary_diagnosis 次要诊断<br/>total_expense_amount 费用合计金额<br/>deductible_amount 起付线金额<br/>paid_deductible_amount 已付起付线<br/>personal_self_payment_amount 个人自付金额<br/>personal_self_funded_amount 个人自费金额<br/>medical_insurance_payment 医保统筹基金支付<br/>cumulative_insurance_payment 本年医保统筹基金累计支付<br/>insurance_reimbursement_rate 医保统筹报销比例<br/>personal_account_payment 个人账户支付<br/>personal_cash_payment 个人现金支付<br/>other_payments 其他支付<br/>current_year_balance 医保当年账户余额<br/>category_b_prepaid_total 乙类先行自付总额<br/>over_limit_self_payment_total_amount 超限价自付总额 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -433,12 +433,12 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
 | tables | array | 票据表格识别结果 |
 | + name | string | 表格名称 |
 | + label | string | 表格名称中文描述 |
 | + items | array | 表格所有行数据 |
-| ++ key | string | 费用明细汇总表字段key<br/><br/>expense_name 费用名称<br/>amount 金额<br/>self_funded_amount 自费<br/>category_b_advance_payment 乙类先行自付<br/>over_limit_self_payment_amount 超限价自付<br/>category_a_expense_amount 甲类费用金额<br/>category_b_expense_amount 乙类费用金额<br/>category_c_expense_amount 丙类费用金额<br/>partial_item_self_payment_amount 部分项目自付<br/>out_of_policy_scope_amount 政策范围外费用金额<br/><br/>基金支付合计汇总表字段key<br/><br/>fund_type 医保基金类型<br/>fund_payment_amount 基金支付金额 |
+| ++ key | string | 费用明细汇总表字段key：<br/>expense_name 费用名称<br/>amount 金额<br/>self_funded_amount 自费<br/>category_b_advance_payment 乙类先行自付<br/>over_limit_self_payment_amount 超限价自付<br/>category_a_expense_amount 甲类费用金额<br/>category_b_expense_amount 乙类费用金额<br/>category_c_expense_amount 丙类费用金额<br/>partial_item_self_payment_amount 部分项目自付<br/>out_of_policy_scope_amount 政策范围外费用金额<br/><br/>基金支付合计汇总表字段key：<br/>fund_type 医保基金类型<br/>fund_payment_amount 基金支付金额 |
 | ++ value | string | 字段识别结果 |
 | ++ label | string | 字段中文描述 |
 | ++ bounding_regions | array | 字段坐标 |
@@ -457,7 +457,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>total_pages_of_invoice 票据总页数<br/>current_page_number 当前页码<br/>invoice_code 票据代码<br/>invoice_number 票据号码<br/>invoice_date 开票日期<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>personnel_category 人员类别<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>id_number 公民身份证号码<br/>social_security_card_number 社会保障号码<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>medical_treatment_date 就诊日期<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>total_expense_amount 费用合计金额<br/>payer 交款人<br/>payee_organization 收款单位 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>total_pages_of_invoice 票据总页数<br/>current_page_number 当前页码<br/>invoice_code 票据代码<br/>invoice_number 票据号码<br/>invoice_date 开票日期<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>personnel_category 人员类别<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>id_number 公民身份证号码<br/>social_security_card_number 社会保障号码<br/>medical_institution_name 医疗机构名称<br/>medical_institution_type 医疗机构类型<br/>department 科室<br/>medical_treatment_date 就诊日期<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>total_expense_amount 费用合计金额<br/>payer 交款人<br/>payee_organization 收款单位 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -466,12 +466,12 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
 | tables | array | 票据表格识别结果 |
 | + name | string | 表格名称 |
 | + label | string | 表格名称中文描述 |
 | + items | array | 表格所有行数据 |
-| ++ key | string | 诊疗清单汇总表字段key<br/><br/>project_name 项目名称<br/>project_category 项目类别（费目）<br/>project_code 项目编号<br/>quantity 数量<br/>unit 单位<br/>amount 金额<br/>unit_price 单价<br/>specification 规格<br/>reimbursement_type 医保报销类别<br/>self_funded_amount 自费金额<br/>category_self_payment_amount 乙类分类自付<br/>over_limit_self_payment_amount 超限价自付<br/>remarks 备注 |
+| ++ key | string | 诊疗清单汇总表字段key：<br/>project_name 项目名称<br/>project_category 项目类别（费目）<br/>project_code 项目编号<br/>quantity 数量<br/>unit 单位<br/>amount 金额<br/>unit_price 单价<br/>specification 规格<br/>reimbursement_type 医保报销类别<br/>self_funded_amount 自费金额<br/>category_self_payment_amount 乙类分类自付<br/>over_limit_self_payment_amount 超限价自付<br/>remarks 备注 |
 | ++ value | string | 字段识别结果 |
 | ++ label | string | 字段中文描述 |
 | ++ bounding_regions | array | 字段坐标 |
@@ -490,7 +490,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>prescription_number 处方号<br/>issuance_date 开具日期<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_institution_name 医疗机构名称<br/>department 科室<br/>clinical_diagnosis_symptoms 临床诊断<br/>prescribing_doctor 开单医生<br/>dispensing_pharmacist 发药药师<br/>total_expense_amount 费用合计金额 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>prescription_number 处方号<br/>issuance_date 开具日期<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_institution_name 医疗机构名称<br/>department 科室<br/>clinical_diagnosis_symptoms 临床诊断<br/>prescribing_doctor 开单医生<br/>dispensing_pharmacist 发药药师<br/>total_expense_amount 费用合计金额 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -499,12 +499,12 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息<br/>expense_information 费用信息 |
 | tables | array | 票据表格识别结果 |
 | + name | string | 表格名称 |
 | + label | string | 表格名称中文描述 |
 | + items | array | 表格所有行数据 |
-| ++ key | string | 处方明细汇总表字段key<br/><br/>drug_name 药品名称<br/>quantity 数量<br/>unit 单位<br/>specification 规格<br/>usage 用法<br/>dosage 用量<br/>unit_price 单价<br/>amount 金额 |
+| ++ key | string | 处方明细汇总表字段key：<br/>drug_name 药品名称<br/>quantity 数量<br/>unit 单位<br/>specification 规格<br/>usage 用法<br/>dosage 用量<br/>unit_price 单价<br/>amount 金额 |
 | ++ value | string | 字段识别结果 |
 | ++ label | string | 字段中文描述 |
 | ++ bounding_regions | array | 字段坐标 |
@@ -523,7 +523,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>report_time 报告时间<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>patient_number 病人编号<br/>bed_number 床号<br/>ward 病区<br/>medical_institution_name 医疗机构名称<br/>department 科室<br/>inspection_item_name 检查项目名称<br/>inspection_item_instrument 检查项目仪器<br/>experimental_method 实验方法<br/>sampling_time 采样时间<br/>receipt_time 接收时间<br/>inspection_number 检查编号<br/>specimen_number 标本号<br/>specimen_type 标本类型<br/>clinical_doctor 临床医生<br/>sampling_doctor 采样医生<br/>laboratory_doctor 检验医生<br/>audit_doctor 审核医生<br/>clinical_diagnosis_symptoms 临床诊断/症状 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>report_time 报告时间<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>patient_number 病人编号<br/>bed_number 床号<br/>ward 病区<br/>medical_institution_name 医疗机构名称<br/>department 科室<br/>inspection_item_name 检查项目名称<br/>inspection_item_instrument 检查项目仪器<br/>experimental_method 实验方法<br/>sampling_time 采样时间<br/>receipt_time 接收时间<br/>inspection_number 检查编号<br/>specimen_number 标本号<br/>specimen_type 标本类型<br/>clinical_doctor 临床医生<br/>sampling_doctor 采样医生<br/>laboratory_doctor 检验医生<br/>audit_doctor 审核医生<br/>clinical_diagnosis_symptoms 临床诊断/症状 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -532,12 +532,12 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息 |
 | tables | array | 票据表格识别结果 |
 | + name | string | 表格名称 |
 | + label | string | 表格名称中文描述 |
 | + items | array | 表格所有行数据 |
-| ++ key | string | 检验结果汇总表字段key<br/><br/>project_name 项目名称<br/>result 结果<br/>unit 单位<br/>reference_value 参考值<br/>prompt 提示 |
+| ++ key | string | 检验结果汇总表字段key：<br/>project_name 项目名称<br/>result 结果<br/>unit 单位<br/>reference_value 参考值<br/>prompt 提示 |
 | ++ value | string | 字段识别结果 |
 | ++ label | string | 字段中文描述 |
 | ++ bounding_regions | array | 字段坐标 |
@@ -556,7 +556,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>total_pages_of_invoice 票据总页数<br/>current_page_number 当前页码<br/>report_time 报告时间<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_institution_name 医疗机构名称<br/>order_department 开单科室<br/>inspection_item_name 检查项目名称<br/>inspection_time 检查时间<br/>inspection_number 检查编号<br/>inspection_part 检查部位<br/>clinical_doctor 临床医生<br/>laboratory_doctor 检验医生<br/>audit_doctor 审核医生<br/>diagnosis_content 影像所见<br/>diagnosis_result 诊断意见/结果 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>total_pages_of_invoice 票据总页数<br/>current_page_number 当前页码<br/>report_time 报告时间<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_institution_name 医疗机构名称<br/>order_department 开单科室<br/>inspection_item_name 检查项目名称<br/>inspection_time 检查时间<br/>inspection_number 检查编号<br/>inspection_part 检查部位<br/>clinical_doctor 临床医生<br/>laboratory_doctor 检验医生<br/>audit_doctor 审核医生<br/>diagnosis_content 影像所见<br/>diagnosis_result 诊断意见/结果 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -565,7 +565,7 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息 |
 
 #### 门急诊病历 outpatient_medical_record
 
@@ -576,7 +576,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>total_pages_of_invoice 票据总页数<br/>current_page_number 当前页码<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>outpatient_number 门诊号<br/>medical_institution_name 医疗机构名称<br/>medical_treatment_date 就诊日期<br/>department 科室<br/>clinical_doctor 临床医生<br/>chief_complaint 主诉<br/>present_illness_history 现病史<br/>past_medical_history 既往史<br/>allergy_history 过敏史<br/>personal_history 个人史<br/>family_medical_history 家族史<br/>marital_history 婚姻史<br/>obstetric_history 孕产史<br/>physical_examination 体格检查<br/>auxiliary_examination 辅助检查<br/>clinical_diagnosis_symptoms 临床诊断/症状<br/>diagnosis_result 诊断结果<br/>outpatient_treatment 门诊处置<br/>medical_advice 医学建议/医嘱 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>total_pages_of_invoice 票据总页数<br/>current_page_number 当前页码<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>outpatient_number 门诊号<br/>medical_institution_name 医疗机构名称<br/>medical_treatment_date 就诊日期<br/>department 科室<br/>clinical_doctor 临床医生<br/>chief_complaint 主诉<br/>present_illness_history 现病史<br/>past_medical_history 既往史<br/>allergy_history 过敏史<br/>personal_history 个人史<br/>family_medical_history 家族史<br/>marital_history 婚姻史<br/>obstetric_history 孕产史<br/>physical_examination 体格检查<br/>auxiliary_examination 辅助检查<br/>clinical_diagnosis_symptoms 临床诊断/症状<br/>diagnosis_result 诊断结果<br/>outpatient_treatment 门诊处置<br/>medical_advice 医学建议/医嘱 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -585,12 +585,12 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息 |
 | tables | array | 票据表格识别结果 |
 | + name | string | 表格名称 |
 | + label | string | 表格名称中文描述 |
 | + items | array | 表格所有行数据 |
-| ++ key | string | 处方汇总表字段key<br/><br/>drug_name 药品名称<br/>usage 用法<br/>dosage 用量<br/>medication_frequency 用药频率<br/>medication_course 用药疗程<br/>specification 规格<br/>notes_or_instructions 提示/嘱托 |
+| ++ key | string | 处方汇总表字段key：<br/>drug_name 药品名称<br/>usage 用法<br/>dosage 用量<br/>medication_frequency 用药频率<br/>medication_course 用药疗程<br/>specification 规格<br/>notes_or_instructions 提示/嘱托 |
 | ++ value | string | 字段识别结果 |
 | ++ label | string | 字段中文描述 |
 | ++ bounding_regions | array | 字段坐标 |
@@ -609,7 +609,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>total_pages_of_invoice 票据总页数<br/>current_page_number 当前页码<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_institution_name 医疗机构名称<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>department 科室<br/>outpatient_diagnosis 门诊诊断<br/>admission_diagnosis 入院诊断<br/>discharge_diagnosis 出院诊断<br/>admission_symptoms_and_signs 入院症状与体征<br/>discharge_symptoms_and_signs 出院症状与体征<br/>treatment_overview 诊疗经过<br/>treatment_result 治疗结果<br/>medical_advice 出院医嘱<br/>attending_doctor 住院医生 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>total_pages_of_invoice 票据总页数<br/>current_page_number 当前页码<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>ward 病区<br/>medical_institution_name 医疗机构名称<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>department 科室<br/>outpatient_diagnosis 门诊诊断<br/>admission_diagnosis 入院诊断<br/>discharge_diagnosis 出院诊断<br/>admission_symptoms_and_signs 入院症状与体征<br/>discharge_symptoms_and_signs 出院症状与体征<br/>treatment_overview 诊疗经过<br/>treatment_result 治疗结果<br/>medical_advice 出院医嘱<br/>attending_doctor 住院医生 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -618,12 +618,12 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息 |
 | tables | array | 票据表格识别结果 |
 | + name | string | 表格名称 |
 | + label | string | 表格名称中文描述 |
 | + items | array | 表格所有行数据 |
-| ++ key | string | 自备药汇总表字段key<br/><br/>drug_name 药品名称<br/>usage 用法<br/>dosage 用量<br/>medication_frequency 用药频率<br/>medication_course 用药疗程<br/>notes_or_instructions 提示/嘱托<br/><br/>出院带药汇总表字段key<br/><br/>drug_name 药品名称<br/>usage 用法<br/>dosage 用量<br/>medication_frequency 用药频率<br/>medication_course 用药疗程<br/>medication_quantity 带药数量<br/>specification 规格<br/>notes_or_instructions 提示/嘱托 |
+| ++ key | string | 自备药汇总表字段key：<br/>drug_name 药品名称<br/>usage 用法<br/>dosage 用量<br/>medication_frequency 用药频率<br/>medication_course 用药疗程<br/>notes_or_instructions 提示/嘱托<br/><br/>出院带药汇总表字段key：<br/>drug_name 药品名称<br/>usage 用法<br/>dosage 用量<br/>medication_frequency 用药频率<br/>medication_course 用药疗程<br/>medication_quantity 带药数量<br/>specification 规格<br/>notes_or_instructions 提示/嘱托 |
 | ++ value | string | 字段识别结果 |
 | ++ label | string | 字段中文描述 |
 | ++ bounding_regions | array | 字段坐标 |
@@ -642,7 +642,7 @@ object_list:票据的各类结构化信息
 | page_ids | integer | 如果是pdf文件，该份票据样本在pdf中的页码 |
 | image_ids | integer | 该份票据在image_list中的所有图片索引 |
 | fields | array | 票据kv字段识别结果 |
-| + key | string | 识别字段key<br/><br/>document_title_name 单据标题名称<br/>issuance_date 开具日期<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>ethnicity 民族<br/>work_unit 单位<br/>home_address 家庭住址<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>medical_institution_name 医疗机构名称<br/>medical_treatment_date 就诊日期<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>department 科室<br/>clinical_doctor 临床医生<br/>diagnosis_result 诊断结果<br/>medical_advice 医学建议/医嘱 |
+| + key | string | 识别字段key：<br/>document_title_name 单据标题名称<br/>issuance_date 开具日期<br/>name 姓名<br/>gender 性别<br/>age 年龄<br/>ethnicity 民族<br/>work_unit 单位<br/>home_address 家庭住址<br/>outpatient_number 门诊号<br/>inpatient_number 住院号<br/>medical_record_number 病历号<br/>bed_number 床号<br/>medical_institution_name 医疗机构名称<br/>medical_treatment_date 就诊日期<br/>admission_time 住院起始日期<br/>discharge_time 住院结束日期<br/>hospitalization_days 住院天数<br/>department 科室<br/>clinical_doctor 临床医生<br/>diagnosis_result 诊断结果<br/>medical_advice 医学建议/医嘱 |
 | + value | string | 字段识别结果 |
 | + label | string | 字段中文描述 |
 | + bounding_regions | array | 字段坐标 |
@@ -651,4 +651,4 @@ object_list:票据的各类结构化信息
 | ++ value | string | 字段识别结果 |
 | ++ position | array | 字段坐标位置 |
 | ++ char_pos | array | 识别结果所有字符的坐标位置 |
-| + type | string | 字段类型<br/><br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息 |
+| + type | string | 字段类型：<br/>invoice_information 票据信息<br/>patient_information 患者信息<br/>visit_and_institution_information 就诊与机构信息 |
