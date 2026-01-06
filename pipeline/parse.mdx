@@ -82,6 +82,39 @@ PDF 密码。当 PDF 为加密文档时，需要提供密码。
 - **0**: 不去水印
 - **1**: 去水印
 
+### get_page_image
+
+**类型**: `boolean` <br />
+**必填**: 否 <br />
+**默认值**: `false` <br />
+
+是否返回每一页的图片，适用于PDF等需要转成图片解析的文件。当设置为 `true` 时，返回结果中会包含 `page_image_url` 字段。
+
+### get_sub_image
+
+**类型**: `boolean` <br />
+**必填**: 否 <br />
+**默认值**: `false` <br />
+
+是否返回页面内的子图。当设置为 `true` 时，返回结果中会包含 `image_base64` 字段。
+
+### image_storage_config
+
+**类型**: `object` <br />
+**必填**: 否 <br />
+
+S3存储配置，用于存储每页的图片。如果缺省，默认托管在xParse后台，通过xParse提供的链接下载图片。
+
+**字段说明**：
+
+- `endpoint` (string): S3端点地址，例如 `"https://s3.oss-cn-beijing.aliyuncs.com"`
+- `access_key` (string): S3访问密钥
+- `secret_key` (string): S3密钥
+- `bucket` (string): S3存储桶名称
+- `region` (string): S3区域，例如 `"cn-beijing"`
+- `prefix` (string): 存储前缀，默认为空字符串
+- `url_prefix` (string): 自定义配置图片下载服务URL前缀。xParse会将图片存储到目标S3，每张图片拥有唯一的hash_id，通过 `url_prefix + hash_id` 即可下载图片
+
 ### Textin 引擎特定参数（provider = textin 时）
 
 #### parse_mode
@@ -151,11 +184,14 @@ parse 阶段返回一个[文档元素](/pipeline/elements-metadata)列表。每�
   - `filename` / `file_directory` / `filetype`
   - `last_modified`
   - `page_number` / `page_width` / `page_height`
-  - `coordinates`（8位数组，表示四边形四个点，归一化坐标，范围 [0, 1]）
+  - `coordinates`：8位数组，表示四边形四个点，归一化坐标，范围 [0, 1]
   - `parent_id` / `category_depth`
-  - `image_base64` / `image_mine_type`
-  - `text_as_html`（针对表格）
-  - `data_source` （数据源详细信息）
+  - `image_base64` / `image_mine_type`：`image_base64` 当开启 `get_sub_image` 时返回
+  - `page_image_url`：当开启 `get_page_image` 时返回，表示页面图片的下载链接。如果开启预处理参数，返回的是预处理后的页面图片
+  - `original_image_url`：仅在开启预处理参数（`crop_dewarp=1`或`remove_watermark=1`）时返回，表示未经预处理的原始页面图片链接
+  - `figure_caption_id`：当元素为图片时（`type=Image`），表示图片对应的标题元素id（`type=FigureCaption`）
+  - `text_as_html`：表格或富文本元素的HTML表示
+  - `data_source` ：数据源详细信息
 
 ## 返回结果示例
 
@@ -284,6 +320,38 @@ from xparse_client import ParseConfig
 parse_config = ParseConfig(
     provider='textin',
     page_ranges='5-7'  # 解析第 5 页到第 7 页
+)
+
+# 在 Pipeline 中使用
+# pipeline = Pipeline(
+#     source=source,
+#     destination=destination,
+#     stages=[
+#         Stage(type='parse', config=parse_config)
+#     ],
+#     # ... 其他配置
+# )
+```
+
+### 示例 4：使用图片存储功能
+
+```python
+from xparse_client import ParseConfig
+
+# 创建解析配置，启用图片存储功能
+parse_config = ParseConfig(
+    provider='textin',
+    get_page_image=True,  # 返回页面图片
+    get_sub_image=True,    # 返回子图
+    image_storage_config={
+        'endpoint': 'https://s3.oss-cn-beijing.aliyuncs.com',
+        'access_key': 'your-access-key',
+        'secret_key': 'your-secret-key',
+        'bucket': 'your-bucket-name',
+        'region': 'cn-beijing',
+        'prefix': '',
+        'url_prefix': 'https://your-file-server.com/download?filename='
+    }
 )
 
 # 在 Pipeline 中使用

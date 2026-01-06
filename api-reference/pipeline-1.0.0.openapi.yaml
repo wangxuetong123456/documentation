@@ -372,11 +372,31 @@ components:
           example: "<table>...</table>"
         image_base64:
           type: string
-          description: 图片的 base64 编码
+          description: |
+            图片的 base64 编码。
+            当开启get_sub_image时返回，图片元素的base64表示。
         image_mine_type:
           type: string
           description: 图片的 MIME 类型
           example: "image/png"
+        page_image_url:
+          type: string
+          description: |
+            页面图片的下载链接。当开启get_page_image时返回。
+            如果开启预处理参数（切边增强-crop_dewarp、去水印-remove_watermark），
+            返回的是预处理后的页面图片。
+          example: "https://your-file-server.com/download?filename=abc123.png"
+        original_image_url:
+          type: string
+          description: |
+            未经预处理的原始页面图片链接。
+            仅在开启预处理参数（切边增强或去水印）时返回。
+          example: "https://your-file-server.com/download?filename=def456.png"
+        figure_caption_id:
+          type: string
+          description: |
+            当元素type为Image时，表示对应的图片标题（type=FigureCaption）元素id。
+          example: "caption_element_id_here"
         is_continuation:
           type: boolean
           description: 分块结果中，当前块是否与上一块连续，即是否属于同一个解析元素（由于max_characters被截断）（仅 chunk 阶段后）
@@ -518,6 +538,58 @@ components:
             - **1**: 去水印
           default: 0
           example: 0
+        
+        get_page_image:
+          type: boolean
+          description: |
+            是否返回每一页的图片，适用于PDF等需要转成图片解析的文件。
+            当设置为 true 时，返回结果中会包含 page_image_url 字段。
+          default: false
+          example: false
+        
+        get_sub_image:
+          type: boolean
+          description: |
+            是否返回页面内的子图。
+            当设置为 true 时，返回结果中会包含 image_base64 字段。
+          default: false
+          example: false
+        
+        image_storage_config:
+          type: object
+          description: |
+            S3存储配置，用于存储每页的图片。
+            如果缺省，默认托管在xParse后台，通过xParse提供的链接下载图片。
+            url_prefix用于自定义配置图片下载服务URL前缀，xParse会将图片存储到目标S3，
+            每张图片拥有唯一的hash_id，通过url_prefix + hash_id即可下载图片。
+          properties:
+            endpoint:
+              type: string
+              description: S3端点地址
+              example: "https://s3.oss-cn-beijing.aliyuncs.com"
+            access_key:
+              type: string
+              description: S3 access_key
+            secret_key:
+              type: string
+              description: S3 secret_key
+            bucket:
+              type: string
+              description: S3存储桶名称
+              example: "textin-etl-test"
+            region:
+              type: string
+              description: S3区域
+              example: "cn-beijing"
+            prefix:
+              type: string
+              description: 存储前缀
+              default: ""
+              example: ""
+            url_prefix:
+              type: string
+              description: 自定义配置图片下载服务URL前缀
+              example: "https://your-file-server.com/download?filename="
         
         image_output_type:
           type: string

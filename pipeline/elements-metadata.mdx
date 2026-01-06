@@ -97,8 +97,11 @@ xParse 会为每个元素记录丰富的元数据信息，这些信息存储在 
 | `coordinates` | 元素在页面上的坐标（8位数组，表示四边形四个点，归一化坐标，范围 [0, 1]） |
 | `parent_id` | 父节点 ID（配合层级目录） |
 | `category_depth` | 在同类元素中的层级深度（如 H1=0） |
-| `image_base64` | 图片 base64 编码（仅图片元素） |
+| `image_base64` | 图片 base64 编码（仅图片元素，当开启get_sub_image时返回） |
 | `image_mine_type` | 图片 MIME 类型 |
+| `page_image_url` | 页面图片下载链接（当开启get_page_image时返回） |
+| `original_image_url` | 原始页面图片链接（仅在开启预处理参数时返回） |
+| `figure_caption_id` | 图片标题元素ID（仅Image元素） |
 | `text_as_html` | 表格/富文本的 HTML 表示 |
 | `orig_elements` | 分块结果中，形成当前块的原始元素列表（gzip+Base64 压缩串） |
 | `is_continuation` | 分块结果中，当前块是否与上一块连续，属于同一个解析元素（由于max_characters被截断） |
@@ -127,6 +130,14 @@ xParse 会为每个元素记录丰富的元数据信息，这些信息存储在 
 
 #### image_base64 / image_mine_type
 - 针对 `Image` 元素，提供直接可用的 base64 编码及 MIME 类型，方便在无对象存储场景下预览。
+- `image_base64`：当开启 `get_sub_image` 时返回，图片元素的base64表示。
+
+#### page_image_url / original_image_url
+- `page_image_url`：页面图片的下载链接。当开启 `get_page_image` 时返回。如果开启了预处理参数（切边增强或去水印），返回的是预处理后的页面图片。
+- `original_image_url`：未经预处理的原始页面图片链接。仅在开启预处理参数（切边增强或去水印）时返回。
+
+#### figure_caption_id
+- 当元素 `type` 为 `Image` 时，`figure_caption_id` 表示对应的图片标题（`type=FigureCaption`）元素的 `element_id`。用于关联图片和其标题。
 
 #### text_as_html
 - 表格或富文本的 HTML 序列化结果，可用于直接渲染或导出。
@@ -250,6 +261,42 @@ xParse 会为每个元素记录丰富的元数据信息，这些信息存储在 
         }
     },
     "embeddings": [0.1, 0.2, 0.3, 0.4, 0.5, ...]
+}
+```
+
+### 示例 4：Image 元素（包含图片存储相关字段）
+
+```json
+{
+    "element_id": "8d24e50b3c9f5be28d24e50b3c9f5be28d24e50b3c9f5be28d24e50b3c9f5be2",
+    "type": "Image",
+    "text": "",
+    "metadata": {
+        "filename": "example.pdf",
+        "file_directory": "/projects/demo/",
+        "filetype": "application/pdf",
+        "last_modified": "1758624866230",
+        "page_number": 1,
+        "page_width": 1191,
+        "page_height": 1684,
+        "coordinates": [0.1822, 0.2316, 0.6717, 0.2316, 0.6717, 0.2732, 0.1822, 0.2732],
+        "image_base64": "iVBORw0KGgoAAAANS...",
+        "image_mine_type": "image/png",
+        "page_image_url": "https://your-file-server.com/download?filename=example_page_1_9b46e646.png",
+        "original_image_url": "https://your-file-server.com/download?filename=example_page_1_0b99c0f2.png",
+        "figure_caption_id": "caption_element_id_here",
+        "data_source": {
+            "record_locator": {
+                "protocol": "file",
+                "remote_file_path": "/projects/demo/example.pdf"
+            },
+            "url": "file:///projects/demo/example.pdf",
+            "version": "1758624866230967485",
+            "date_created": "1764555574237",
+            "date_modified": "1758624866230",
+            "date_processed": "1764742970688"
+        }
+    }
 }
 ```
 

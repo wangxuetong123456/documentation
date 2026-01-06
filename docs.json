@@ -109,6 +109,12 @@
             ]
           },
           {
+            "tab": "Open Source",
+            "pages": [
+              "pipeline/open-source/visualizer"
+            ]
+          },
+          {
             "tab": "Blog",
             "pages": [
                   "pipeline/blog/ai-agent-data-structure"

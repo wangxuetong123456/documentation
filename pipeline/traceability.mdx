@@ -266,7 +266,17 @@ print(json.dumps(trace_info, indent=2, ensure_ascii=False))
 
 利用坐标信息，您可以在原始文档上可视化元素位置，这对于验证处理结果和用户展示非常有用。
 
-### 坐标可视化示例
+xParse 提供了多种可视化方案：
+
+### 开源前端可视化 SDK
+
+`@xparse-kit/visualizer` 是一个开源的前端可视化 SDK，可以直接在浏览器中可视化文档解析结果，支持缩放、旋转、页面导航等交互功能。详见[前端可视化 SDK 教程](/pipeline/open-source/visualizer)。
+
+### Python 后端可视化
+
+使用 PIL/Pillow 等库在服务端生成可视化图片，适合批量处理和自动化场景。
+
+**坐标可视化示例**
 
 以下示例展示如何在原始页面上绘制元素边界框：
 
@@ -367,7 +377,7 @@ visualize_elements_on_page(
 )
 ```
 
-### 高亮检索结果
+**高亮检索结果**
 
 在 RAG 应用中，当用户查询得到结果时，可以在原始文档上高亮显示匹配的元素：
 
