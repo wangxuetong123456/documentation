@@ -1,0 +1,2464 @@
+openapi: 3.0.3
+info:
+  version: 1.2.0
+  title: 医疗票据识别v1.2.0接口
+servers:
+  - url: https://api.textin.com
+    description: Production server
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /ai/service/v1/medical_recognize:
+    post:
+      summary: 医疗票据v1接口识别
+
+      parameters:
+        - name: crop_image
+          in: query
+          description: 选择是否需要进行图片切分，0关闭切分，1开启切分，默认为0
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+            default: 0
+
+        - name: return_image_base64
+          in: query
+          description: 选择是否需要输出图片base64，对应image_list中image_base64，0关闭，1开启，默认为0
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+            default: 0
+
+        - name: category
+          in: query
+          description: |
+            指定样本类型，不进行样本分类，直接抽取结果，默认为0不使用该功能 |
+            1: 医疗住院收费票据（纸质） |
+            2: 医疗门诊收费票据（纸质） |
+            3: 医疗住院收费票据（电子） |
+            4: 医疗门诊收费票据（电子） |
+            5: 医保结算单 |
+            6: 医疗费用明细 |
+            7: 医疗处方笺 |
+            8: 实验室检验报告 |
+            9: 影像学检查报告 |
+            10: 门急诊病历 |
+            11: 出院小结 |
+            12: 诊断证明书
+          schema:
+            type: integer
+            enum:
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+              - 8
+              - 9
+              - 10
+              - 11
+              - 12
+            default: 0
+
+        - name: coord_restore
+          in: query
+          description: 调整各字段的返回坐标逻辑，1代表坐标以原图为基准，0代表坐标以切图后转正图为基准，默认为0
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+            default: 0
+
+        - name: is_same_file
+          in: query
+          description: PDF是否为一个整份文件，开启则不再对每一页进行单独切图和分类
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+            default: 0
+
+      operationId: ai_service_v1_medical_crop_and_recog_multi
+
+      requestBody:
+        description: 要上传的图片，目前支持jpg, png, bmp, pdf, tiff, ofd, webp, 单帧gif等大部分格式.
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+              example: success
+
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/CodeMessage"
+                  - $ref: "#/components/schemas/Response"
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+  schemas:
+    Response:
+      type: object
+      required:
+        - duration
+        - version
+        - result
+      description: ""
+      properties:
+        duration:
+          type: integer
+          description: 接口总耗时，单位为毫秒
+          example: 100
+        version:
+          type: string
+          description: 接口版本
+          example: v1.2.0
+        result:
+          type: object
+          required:
+            - success_count
+            - page_count
+            - ppi
+            - image_list
+            - object_list
+          description: 样本识别结果
+          properties:
+            success_count:
+              type: integer
+              description: 成功识别的图片数量
+              example: 1
+            page_count:
+              type: integer
+              description: 样本总页数
+              example: 1
+            ppi:
+              type: integer
+              description: pdf解析分辨率，默认144
+              example: 144
+            image_list:
+              type: array
+              items:
+                $ref: "#/components/schemas/ImageItem"
+            object_list:
+              type: array
+              items:
+                $ref: "#/components/schemas/ObjectItem"
+
+    ImageItem:
+      type: object
+      required:
+        - image_angle
+        - rotated_image_width
+        - rotated_image_height
+        - page_id
+        - image_position
+      properties:
+        image_angle:
+          type: integer
+          description: 切分后单张票据的角度
+          enum:
+            - 0
+            - 90
+            - 180
+            - 270
+          example: 0
+
+        rotated_image_width:
+          type: integer
+          description: 切分后单张票据转正后的宽度
+          minimum: 1
+          example: 1000
+
+        rotated_image_height:
+          type: integer
+          description: 切分后单张票据转正后的高度
+          minimum: 1
+          example: 3000
+
+        page_id:
+          type: integer
+          description: 如果是pdf样本，该图片在pdf上的所在页，默认0，第一页
+          minimum: 0
+          example: 0
+
+        image_base64:
+          type: string
+          description: 图片base64
+          example: ""
+
+        image_position:
+          type: array
+          minItems: 0
+          maxItems: 8
+          items:
+            type: integer
+            description: |
+              开启图片切分后单张票据在原图中的坐标位置
+              [0,1,2,3,4,5,6,7]
+              - (0, 1) 左上角坐标
+              - (2, 3) 右上角坐标
+              - (4, 5) 右下角坐标
+              - (6, 7) 左下角坐标
+            example: 100
+          example: [100, 100, 200, 100, 200, 200, 100, 200]
+
+    ObjectItem:
+      type: object
+      required:
+        - doc_type
+        - doc_label
+        - page_ids
+        - image_ids
+      properties:
+        doc_type:
+          type: string
+          description: 单份医疗票据类型
+          enum:
+            - paper_inpatient_medical_invoice
+            - paper_outpatient_medical_invoice
+            - electronic_inpatient_medical_invoice
+            - electronic_outpatient_medical_invoice
+            - medical_insurance_settlement
+            - medical_cost_details
+            - medical_prescription
+            - medical_laboratory_report
+            - medical_diagnostic_report
+            - outpatient_medical_record
+            - discharge_summary
+            - diagnosis_certificate
+            - other
+        doc_label:
+          type: string
+          description: 票据类型中文描述
+          enum:
+            - 医疗住院收费票据（纸质）
+            - 医疗门诊收费票据（纸质）
+            - 医疗住院收费票据（电子）
+            - 医疗门诊收费票据（电子）
+            - 医保结算单
+            - 医疗费用明细
+            - 医疗处方笺
+            - 实验室检验报告
+            - 影像学检查报告
+            - 门急诊病历
+            - 出院小结
+            - 诊断证明书
+            - 其他
+        page_ids:
+          type: array
+          description: 如果是pdf文件，该份票据样本在pdf中的页码
+          minItems: 0
+          items:
+            type: integer
+            description: pdf页码，从0开始计数
+            minimum: 0
+            example: 0
+          example: [0]
+
+        image_ids:
+          type: array
+          description: 该份票据在image_list中的所有图片索引
+          minItems: 0
+          items:
+            type: integer
+            description: image_list中的图片索引id，从0开始计数
+            minimum: 0
+            example: 0
+          example: [0]
+
+      description: 单份医疗票据完整信息
+
+      oneOf:
+        - $ref: "#/components/schemas/Type_paper_inpatient_medical_invoice"
+        - $ref: "#/components/schemas/Type_paper_outpatient_medical_invoice"
+        - $ref: "#/components/schemas/Type_electronic_inpatient_medical_invoice"
+        - $ref: "#/components/schemas/Type_electronic_outpatient_medical_invoice"
+        - $ref: "#/components/schemas/Type_medical_insurance_settlement"
+        - $ref: "#/components/schemas/Type_medical_cost_details"
+        - $ref: "#/components/schemas/Type_medical_prescription"
+        - $ref: "#/components/schemas/Type_medical_laboratory_report"
+        - $ref: "#/components/schemas/Type_medical_diagnostic_report"
+        - $ref: "#/components/schemas/Type_outpatient_medical_record"
+        - $ref: "#/components/schemas/Type_discharge_summary"
+        - $ref: "#/components/schemas/Type_diagnosis_certificate"
+        - $ref: "#/components/schemas/Type_other"
+
+      discriminator:
+        propertyName: doc_type
+        mapping:
+          paper_inpatient_medical_invoice: "#/components/schemas/Type_paper_inpatient_medical_invoice"
+          paper_outpatient_medical_invoice: "#/components/schemas/Type_paper_outpatient_medical_invoice"
+          electronic_inpatient_medical_invoice: "#/components/schemas/Type_electronic_inpatient_medical_invoice"
+          electronic_outpatient_medical_invoice: "#/components/schemas/Type_electronic_outpatient_medical_invoice"
+          medical_insurance_settlement: "#/components/schemas/Type_medical_insurance_settlement"
+          medical_cost_details: "#/components/schemas/Type_medical_cost_details"
+          medical_prescription: "#/components/schemas/Type_medical_prescription"
+          medical_laboratory_report: "#/components/schemas/Type_medical_laboratory_report"
+          medical_diagnostic_report: "#/components/schemas/Type_medical_diagnostic_report"
+          outpatient_medical_record: "#/components/schemas/Type_outpatient_medical_record"
+          discharge_summary: "#/components/schemas/Type_discharge_summary"
+          diagnosis_certificate: "#/components/schemas/Type_diagnosis_certificate"
+          other: "#/components/schemas/Type_other"
+
+    BoundingRegions:
+      type: object
+      required:
+        - page_id
+        - image_id
+        - value
+        - position
+        - char_pos
+      properties:
+        page_id:
+          type: integer
+          description: 坐标所在页码
+          example: 0
+        image_id:
+          type: integer
+          description: 坐标所在图片在image_list中的索引id
+          example: 0
+        value:
+          type: string
+          description: 字段识别结果
+          example: ""
+        position:
+          type: array
+          description: |
+            字段坐标位置
+            [0,1,2,3,4,5,6,7]
+            - (0, 1) 左上角坐标
+            - (2, 3) 右上角坐标
+            - (4, 5) 右下角坐标
+            - (6, 7) 左下角坐标
+          items:
+            type: integer
+            minItems: 0
+            maxItems: 8
+            description: 坐标点
+            example: 100
+          example: [100, 100, 200, 100, 200, 200, 100, 200]
+        char_pos:
+          type: array
+          description: 识别结果所有字符的坐标位置
+          items:
+            type: array
+            description: |
+              单个字符的坐标位置
+              [0,1,2,3,4,5,6,7]
+              - (0, 1) 左上角坐标
+              - (2, 3) 右上角坐标
+              - (4, 5) 右下角坐标
+              - (6, 7) 左下角坐标
+            items:
+              type: integer
+              minItems: 0
+              maxItems: 8
+              description: 坐标点
+              example: 100
+          example: [[100, 100, 200, 100, 200, 200, 100, 200]]
+
+    BasicField:
+      type: object
+      required:
+        - value
+        - label
+        - bounding_regions
+      properties:
+        value:
+          type: string
+          description: 字段识别结果
+          example: "住院发票"
+        label:
+          type: string
+          description: 字段中文描述
+          example: "单据标题名称"
+        bounding_regions:
+          type: array
+          description: 字段坐标
+          items:
+            $ref: "#/components/schemas/BoundingRegions"
+          minItems: 0
+
+    Type_paper_inpatient_medical_invoice:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 医疗住院收费票据（纸质）
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name             单据标题名称
+                      - invoice_code                    票据代码
+                      - invoice_number                  票据号码
+                      - electronic_invoice_code         电子票据代码
+                      - electronic_invoice_number       电子票据号码
+                      - business_serial_number          业务流水号
+                      - bill_verification_code          票据校验码
+                      - payer_social_credit_code        交款人统一社会信用代码
+                      - invoice_date                    开票日期
+                      - name                            姓名
+                      - gender                          性别
+                      - age                             年龄
+                      - inpatient_number                住院号
+                      - medical_record_number           病历号
+                      - bed_number                      床号
+                      - ward                            病区
+                      - medical_insurance_number        医保编号
+                      - medical_insurance_type          医保类型
+                      - social_security_card_number     社会保障号码
+                      - medical_institution_name        医疗机构名称
+                      - medical_institution_type        医疗机构类型
+                      - department                      科室
+                      - medical_treatment_date          就诊日期
+                      - admission_time                  住院起始日期
+                      - discharge_time                  住院结束日期
+                      - hospitalization_days            住院天数
+                      - total_amount_in_words           大写金额合计
+                      - total_expense_amount            发票金额合计
+                      - personal_account_balance        个人账户余额
+                      - personal_self_payment_amount    个人自付金额
+                      - personal_self_bear_amount       个人自负金额
+                      - category_self_payment_amount    分类自付金额
+                      - personal_self_funded_amount     个人自费金额
+                      - prepaid_amount                  预缴金额
+                      - supplementary_payment_amount    补缴金额
+                      - refund_amount                   退费金额
+                      - rounding_amount                 抹零金额
+                      - medical_insurance_payment       医保统筹基金支付
+                      - additional_fund_payment         附加基金支付
+                      - personal_account_payment        个人账户支付
+                      - personal_cash_payment           个人现金支付
+                      - other_payments                  其他支付
+                      - payee_organization              收款单位
+                      - payee                           收款人
+                      - reviewer                        复核人
+                      - payer                           交款人
+                      - current_year_balance            医保当年账户余额
+                      - cumulative_balance              医保历年账户余额
+                      - cumulative_insurance_payment    累计统筹报销金额
+                      - cumulative_deductible_amount    累计起付线金额
+                    enum:
+                      - document_title_name
+                      - invoice_code
+                      - invoice_number
+                      - electronic_invoice_code
+                      - electronic_invoice_number
+                      - business_serial_number
+                      - bill_verification_code
+                      - payer_social_credit_code
+                      - invoice_date
+                      - name
+                      - gender
+                      - age
+                      - inpatient_number
+                      - medical_record_number
+                      - bed_number
+                      - ward
+                      - medical_insurance_number
+                      - medical_insurance_type
+                      - social_security_card_number
+                      - medical_institution_name
+                      - medical_institution_type
+                      - department
+                      - medical_treatment_date
+                      - admission_time
+                      - discharge_time
+                      - hospitalization_days
+                      - total_amount_in_words
+                      - total_expense_amount
+                      - personal_account_balance
+                      - personal_self_payment_amount
+                      - personal_self_bear_amount
+                      - category_self_payment_amount
+                      - personal_self_funded_amount
+                      - prepaid_amount
+                      - supplementary_payment_amount
+                      - refund_amount
+                      - rounding_amount
+                      - medical_insurance_payment
+                      - additional_fund_payment
+                      - personal_account_payment
+                      - personal_cash_payment
+                      - other_payments
+                      - payee_organization
+                      - payee
+                      - reviewer
+                      - payer
+                      - current_year_balance
+                      - cumulative_balance
+                      - cumulative_insurance_payment
+                      - cumulative_deductible_amount
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                      - expense_information                      费用信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                      - expense_information
+                    example: invoice_information
+
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            type: object
+            required:
+              - name
+              - label
+              - items
+            properties:
+              name:
+                type: string
+                description: 表格名称
+                example: "expense_item_summary_table"
+              label:
+                type: string
+                description: 表格名称中文描述
+                example: "费目金额汇总表"
+              items:
+                type: array
+                description: 表格所有行数据
+                items:
+                  type: array
+                  description: 表格单行数据
+                  items:
+                    type: object
+                    description: 单个字段识别结果
+                    allOf:
+                      - $ref: "#/components/schemas/BasicField"
+                      - type: object
+                        required:
+                          - key
+                        properties:
+                          key:
+                            type: string
+                            example: project_name
+                            description: |
+                              识别字段key
+                              - project_name              项目名称
+                              - amount                    金额
+                              - personal_payment_amount   个人支付金额
+                              - remarks                   备注
+                            enum:
+                              - project_name
+                              - amount
+                              - personal_payment_amount
+                              - remarks
+
+    Type_paper_outpatient_medical_invoice:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 医疗门诊收费票据（纸质）
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name             单据标题名称
+                      - invoice_code                    票据代码
+                      - invoice_number                  票据号码
+                      - electronic_invoice_code         电子票据代码
+                      - electronic_invoice_number       电子票据号码
+                      - business_serial_number          业务流水号
+                      - bill_verification_code          票据校验码
+                      - payer_social_credit_code        交款人统一社会信用代码
+                      - invoice_date                    开票日期
+                      - name                            姓名
+                      - gender                          性别
+                      - age                             年龄
+                      - outpatient_number               门诊号
+                      - medical_insurance_number        医保编号
+                      - medical_insurance_type          医保类型
+                      - social_security_card_number     社会保障号码
+                      - medical_institution_name        医疗机构名称
+                      - medical_institution_type        医疗机构类型
+                      - department                      科室
+                      - medical_treatment_date          就诊日期
+                      - total_amount_in_words           大写金额合计
+                      - total_expense_amount            发票金额合计
+                      - personal_account_balance        个人账户余额
+                      - personal_self_payment_amount    个人自付金额
+                      - personal_self_bear_amount       个人自负金额
+                      - category_self_payment_amount    分类自付金额
+                      - personal_self_funded_amount     个人自费金额
+                      - prepaid_amount                  预缴金额
+                      - supplementary_payment_amount    补缴金额
+                      - refund_amount                   退费金额
+                      - rounding_amount                 抹零金额
+                      - medical_insurance_payment       医保统筹基金支付
+                      - additional_fund_payment         附加基金支付
+                      - personal_account_payment        个人账户支付
+                      - personal_cash_payment           个人现金支付
+                      - other_payments                  其他支付
+                      - payee_organization              收款单位
+                      - payee                           收款人
+                      - reviewer                        复核人
+                      - payer                           交款人
+                      - current_year_balance            医保当年账户余额
+                      - cumulative_balance              医保历年账户余额
+                      - cumulative_insurance_payment    累计统筹报销金额
+                      - cumulative_deductible_amount    累计起付线金额
+                    enum:
+                      - document_title_name
+                      - invoice_code
+                      - invoice_number
+                      - electronic_invoice_code
+                      - electronic_invoice_number
+                      - business_serial_number
+                      - bill_verification_code
+                      - payer_social_credit_code
+                      - invoice_date
+                      - name
+                      - gender
+                      - age
+                      - outpatient_number
+                      - medical_insurance_number
+                      - medical_insurance_type
+                      - social_security_card_number
+                      - medical_institution_name
+                      - medical_institution_type
+                      - department
+                      - medical_treatment_date
+                      - total_amount_in_words
+                      - total_expense_amount
+                      - personal_account_balance
+                      - personal_self_payment_amount
+                      - personal_self_bear_amount
+                      - category_self_payment_amount
+                      - personal_self_funded_amount
+                      - prepaid_amount
+                      - supplementary_payment_amount
+                      - refund_amount
+                      - rounding_amount
+                      - medical_insurance_payment
+                      - additional_fund_payment
+                      - personal_account_payment
+                      - personal_cash_payment
+                      - other_payments
+                      - payee_organization
+                      - payee
+                      - reviewer
+                      - payer
+                      - current_year_balance
+                      - cumulative_balance
+                      - cumulative_insurance_payment
+                      - cumulative_deductible_amount
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                      - expense_information                      费用信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                      - expense_information
+                    example: invoice_information
+
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            anyOf:
+              - type: object
+                required:
+                  - name
+                  - label
+                  - items
+                properties:
+                  name:
+                    type: string
+                    description: |
+                      表格名称
+                      item_summary_table          项目明细汇总表
+                    enum:
+                      - item_summary_table
+                    example: "item_summary_table"
+                  label:
+                    type: string
+                    description: 表格名称中文描述
+                    example: "项目明细汇总表"
+                  items:
+                    type: array
+                    description: 项目明细汇总表所有行数据
+                    items:
+                      type: array
+                      description: 项目明细汇总表单行数据
+                      items:
+                        type: object
+                        description: 项目明细汇总表中字段识别结果
+                        allOf:
+                          - $ref: "#/components/schemas/BasicField"
+                          - type: object
+                            required:
+                              - key
+                            properties:
+                              key:
+                                type: string
+                                example: project_name
+                                description: |
+                                  识别字段key
+                                  - project_name             项目名称
+                                  - specification            规格
+                                  - amount                   金额 
+                                  - remarks                  备注
+                                  - quantity                 数量
+                                  - unit                     单位
+                                  - reimbursement_type       医保报销类别
+                                enum:
+                                  - project_name
+                                  - specification
+                                  - amount
+                                  - remarks
+                                  - quantity
+                                  - unit
+                                  - reimbursement_type
+              - type: object
+                required:
+                  - name
+                  - label
+                  - items
+                properties:
+                  name:
+                    type: string
+                    description: |
+                      表格名称
+                      expense_item_summary_table  费目金额汇总表
+                    enum:
+                      - expense_item_summary_table
+                    example: "expense_item_summary_table"
+                  label:
+                    type: string
+                    description: 表格名称中文描述
+                    example: "费目金额汇总表"
+                  items:
+                    type: array
+                    description: 费目金额汇总表所有行数据
+                    items:
+                      type: array
+                      description: 费目金额汇总表单行数据
+                      items:
+                        type: object
+                        description: 费目金额汇总表中字段识别结果
+                        allOf:
+                          - $ref: "#/components/schemas/BasicField"
+                          - type: object
+                            required:
+                              - key
+                            properties:
+                              key:
+                                type: string
+                                example: expense_item
+                                description: |
+                                  识别字段key
+                                  - expense_item              费目
+                                  - amount                    金额
+                                  - remarks                   备注   
+                                  - reimbursement_type        医保报销类别
+                                enum:
+                                  - expense_item
+                                  - amount
+                                  - remarks
+                                  - reimbursement_type
+    Type_electronic_inpatient_medical_invoice:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 医疗住院收费票据（电子）
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name             单据标题名称
+                      - invoice_code                    票据代码
+                      - invoice_number                  票据号码
+                      - business_serial_number          业务流水号
+                      - bill_verification_code          票据校验码
+                      - payer_social_credit_code        交款人统一社会信用代码
+                      - invoice_date                    开票日期
+                      - gender                          性别
+                      - inpatient_number                住院号
+                      - medical_record_number           病历号
+                      - bed_number                      床号
+                      - ward                            病区
+                      - medical_insurance_number        医保编号
+                      - medical_insurance_type          医保类型
+                      - social_security_card_number     社会保障号码
+                      - medical_institution_name        医疗机构名称
+                      - medical_institution_type        医疗机构类型
+                      - department                      科室
+                      - admission_time                  住院起始日期
+                      - discharge_time                  住院结束日期
+                      - hospitalization_days            住院天数
+                      - total_amount_in_words           大写金额合计
+                      - total_expense_amount            发票金额合计
+                      - personal_account_balance        个人账户余额
+                      - personal_self_payment_amount    个人自付金额
+                      - personal_self_bear_amount       个人自负金额
+                      - category_self_payment_amount    分类自付金额
+                      - personal_self_funded_amount     个人自费金额
+                      - prepaid_amount                  预缴金额
+                      - supplementary_payment_amount    补缴金额
+                      - refund_amount                   退费金额
+                      - rounding_amount                 抹零金额
+                      - medical_insurance_payment       医保统筹基金支付
+                      - additional_fund_payment         附加基金支付
+                      - personal_account_payment        个人账户支付
+                      - personal_cash_payment           个人现金支付
+                      - other_payments                  其他支付
+                      - payee_organization              收款单位
+                      - payee                           收款人
+                      - reviewer                        复核人
+                      - payer                           交款人
+                      - current_year_balance            医保当年账户余额
+                      - cumulative_balance              医保历年账户余额
+                      - cumulative_insurance_payment    累计统筹报销金额
+                      - cumulative_deductible_amount    累计起付线金额
+                    enum:
+                      - document_title_name
+                      - invoice_code
+                      - invoice_number
+                      - business_serial_number
+                      - bill_verification_code
+                      - payer_social_credit_code
+                      - invoice_date
+                      - gender
+                      - inpatient_number
+                      - medical_record_number
+                      - bed_number
+                      - ward
+                      - medical_insurance_number
+                      - medical_insurance_type
+                      - social_security_card_number
+                      - medical_institution_name
+                      - medical_institution_type
+                      - department
+                      - admission_time
+                      - discharge_time
+                      - hospitalization_days
+                      - total_amount_in_words
+                      - total_expense_amount
+                      - personal_account_balance
+                      - personal_self_payment_amount
+                      - personal_self_bear_amount
+                      - category_self_payment_amount
+                      - personal_self_funded_amount
+                      - prepaid_amount
+                      - supplementary_payment_amount
+                      - refund_amount
+                      - rounding_amount
+                      - medical_insurance_payment
+                      - additional_fund_payment
+                      - personal_account_payment
+                      - personal_cash_payment
+                      - other_payments
+                      - payee_organization
+                      - payee
+                      - reviewer
+                      - payer
+                      - current_year_balance
+                      - cumulative_balance
+                      - cumulative_insurance_payment
+                      - cumulative_deductible_amount
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                      - expense_information                      费用信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                      - expense_information
+                    example: invoice_information
+
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            type: object
+            required:
+              - name
+              - label
+              - items
+            properties:
+              name:
+                type: string
+                description: 表格名称
+                enum:
+                  - expense_item_summary_table
+                example: "expense_item_summary_table"
+              label:
+                type: string
+                description: 表格名称中文描述
+                example: "费目金额汇总表"
+              items:
+                type: array
+                description: 表格所有行数据
+                items:
+                  type: array
+                  description: 表格单行数据
+                  items:
+                    type: object
+                    description: 单个字段识别结果
+                    allOf:
+                      - $ref: "#/components/schemas/BasicField"
+                      - type: object
+                        required:
+                          - key
+                        properties:
+                          key:
+                            type: string
+                            example: project_name
+                            description: |
+                              识别字段key
+                              - project_name              项目名称
+                              - amount                    金额
+                              - remarks                   备注
+                            enum:
+                              - project_name
+                              - amount
+                              - remarks
+
+    Type_electronic_outpatient_medical_invoice:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 医疗门诊收费票据（电子）
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name             单据标题名称
+                      - invoice_code                    票据代码
+                      - invoice_number                  票据号码
+                      - business_serial_number          业务流水号
+                      - bill_verification_code          票据校验码
+                      - payer_social_credit_code        交款人统一社会信用代码
+                      - invoice_date                    开票日期
+                      - gender                          性别
+                      - outpatient_number               门诊号
+                      - medical_record_number           病历号
+                      - medical_insurance_number        医保编号
+                      - medical_insurance_type          医保类型
+                      - social_security_card_number     社会保障号码
+                      - medical_institution_name        医疗机构名称
+                      - medical_institution_type        医疗机构类型
+                      - department                      科室
+                      - medical_treatment_date          就诊日期
+                      - total_amount_in_words           大写金额合计
+                      - total_expense_amount            发票金额合计
+                      - personal_account_balance        个人账户余额
+                      - personal_self_payment_amount    个人自付金额
+                      - personal_self_bear_amount       个人自负金额
+                      - category_self_payment_amount    分类自付金额
+                      - personal_self_funded_amount     个人自费金额
+                      - prepaid_amount                  预缴金额
+                      - supplementary_payment_amount    补缴金额
+                      - refund_amount                   退费金额
+                      - rounding_amount                 抹零金额
+                      - medical_insurance_payment       医保统筹基金支付
+                      - additional_fund_payment         附加基金支付
+                      - personal_account_payment        个人账户支付
+                      - personal_cash_payment           个人现金支付
+                      - other_payments                  其他支付
+                      - payee_organization              收款单位
+                      - payee                           收款人
+                      - reviewer                        复核人
+                      - payer                           交款人
+                      - current_year_balance            医保当年账户余额
+                      - cumulative_balance              医保历年账户余额
+                      - cumulative_insurance_payment    累计统筹报销金额
+                      - cumulative_deductible_amount    累计起付线金额
+                    enum:
+                      - document_title_name
+                      - invoice_code
+                      - invoice_number
+                      - business_serial_number
+                      - bill_verification_code
+                      - payer_social_credit_code
+                      - invoice_date
+                      - gender
+                      - outpatient_number
+                      - medical_record_number
+                      - medical_insurance_number
+                      - medical_insurance_type
+                      - social_security_card_number
+                      - medical_institution_name
+                      - medical_institution_type
+                      - department
+                      - medical_treatment_date
+                      - total_amount_in_words
+                      - total_expense_amount
+                      - personal_account_balance
+                      - personal_self_payment_amount
+                      - personal_self_bear_amount
+                      - category_self_payment_amount
+                      - personal_self_funded_amount
+                      - prepaid_amount
+                      - supplementary_payment_amount
+                      - refund_amount
+                      - rounding_amount
+                      - medical_insurance_payment
+                      - additional_fund_payment
+                      - personal_account_payment
+                      - personal_cash_payment
+                      - other_payments
+                      - payee_organization
+                      - payee
+                      - reviewer
+                      - payer
+                      - current_year_balance
+                      - cumulative_balance
+                      - cumulative_insurance_payment
+                      - cumulative_deductible_amount
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                      - expense_information                      费用信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                      - expense_information
+                    example: invoice_information
+
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            anyOf:
+              - type: object
+                required:
+                  - name
+                  - label
+                  - items
+                properties:
+                  name:
+                    type: string
+                    description: |
+                      表格名称
+                      item_summary_table          项目明细汇总表
+                    enum:
+                      - item_summary_table
+                    example: "item_summary_table"
+                  label:
+                    type: string
+                    description: 表格名称中文描述
+                    example: "项目明细汇总表"
+                  items:
+                    type: array
+                    description: 项目明细汇总表所有行数据
+                    items:
+                      type: array
+                      description: 项目明细汇总表单行数据
+                      items:
+                        type: object
+                        description: 项目明细汇总表中字段识别结果
+                        allOf:
+                          - $ref: "#/components/schemas/BasicField"
+                          - type: object
+                            required:
+                              - key
+                            properties:
+                              key:
+                                type: string
+                                example: project_name
+                                description: |
+                                  识别字段key
+                                  - project_name             项目名称
+                                  - specification            规格
+                                  - amount                   金额 
+                                  - remarks                  备注
+                                  - quantity                 数量
+                                  - unit                     单位
+                                  - reimbursement_type       医保报销类别
+                                enum:
+                                  - project_name
+                                  - specification
+                                  - amount
+                                  - remarks
+                                  - quantity
+                                  - unit
+                                  - reimbursement_type
+              - type: object
+                required:
+                  - name
+                  - label
+                  - items
+                properties:
+                  name:
+                    type: string
+                    description: |
+                      表格名称
+                      expense_item_summary_table  费目金额汇总表
+                    enum:
+                      - expense_item_summary_table
+                    example: "expense_item_summary_table"
+                  label:
+                    type: string
+                    description: 表格名称中文描述
+                    example: "费目金额汇总表"
+                  items:
+                    type: array
+                    description: 费目金额汇总表所有行数据
+                    items:
+                      type: array
+                      description: 费目金额汇总表单行数据
+                      items:
+                        type: object
+                        description: 费目金额汇总表中字段识别结果
+                        allOf:
+                          - $ref: "#/components/schemas/BasicField"
+                          - type: object
+                            required:
+                              - key
+                            properties:
+                              key:
+                                type: string
+                                example: expense_item
+                                description: |
+                                  识别字段key
+                                  - expense_item              费目
+                                  - amount                    金额
+                                  - remarks                   备注
+                                enum:
+                                  - expense_item
+                                  - amount
+                                  - remarks
+
+    Type_medical_insurance_settlement:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 医保结算单
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            anyOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name                     单据标题名称
+                      - total_pages_of_invoice                  票据总页数
+                      - current_page_number                     当前页码
+                      - settlement_time                         结算时间
+                      - name                                    姓名
+                      - gender                                  性别
+                      - age                                     年龄
+                      - medical_insurance_type                  医保类型
+                      - social_security_card_number             社会保障号码
+                      - insurance_location                      参保地
+                      - treatment_location                      就医地
+                      - visit_type                              业务类别
+                      - insurance_type                          险种类型
+                      - personnel_category                      人员类别
+                      - affiliated_unit                         所属单位
+                      - outpatient_number                       门诊号
+                      - inpatient_number                        住院号
+                      - medical_record_number                   病历号
+                      - bed_number                              床号
+                      - ward                                    病区
+                      - medical_institution_name                医疗机构名称
+                      - medical_institution_type                医疗机构类型
+                      - department                              科室
+                      - medical_treatment_date                  就诊日期
+                      - admission_time                          住院起始日期
+                      - discharge_time                          住院结束日期
+                      - hospitalization_days                    住院天数
+                      - main_diagnosis                          主要诊断
+                      - secondary_diagnosis                     次要诊断
+                      - total_expense_amount                    费用合计金额
+                      - deductible_amount                       起付线金额
+                      - paid_deductible_amount                  已付起付线
+                      - personal_self_payment_amount            个人自付金额
+                      - personal_self_funded_amount             个人自费金额
+                      - medical_insurance_payment               医保统筹基金支付
+                      - cumulative_insurance_payment            本年医保统筹基金累计支付
+                      - insurance_reimbursement_rate            医保统筹报销比例
+                      - personal_account_payment                个人账户支付
+                      - personal_cash_payment                   个人现金支付
+                      - other_payments                          其他支付
+                      - current_year_balance                    医保当年账户余额
+                      - category_b_prepaid_total                乙类先行自付总额
+                      - over_limit_self_payment_total_amount    超限价自付总额
+                    enum:
+                      - document_title_name
+                      - total_pages_of_invoice
+                      - current_page_number
+                      - settlement_time
+                      - name
+                      - gender
+                      - age
+                      - medical_insurance_type
+                      - social_security_card_number
+                      - insurance_location
+                      - treatment_location
+                      - visit_type
+                      - insurance_type
+                      - personnel_category
+                      - affiliated_unit
+                      - outpatient_number
+                      - inpatient_number
+                      - medical_record_number
+                      - bed_number
+                      - ward
+                      - medical_institution_name
+                      - medical_institution_type
+                      - department
+                      - medical_treatment_date
+                      - admission_time
+                      - discharge_time
+                      - hospitalization_days
+                      - main_diagnosis
+                      - secondary_diagnosis
+                      - total_expense_amount
+                      - deductible_amount
+                      - paid_deductible_amount
+                      - personal_self_payment_amount
+                      - personal_self_funded_amount
+                      - medical_insurance_payment
+                      - cumulative_insurance_payment
+                      - insurance_reimbursement_rate
+                      - personal_account_payment
+                      - personal_cash_payment
+                      - other_payments
+                      - current_year_balance
+                      - category_b_prepaid_total
+                      - over_limit_self_payment_total_amount
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                      - expense_information                      费用信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                      - expense_information
+                    example: invoice_information
+
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            anyOf:
+              - type: object
+                required:
+                  - name
+                  - label
+                  - items
+                properties:
+                  name:
+                    type: string
+                    description: |
+                      表格名称
+                      expense_summary_table          费用明细汇总表
+                    enum:
+                      - expense_summary_table
+                    example: "expense_summary_table"
+                  label:
+                    type: string
+                    description: 表格名称中文描述
+                    example: "费用明细汇总表"
+                  items:
+                    type: array
+                    description: 表格所有行数据
+                    items:
+                      type: array
+                      description: 表格单行数据
+                      items:
+                        type: object
+                        description: 费用明细汇总表格行数据
+                        allOf:
+                          - $ref: "#/components/schemas/BasicField"
+                          - type: object
+                            required:
+                              - key
+                            properties:
+                              key:
+                                type: string
+                                example: expense_name
+                                description: |
+                                  识别字段key
+                                  - expense_name                         费用名称
+                                  - amount                               金额
+                                  - self_funded_amount                   自费 
+                                  - category_b_advance_payment           乙类先行自付
+                                  - over_limit_self_payment_amount       超限价自付
+                                  - category_a_expense_amount            甲类费用金额
+                                  - category_b_expense_amount            乙类费用金额
+                                  - category_c_expense_amount            丙类费用金额
+                                  - partial_item_self_payment_amount     部分项目自付
+                                  - out_of_policy_scope_amount           政策范围外费用金额
+                                enum:
+                                  - expense_name
+                                  - amount
+                                  - self_funded_amount
+                                  - category_b_advance_payment
+                                  - over_limit_self_payment_amount
+                                  - category_a_expense_amount
+                                  - category_b_expense_amount
+                                  - category_c_expense_amount
+                                  - partial_item_self_payment_amount
+                                  - out_of_policy_scope_amount
+              - type: object
+                required:
+                  - name
+                  - label
+                  - items
+                properties:
+                  name:
+                    type: string
+                    description: |
+                      表格名称
+                      funds_payment_summary_table    基金支付合计汇总表
+                    enum:
+                      - funds_payment_summary_table
+                    example: "funds_payment_summary_table"
+                  label:
+                    type: string
+                    description: 表格名称中文描述
+                    example: "基金支付合计汇总表"
+                  items:
+                    type: array
+                    description: 表格所有行数据
+                    items:
+                      type: array
+                      description: 表格单行数据
+                      items:
+                        type: object
+                        description: 基金支付合计汇总表格行数据
+                        allOf:
+                          - $ref: "#/components/schemas/BasicField"
+                          - type: object
+                            required:
+                              - key
+                            properties:
+                              key:
+                                type: string
+                                example: fund_type
+                                description: |
+                                  识别字段key
+                                  - fund_type              医保基金类型
+                                  - fund_payment_amount    基金支付金额
+                                enum:
+                                  - fund_type
+                                  - fund_payment_amount
+    Type_medical_cost_details:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 医疗费用明细
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name            单据标题名称
+                      - total_pages_of_invoice         票据总页数
+                      - current_page_number            当前页码
+                      - invoice_code                   票据代码
+                      - invoice_number                 票据号码
+                      - invoice_date                   开票日期
+                      - name                           姓名
+                      - gender                         性别
+                      - age                            年龄
+                      - personnel_category             人员类别
+                      - outpatient_number              门诊号
+                      - inpatient_number               住院号
+                      - medical_record_number          病历号
+                      - bed_number                     床号
+                      - ward                           病区
+                      - id_number                      公民身份证号码
+                      - social_security_card_number    社会保障号码
+                      - medical_institution_name       医疗机构名称
+                      - medical_institution_type       医疗机构类型
+                      - department                     科室
+                      - medical_treatment_date         就诊日期
+                      - admission_time                 住院起始日期
+                      - discharge_time                 住院结束日期
+                      - hospitalization_days           住院天数
+                      - total_expense_amount           费用合计金额
+                      - payer                          交款人
+                      - payee_organization             收款单位
+                    enum:
+                      - document_title_name
+                      - total_pages_of_invoice
+                      - current_page_number
+                      - invoice_code
+                      - invoice_number
+                      - invoice_date
+                      - name
+                      - gender
+                      - age
+                      - personnel_category
+                      - outpatient_number
+                      - inpatient_number
+                      - medical_record_number
+                      - bed_number
+                      - ward
+                      - id_number
+                      - social_security_card_number
+                      - medical_institution_name
+                      - medical_institution_type
+                      - department
+                      - medical_treatment_date
+                      - admission_time
+                      - discharge_time
+                      - hospitalization_days
+                      - total_expense_amount
+                      - payer
+                      - payee_organization
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                      - expense_information                      费用信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                      - expense_information
+                    example: invoice_information
+
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            type: object
+            required:
+              - name
+              - label
+              - items
+            properties:
+              name:
+                type: string
+                description: 表格名称
+                enum:
+                  - treatment_summary_table
+                example: "treatment_summary_table"
+              label:
+                type: string
+                description: 表格名称中文描述
+                example: "诊疗清单汇总表"
+              items:
+                type: array
+                description: 表格所有行数据
+                items:
+                  type: array
+                  description: 表格单行数据
+                  items:
+                    type: object
+                    description: 单个字段识别结果
+                    allOf:
+                      - $ref: "#/components/schemas/BasicField"
+                      - type: object
+                        required:
+                          - key
+                        properties:
+                          key:
+                            type: string
+                            example: project_name
+                            description: |
+                              识别字段key
+                              - project_name                    项目名称
+                              - project_category                项目类别（费目）
+                              - project_code                    项目编号
+                              - quantity                        数量
+                              - unit                            单位
+                              - amount                          金额
+                              - unit_price                      单价
+                              - specification                   规格
+                              - reimbursement_type              医保报销类别
+                              - self_funded_amount              自费金额
+                              - category_self_payment_amount    乙类分类自付
+                              - over_limit_self_payment_amount  超限价自付
+                              - remarks 备注
+                            enum:
+                              - project_name
+                              - project_category
+                              - project_code
+                              - quantity
+                              - unit
+                              - amount
+                              - unit_price
+                              - specification
+                              - reimbursement_type
+                              - self_funded_amount
+                              - category_self_payment_amount
+                              - over_limit_self_payment_amount
+                              - remarks
+
+    Type_medical_prescription:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 医疗处方笺
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name            单据标题名称
+                      - prescription_number            处方号
+                      - issuance_date                  开具日期
+                      - name                           姓名
+                      - gender                         性别
+                      - age                            年龄
+                      - outpatient_number              门诊号
+                      - inpatient_number               住院号
+                      - medical_record_number          病历号
+                      - bed_number                     床号
+                      - ward                           病区
+                      - medical_institution_name       医疗机构名称
+                      - department                     科室
+                      - clinical_diagnosis_symptoms    临床诊断
+                      - prescribing_doctor             开单医生
+                      - dispensing_pharmacist          发药药师
+                      - total_expense_amount           费用合计金额
+                    enum:
+                      - document_title_name
+                      - prescription_number
+                      - issuance_date
+                      - name
+                      - gender
+                      - age
+                      - outpatient_number
+                      - inpatient_number
+                      - medical_record_number
+                      - bed_number
+                      - ward
+                      - medical_institution_name
+                      - department
+                      - clinical_diagnosis_symptoms
+                      - prescribing_doctor
+                      - dispensing_pharmacist
+                      - total_expense_amount
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                      - expense_information                      费用信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                      - expense_information
+                    example: invoice_information
+
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            type: object
+            required:
+              - name
+              - label
+              - items
+            properties:
+              name:
+                type: string
+                description: 表格名称
+                enum:
+                  - prescription_summary_table
+                example: "prescription_summary_table"
+              label:
+                type: string
+                description: 表格名称中文描述
+                example: "处方明细汇总表"
+              items:
+                type: array
+                description: 表格所有行数据
+                items:
+                  type: array
+                  description: 表格单行数据
+                  items:
+                    type: object
+                    description: 字段识别结果
+                    allOf:
+                      - $ref: "#/components/schemas/BasicField"
+                      - type: object
+                        required:
+                          - key
+                        properties:
+                          key:
+                            type: string
+                            example: drug_name
+                            description: |
+                              识别字段key
+                              - drug_name            药品名称
+                              - quantity             数量
+                              - unit                 单位
+                              - specification        规格
+                              - usage                用法
+                              - dosage               用量
+                              - unit_price           单价
+                              - amount               金额
+                            enum:
+                              - drug_name
+                              - quantity
+                              - unit
+                              - specification
+                              - usage
+                              - dosage
+                              - unit_price
+                              - amount
+
+    Type_medical_laboratory_report:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 实验室检验报告
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name            单据标题名称
+                      - report_time                    报告时间
+                      - name                           姓名
+                      - gender                         性别
+                      - age                            年龄
+                      - outpatient_number              门诊号
+                      - inpatient_number               住院号
+                      - medical_record_number          病历号
+                      - patient_number                 病人编号
+                      - bed_number                     床号
+                      - ward                           病区
+                      - medical_institution_name       医疗机构名称
+                      - department                     科室
+                      - inspection_item_name           检查项目名称
+                      - inspection_item_instrument     检查项目仪器
+                      - experimental_method            实验方法
+                      - sampling_time                  采样时间
+                      - receipt_time                   接收时间
+                      - inspection_number              检查编号
+                      - specimen_number                标本号
+                      - specimen_type                  标本类型
+                      - clinical_doctor                临床医生
+                      - sampling_doctor                采样医生
+                      - laboratory_doctor              检验医生
+                      - audit_doctor                   审核医生
+                      - clinical_diagnosis_symptoms    临床诊断/症状
+                    enum:
+                      - document_title_name
+                      - report_time
+                      - name
+                      - gender
+                      - age
+                      - outpatient_number
+                      - inpatient_number
+                      - medical_record_number
+                      - patient_number
+                      - bed_number
+                      - ward
+                      - medical_institution_name
+                      - department
+                      - inspection_item_name
+                      - inspection_item_instrument
+                      - experimental_method
+                      - sampling_time
+                      - receipt_time
+                      - inspection_number
+                      - specimen_number
+                      - specimen_type
+                      - clinical_doctor
+                      - sampling_doctor
+                      - laboratory_doctor
+                      - audit_doctor
+                      - clinical_diagnosis_symptoms
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                    example: invoice_information
+
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            type: object
+            required:
+              - name
+              - label
+              - items
+            properties:
+              name:
+                type: string
+                description: 表格名称
+                enum:
+                  - test_results_summary_table
+                example: "test_results_summary_table"
+              label:
+                type: string
+                description: 表格名称中文描述
+                example: "检验结果汇总表"
+              items:
+                type: array
+                description: 表格所有行数据
+                items:
+                  type: array
+                  description: 表格单行数据
+                  items:
+                    type: object
+                    description: 表格行数据
+                    allOf:
+                      - $ref: "#/components/schemas/BasicField"
+                      - type: object
+                        required:
+                          - key
+                        properties:
+                          key:
+                            type: string
+                            example: project_name
+                            description: |
+                              识别字段key
+                              - project_name         项目名称
+                              - result               结果
+                              - unit                 单位
+                              - reference_value      参考值
+                              - prompt               提示
+                            enum:
+                              - project_name
+                              - result
+                              - unit
+                              - reference_value
+                              - prompt
+
+    Type_medical_diagnostic_report:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 影像学检查报告
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name            单据标题名称
+                      - total_pages_of_invoice         票据总页数
+                      - current_page_number            当前页码
+                      - report_time                    报告时间
+                      - name                           姓名
+                      - gender                         性别
+                      - age                            年龄
+                      - outpatient_number              门诊号
+                      - inpatient_number               住院号
+                      - medical_record_number          病历号
+                      - bed_number                     床号
+                      - ward                           病区
+                      - medical_institution_name       医疗机构名称
+                      - order_department               开单科室
+                      - inspection_item_name           检查项目名称
+                      - inspection_time                检查时间
+                      - inspection_number              检查编号
+                      - inspection_part                检查部位
+                      - clinical_doctor                临床医生
+                      - laboratory_doctor              检验医生
+                      - audit_doctor                   审核医生
+                      - diagnosis_content              影像所见
+                      - diagnosis_result               诊断意见/结果
+                    enum:
+                      - document_title_name
+                      - total_pages_of_invoice
+                      - current_page_number
+                      - report_time
+                      - name
+                      - gender
+                      - age
+                      - outpatient_number
+                      - inpatient_number
+                      - medical_record_number
+                      - bed_number
+                      - ward
+                      - medical_institution_name
+                      - order_department
+                      - inspection_item_name
+                      - inspection_time
+                      - inspection_number
+                      - inspection_part
+                      - clinical_doctor
+                      - laboratory_doctor
+                      - audit_doctor
+                      - diagnosis_content
+                      - diagnosis_result
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                    example: invoice_information
+
+    Type_outpatient_medical_record:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 门急诊病历
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name            单据标题名称
+                      - total_pages_of_invoice         票据总页数
+                      - current_page_number            当前页码
+                      - name                           姓名
+                      - gender                         性别
+                      - age                            年龄
+                      - outpatient_number              门诊号
+                      - medical_institution_name       医疗机构名称
+                      - medical_treatment_date         就诊日期
+                      - department                     科室
+                      - clinical_doctor                临床医生
+                      - chief_complaint                主诉
+                      - present_illness_history        现病史
+                      - past_medical_history           既往史
+                      - allergy_history                过敏史
+                      - personal_history               个人史
+                      - family_medical_history         家族史
+                      - marital_history                婚姻史
+                      - obstetric_history              孕产史
+                      - physical_examination           体格检查
+                      - auxiliary_examination          辅助检查
+                      - clinical_diagnosis_symptoms    临床诊断/症状
+                      - diagnosis_result               诊断结果
+                      - outpatient_treatment           门诊处置
+                      - medical_advice                 医学建议/医嘱
+                    enum:
+                      - document_title_name
+                      - total_pages_of_invoice
+                      - current_page_number
+                      - name
+                      - gender
+                      - age
+                      - outpatient_number
+                      - medical_institution_name
+                      - medical_treatment_date
+                      - department
+                      - clinical_doctor
+                      - chief_complaint
+                      - present_illness_history
+                      - past_medical_history
+                      - allergy_history
+                      - personal_history
+                      - family_medical_history
+                      - marital_history
+                      - obstetric_history
+                      - physical_examination
+                      - auxiliary_examination
+                      - clinical_diagnosis_symptoms
+                      - diagnosis_result
+                      - outpatient_treatment
+                      - medical_advice
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                    example: invoice_information
+
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            type: object
+            required:
+              - name
+              - label
+              - items
+            properties:
+              name:
+                type: string
+                description: 表格名称
+                enum:
+                  - prescription_summary_table
+                example: "prescription_summary_table"
+              label:
+                type: string
+                description: 表格名称中文描述
+                example: "处方汇总表"
+              items:
+                type: array
+                description: 表格所有行数据
+                items:
+                  type: array
+                  description: 表格单行数据
+                  items:
+                    type: object
+                    description: 字段识别结果
+                    allOf:
+                      - $ref: "#/components/schemas/BasicField"
+                      - type: object
+                        required:
+                          - key
+                        properties:
+                          key:
+                            type: string
+                            example: drug_name
+                            description: |
+                              识别字段key
+                              - drug_name               药品名称
+                              - usage                   用法
+                              - dosage                  用量
+                              - medication_frequency    用药频率
+                              - medication_course       用药疗程
+                              - specification           规格
+                              - notes_or_instructions   提示/嘱托
+                            enum:
+                              - drug_name
+                              - usage
+                              - dosage
+                              - medication_frequency
+                              - medication_course
+                              - specification
+                              - notes_or_instructions
+
+    Type_discharge_summary:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 出院小结
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name             单据标题名称
+                      - total_pages_of_invoice          票据总页数
+                      - current_page_number             当前页码
+                      - name                            姓名
+                      - gender                          性别
+                      - age                             年龄
+                      - inpatient_number                住院号
+                      - medical_record_number           病历号
+                      - bed_number                      床号
+                      - ward                            病区
+                      - medical_institution_name        医疗机构名称
+                      - admission_time                  住院起始日期
+                      - discharge_time                  住院结束日期
+                      - hospitalization_days            住院天数
+                      - department                      科室
+                      - outpatient_diagnosis            门诊诊断
+                      - admission_diagnosis             入院诊断
+                      - discharge_diagnosis             出院诊断
+                      - admission_symptoms_and_signs    入院症状与体征
+                      - discharge_symptoms_and_signs    出院症状与体征
+                      - treatment_overview              诊疗经过
+                      - treatment_result                治疗结果
+                      - medical_advice                  出院医嘱
+                      - attending_doctor                住院医生
+                    enum:
+                      - document_title_name
+                      - total_pages_of_invoice
+                      - current_page_number
+                      - name
+                      - gender
+                      - age
+                      - inpatient_number
+                      - medical_record_number
+                      - bed_number
+                      - ward
+                      - medical_institution_name
+                      - admission_time
+                      - discharge_time
+                      - hospitalization_days
+                      - department
+                      - outpatient_diagnosis
+                      - admission_diagnosis
+                      - discharge_diagnosis
+                      - admission_symptoms_and_signs
+                      - discharge_symptoms_and_signs
+                      - treatment_overview
+                      - treatment_result
+                      - medical_advice
+                      - attending_doctor
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                    example: invoice_information
+
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            anyOf:
+              - type: object
+                required:
+                  - name
+                  - label
+                  - items
+                properties:
+                  name:
+                    type: string
+                    description: |
+                      表格名称
+                      discharge_medication_summary_table          出院带药汇总表
+                    enum:
+                      - discharge_medication_summary_table
+                    example: "discharge_medication_summary_table"
+                  label:
+                    type: string
+                    description: 表格名称中文描述
+                    example: "出院带药汇总表"
+                  items:
+                    type: array
+                    description: 出院带药汇总表所有行数据
+                    items:
+                      type: array
+                      description: 出院带药汇总表单行数据
+                      items:
+                        type: object
+                        description: 出院带药汇总表中字段识别结果
+                        allOf:
+                          - $ref: "#/components/schemas/BasicField"
+                          - type: object
+                            required:
+                              - key
+                            properties:
+                              key:
+                                type: string
+                                example: drug_name
+                                description: |
+                                  识别字段key
+                                  - drug_name             药品名称
+                                  - usage                 用法
+                                  - dosage                用量 
+                                  - medication_frequency  用药频率
+                                  - medication_course     用药疗程
+                                  - medication_quantity   带药数量
+                                  - specification         规格
+                                  - notes_or_instructions 提示/嘱托
+                                enum:
+                                  - drug_name
+                                  - usage
+                                  - dosage
+                                  - medication_frequency
+                                  - medication_course
+                                  - medication_quantity
+                                  - specification
+                                  - notes_or_instructions
+              - type: object
+                required:
+                  - name
+                  - label
+                  - items
+                properties:
+                  name:
+                    type: string
+                    description: |
+                      表格名称
+                      self_provided_medication_summary_table      自备药汇总表
+                    enum:
+                      - self_provided_medication_summary_table
+                    example: "self_provided_medication_summary_table"
+                  label:
+                    type: string
+                    description: 表格名称中文描述
+                    example: "自备药汇总表"
+                  items:
+                    type: array
+                    description: 自备药汇总表所有行数据
+                    items:
+                      type: array
+                      description: 自备药汇总表单行数据
+                      items:
+                        type: object
+                        description: 自备药汇总表中字段识别结果
+                        allOf:
+                          - $ref: "#/components/schemas/BasicField"
+                          - type: object
+                            required:
+                              - key
+                            properties:
+                              key:
+                                type: string
+                                example: drug_name
+                                description: |
+                                  识别字段key
+                                  - drug_name               药品名称
+                                  - usage                   用法
+                                  - dosage                  用量
+                                  - medication_frequency    用药频率
+                                  - medication_course       用药疗程
+                                  - notes_or_instructions   提示/嘱托
+                                enum:
+                                  - drug_name
+                                  - usage
+                                  - dosage
+                                  - medication_frequency
+                                  - medication_course
+                                  - notes_or_instructions
+
+    Type_diagnosis_certificate:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 诊断证明书
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/BasicField"
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name            单据标题名称
+                      - issuance_date                  开具日期
+                      - name                           姓名
+                      - gender                         性别
+                      - age                            年龄
+                      - ethnicity                      民族
+                      - work_unit                      单位
+                      - home_address                   家庭住址
+                      - outpatient_number              门诊号
+                      - inpatient_number               住院号
+                      - medical_record_number          病历号
+                      - bed_number                     床号
+                      - medical_institution_name       医疗机构名称
+                      - medical_treatment_date         就诊日期
+                      - admission_time                 住院起始日期
+                      - discharge_time                 住院结束日期
+                      - hospitalization_days           住院天数
+                      - department                     科室
+                      - clinical_doctor                临床医生
+                      - diagnosis_result               诊断结果
+                      - medical_advice                 医学建议/医嘱
+                    enum:
+                      - document_title_name
+                      - issuance_date
+                      - name
+                      - gender
+                      - age
+                      - ethnicity
+                      - work_unit
+                      - home_address
+                      - outpatient_number
+                      - inpatient_number
+                      - medical_record_number
+                      - bed_number
+                      - medical_institution_name
+                      - medical_treatment_date
+                      - admission_time
+                      - discharge_time
+                      - hospitalization_days
+                      - department
+                      - clinical_doctor
+                      - diagnosis_result
+                      - medical_advice
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息
+                    enum:
+                      - invoice_information
+                      - patient_information
+                      - visit_and_institution_information
+                    example: invoice_information
+
+    Type_other:
+      type: object
+      description: 其他类，识别为空
+      additionalProperties: true
+      minProperties: 0
+
+    CodeMessage:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          example: 200
+          type: integer
+          description: |
+            错误码
+            - 200: success
+            - 40101: x-ti-app-id 或 x-ti-secret-code 为空 
+            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败 
+            - 40103: 客户端IP不在白名单
+            - 40003: 余额不足，请充值后再使用
+            - 40004: 参数错误，请查看技术文档，检查传参 
+            - 40007: 机器人不存在或未发布
+            - 40008: 机器人未开通，请至市场开通后重试
+            - 40301: 图片类型不支持 
+            - 40302: 上传文件大小不符，文件大小不超过 20M
+            - 40303: 文件类型不支持，接口会返回实际检测到的文件类型 
+            - 40304: 图片尺寸不符，长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内
+            - 40305: 识别文件未上传
+            - 40422: 文件损坏（The file is corrupted.）
+            - 40423: PDF密码错误（Password required or incorrect password.）
+            - 30203: 基础服务故障，请稍后重试
+            - 500: 服务器内部错误
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40103
+            - 40003
+            - 40004
+            - 40007
+            - 40008
+            - 40301
+            - 40302
+            - 40303
+            - 40304
+            - 40305
+            - 40422
+            - 40423
+            - 30203
+            - 500
+        message:
+          type: string
+          description: 错误信息
+          example: success
