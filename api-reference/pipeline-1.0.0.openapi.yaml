@@ -457,7 +457,6 @@ components:
             - $ref: '#/components/schemas/ParseConfig'
             - $ref: '#/components/schemas/ChunkConfig'
             - $ref: '#/components/schemas/EmbedConfig'
-          example: {}
     
     ParseConfig:
       type: object
@@ -585,26 +584,25 @@ components:
               description: 自定义配置图片下载服务URL前缀
               example: "https://your-file-server.com/download?filename="
         
-        image_output_type:
-          type: string
-          enum: [base64str, default]
-          description: |
-            指定返回的图片对象输出类型。
+        # image_output_type:
+        #   type: string
+        #   enum: [base64str, default]
+        #   description: |
+        #     指定返回的图片对象输出类型。
             
-            - **base64str**: 指定所有图片对象为 base64 字符串，适用于没有云存储的用户，但是引擎返回结果体积会很大
-            - **default**: 指定子图片对象为图片 URL，页图片对象为图片 ID
-          default: "default"
-          example: "default"
+        #     - **base64str**: 指定所有图片对象为 base64 字符串，适用于没有云存储的用户，但是引擎返回结果体积会很大
+        #     - **default**: 指定子图片对象为图片 URL，页图片对象为图片 ID
+        #   default: "default"
+        #   example: "default"
         
         underline_level:
           type: integer
-          enum: [0, 1, 2]
+          enum: [0, 1]
           description: |
             控制下划线识别范围。
             
             - **0**: 不识别
             - **1**: 仅识别无文字的下划线（仅 scan 模式可用）
-            - **2**: 识别全部的下划线（仅 scan 模式可用）
           default: 0
           example: 0  
     
