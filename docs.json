@@ -145,7 +145,14 @@
                   "xparse/parse-getcatalog",
                   "xparse/parse-getimage",
                   "xparse/parse-getpos",
-                  "xparse/parse-max-workers"
+                  "xparse/parse-max-workers",
+                  {
+                    "group": "快捷调试",
+                    "pages": [
+                      "xparse/parse-debug-postman",
+                      "xparse/parse-debug-apifox"
+                    ]
+                  }
                 ]
               },
               {
@@ -153,7 +160,14 @@
                 "pages": [
                   "xparse/extract-quickstart-v3",
                   "xparse/extract-tutorial-v3",
-                  "xparse/extract-best-practices-v3"
+                  "xparse/extract-best-practices-v3",
+                  {
+                    "group": "快捷调试",
+                    "pages": [
+                      "xparse/extract-debug-postman",
+                      "xparse/extract-debug-apifox"
+                    ]
+                  }
                 ]
               },
               {

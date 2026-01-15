@@ -21,6 +21,8 @@ paths:
       operationId: llm_uie_v3
       description: |
         智能抽取API已更新至v3， 如需查看旧版API请[点击](https://www.textin.com/document/legacy/open_kie_vlm_engine)
+        
+        快速调试：请参考[Postman调试教程](/xparse/extract-debug-postman)或[Apifox调试教程](/xparse/extract-debug-apifox)
       requestBody:
         description: |
           支持的文件格式：png, jpg, jpeg, pdf, bmp, tiff, webp, doc, docx, html, mhtml, xls, xlsx, csv, ppt, pptx, txt, ofd；

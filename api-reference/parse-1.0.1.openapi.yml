@@ -18,7 +18,10 @@ paths:
       tags:
         - "文档解析"
       summary: 文档解析
-      description: 上传图片/pdf/word/html/excel/ppt/txt，进行版面检测，文字识别，表格识别，版面分析等操作，并生成markdown文档及结构化数据
+      description: |
+        上传图片/pdf/word/html/excel/ppt/txt，进行版面检测，文字识别，表格识别，版面分析等操作，并生成markdown文档及结构化数据
+        
+        快速调试：请参考[Postman调试教程](/xparse/parse-debug-postman)或[Apifox调试教程](/xparse/parse-debug-apifox)
       operationId: pdf_to_markdown
       parameters:
         - in: query
