@@ -16,7 +16,6 @@ description: "了解 xParse 中的文档元素结构和元数据字段"
     "text": "xParse 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的向量数据资产。",
     "metadata": {
         "filename": "example.pdf",
-        "file_directory": "/projects/demo/",
         "filetype": "application/pdf",
         "last_modified": "1758624866230",
         "page_number": 1,
@@ -88,9 +87,8 @@ xParse 会为每个元素记录丰富的元数据信息，这些信息存储在 
 | 字段 | 说明 |
 | --- | --- |
 | `filename` | 文件名 |
-| `file_directory` | 文件在云存储中的目录/前缀 |
-| `last_modified` | 文件最后修改时间（Unix 毫秒时间戳） |
 | `filetype` | MIME 类型（如 `application/pdf`、`image/png`） |
+| `last_modified` | 文件最后修改时间（Unix 毫秒时间戳） |
 | `page_number` | 元素所在的页码 |
 | `page_width` | 元素所在的页面的宽度（单位：像素） |
 | `page_height` | 元素所在的页面的高度（单位：像素） |
@@ -107,11 +105,10 @@ xParse 会为每个元素记录丰富的元数据信息，这些信息存储在 
 | `is_continuation` | 分块结果中，当前块是否与上一块连续，属于同一个解析元素（由于max_characters被截断） |
 | `data_source` | 数据源详细信息 |
 
-#### filename / file_directory / last_modified
+#### filename / filetype / last_modified
 - `filename`：例如 `annual_report.pdf`，用于溯源。
-- `file_directory`：对象存储或本地目录路径，方便增量同步。
-- `last_modified`：毫秒时间戳，便于做增量更新或版本比对。
 - `filetype`：标准 MIME 类型。
+- `last_modified`：毫秒时间戳，便于做增量更新或版本比对。
 
 #### page_number / page_width / page_height
 - `page_number`：元素所在的页码。
@@ -177,7 +174,6 @@ xParse 会为每个元素记录丰富的元数据信息，这些信息存储在 
     "text": "xParse 简介",
     "metadata": {
         "filename": "example.pdf",
-        "file_directory": "/projects/demo/",
         "filetype": "application/pdf",
         "last_modified": "1758624866230",
         "page_number": 1,
@@ -209,7 +205,6 @@ xParse 会为每个元素记录丰富的元数据信息，这些信息存储在 
     "text": "这是由多个原始元素组合而成的文本块。它包含了文档的多个段落，保持了语义的完整性。",
     "metadata": {
         "filename": "example.pdf",
-        "file_directory": "/projects/demo/",
         "filetype": "application/pdf",
         "last_modified": "1758624866230",
         "page_number": 1,
@@ -241,7 +236,6 @@ xParse 会为每个元素记录丰富的元数据信息，这些信息存储在 
     "text": "最终的文本块示例。",
     "metadata": {
         "filename": "example.pdf",
-        "file_directory": "/projects/demo/",
         "filetype": "application/pdf",
         "page_number": 1,
         "page_width": 1191,
@@ -273,7 +267,6 @@ xParse 会为每个元素记录丰富的元数据信息，这些信息存储在 
     "text": "",
     "metadata": {
         "filename": "example.pdf",
-        "file_directory": "/projects/demo/",
         "filetype": "application/pdf",
         "last_modified": "1758624866230",
         "page_number": 1,

@@ -150,7 +150,6 @@ paths:
                         type: "NarrativeText"
                         metadata:
                           filename: "example.pdf"
-                          file_directory: "/projects/demo/"
                           filetype: "application/pdf"
                           last_modified: "1758624866230"
                           page_number: 1
@@ -189,7 +188,6 @@ paths:
                         metadata:
                           filename: "example.pdf"
                           filetype: "application/pdf"
-                          file_directory: "/projects/demo/"
                           last_modified: "1758624866230"
                           page_number: 1
                           page_width: 1191
@@ -322,10 +320,6 @@ components:
           type: string
           description: 文件名
           example: "example.pdf"
-        file_directory:
-          type: string
-          description: 文件所在的目录或前缀
-          example: "/projects/demo/"
         filetype:
           type: string
           description: 文件类型

@@ -36,7 +36,6 @@ xParse 通过以下机制支持结果回溯：
 {
   "metadata": {
     "filename": "example.pdf",
-    "file_directory": "/projects/demo/",
     "filetype": "application/pdf",
     "last_modified": "1758624866230"
   }
@@ -44,7 +43,6 @@ xParse 通过以下机制支持结果回溯：
 ```
 
 - **filename**：文件名，用于识别源文件
-- **file_directory**：文件在存储系统中的目录路径
 - **filetype**：文件的 MIME 类型
 - **last_modified**：文件最后修改时间（Unix 毫秒时间戳）
 
@@ -521,7 +519,7 @@ def display_search_result_with_trace(search_result):
 ## 最佳实践
 
 1. **启用原始元素追踪**：在分块配置中设置 `include_orig_elements=true`，以便后续追溯
-2. **保存原始文件路径**：确保 `file_directory` 和 `filename` 信息完整，便于定位源文件
+2. **保存原始文件路径**：确保 `filename` 和 `data_source.url` 信息完整，便于定位源文件
 3. **利用坐标信息**：使用 `coordinates` 字段在原始文档上可视化元素位置
 4. **记录处理时间**：利用 `data_source.date_processed` 追踪处理时间，便于版本管理
 5. **构建元素映射**：在处理大量文档时，可以构建 `element_id` 到元素的映射，加速回溯
