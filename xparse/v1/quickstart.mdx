@@ -1,0 +1,351 @@
+---
+title: "快速入门"
+description: "5 分钟内完成第一次文档解析，使用 Python SDK 或 REST API 将文档转化为结构化数据。"
+---
+
+<Tip>
+  推荐使用 **Python SDK** 快速上手。如果您更熟悉直接调用 REST API，可参考下方 [REST API 示例](#rest-api-示例)。
+</Tip>
+
+## 准备工作
+
+### 1. 获取 API Key
+
+前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取您的 `x-ti-app-id` 和 `x-ti-secret-code`。
+
+详细步骤请参考 [API Key 获取指南](/xparse/v1/api-key)。
+
+### 2. 准备示例文件
+
+您可以使用自己的文档，或下载我们提供的示例文件：[文档解析示例.pdf](https://dllf.intsig.net/download/2025/Solution/textin/sample/pdf_to_markdown/sample_02.pdf)
+
+<Info>
+  支持的文件格式：png, jpg, jpeg, pdf, bmp, tiff, webp, doc, docx, html, mhtml, xls, xlsx, csv, ppt, pptx, txt, ofd, rtf
+
+  文件大小限制：500MB
+</Info>
+
+---
+
+## 使用 Python SDK（推荐）
+
+### Step 1：安装 SDK
+
+<CodeGroup>
+
+```bash pip
+pip install xparse-client
+```
+
+```bash uv
+uv add xparse-client
+```
+
+</CodeGroup>
+
+### Step 2：配置环境变量
+
+```bash
+export TEXTIN_APP_ID="your-app-id"
+export TEXTIN_SECRET_CODE="your-secret-code"
+```
+
+### Step 3：解析文档
+
+```python
+from xparse_client import XParseClient, ParseConfig, Capabilities
+
+# 初始化客户端（自动读取环境变量）
+client = XParseClient()
+
+# 解析本地文件
+with open("document.pdf", "rb") as f:
+    result = client.parse.run(
+        file=f,
+        filename="document.pdf",
+        config=ParseConfig(
+            capabilities=Capabilities(
+                include_table_structure=True,
+                title_tree=True,
+            ),
+        ),
+    )
+```
+
+### Step 4：查看结果
+
+```python
+# 输出 Markdown
+if result.markdown:
+    print(result.markdown)
+
+# 遍历文档元素
+for el in result.elements:
+    print(f"[{el.type}] {el.text[:80]}")
+
+print(f"共解析 {len(result.elements)} 个元素")
+```
+
+### Step 5：保存结果
+
+```python
+import json
+
+# 保存为 Markdown 文件
+with open("output.md", "w", encoding="utf-8") as f:
+    f.write(result.markdown)
+
+# 保存完整 JSON 结果
+with open("output.json", "w", encoding="utf-8") as f:
+    json.dump(result.model_dump(), f, ensure_ascii=False, indent=2)
+```
+
+### 完整代码（一键运行）
+
+```python quickstart.py expandable
+"""
+用法:
+  1. 安装依赖： pip install xparse-client
+  2. 设置环境变量 TEXTIN_APP_ID 和 TEXTIN_SECRET_CODE
+  3. python quickstart.py <文件路径>
+"""
+
+import json
+import sys
+from pathlib import Path
+
+from xparse_client import XParseClient, ParseConfig, Capabilities
+
+
+def main():
+    # 从命令行参数获取文件路径，默认使用 document.pdf
+    file_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("document.pdf")
+    if not file_path.exists():
+        print(f"文件不存在: {file_path}")
+        sys.exit(1)
+
+    # Step 1: 初始化客户端（自动读取环境变量 TEXTIN_APP_ID, TEXTIN_SECRET_CODE）
+    client = XParseClient()
+
+    # Step 2: 解析文档
+    with open(file_path, "rb") as f:
+        result = client.parse.run(
+            file=f,
+            filename=file_path.name,
+            config=ParseConfig(
+                capabilities=Capabilities(
+                    include_table_structure=True,
+                    title_tree=True,
+                ),
+            ),
+        )
+
+    # Step 3: 打印解析概览
+    print(f"解析完成！共 {len(result.elements)} 个元素，{result.success_count} 页成功")
+    print("=" * 60)
+
+    # 输出 Markdown
+    if result.markdown:
+        print(result.markdown[:2000])
+        if len(result.markdown) > 2000:
+            print(f"\n... (Markdown 共 {len(result.markdown)} 字符，已截断)")
+    print("=" * 60)
+
+    # 遍历文档元素
+    for el in result.elements:
+        print(f"  [{el.type:20s}] p{el.page_number}: {el.text[:60]}")
+
+    # Step 4: 保存结果
+    output_dir = Path("output")
+    output_dir.mkdir(exist_ok=True)
+
+    stem = file_path.stem
+
+    md_path = output_dir / f"{stem}.md"
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write(result.markdown)
+    print(f"\nMarkdown 已保存: {md_path}")
+
+    json_path = output_dir / f"{stem}.json"
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(result.model_dump(), f, ensure_ascii=False, indent=2)
+    print(f"JSON 已保存:     {json_path}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+<Tip>
+  更多 SDK 用法请参考 [Python SDK 文档](/xparse/v1/sdk-python)。
+</Tip>
+
+---
+
+## REST API 示例
+
+如果您不使用 Python SDK，可以直接调用 REST API。
+
+### 同步解析
+
+<CodeGroup>
+
+```python Python
+import requests
+import json
+
+app_id = "your-app-id"
+secret_code = "your-secret-code"
+
+with open("document.pdf", "rb") as f:
+    response = requests.post(
+        "https://api.textin.com/api/v1/xparse/parse/sync",
+        headers={
+            "x-ti-app-id": app_id,
+            "x-ti-secret-code": secret_code,
+        },
+        files={"file": ("document.pdf", f)},
+        data={
+            "config": json.dumps({
+                "capabilities": {
+                    "include_table_structure": True,
+                    "title_tree": True
+                }
+            })
+        },
+    )
+
+result = response.json()
+print(result["data"]["markdown"])
+```
+
+```bash cURL
+curl -X POST "https://api.textin.com/api/v1/xparse/parse/sync" \
+  -H "x-ti-app-id: your-app-id" \
+  -H "x-ti-secret-code: your-secret-code" \
+  -F "file=@document.pdf" \
+  -F 'config={"capabilities":{"include_table_structure":true,"title_tree":true}}'
+```
+
+</CodeGroup>
+
+### 异步解析（适用于大文件）
+
+对于大文件或需要批量处理的场景，建议使用异步 API：
+
+```python
+import requests
+import json
+import time
+
+app_id = "your-app-id"
+secret_code = "your-secret-code"
+headers = {
+    "x-ti-app-id": app_id,
+    "x-ti-secret-code": secret_code,
+}
+
+# Step 1: 创建异步任务
+with open("large_document.pdf", "rb") as f:
+    response = requests.post(
+        "https://api.textin.com/api/v1/xparse/parse/async",
+        headers=headers,
+        files={"file": ("large_document.pdf", f)},
+    )
+
+job_id = response.json()["data"]["job_id"]
+print(f"任务已创建: {job_id}")
+
+# Step 2: 轮询查询任务状态
+while True:
+    status_resp = requests.get(
+        f"https://api.textin.com/api/v1/xparse/parse/async/{job_id}",
+        headers=headers,
+    )
+    status_data = status_resp.json()["data"]
+
+    if status_data["status"] == "completed":
+        print("解析完成！")
+        print(status_data["result"]["markdown"])
+        break
+    elif status_data["status"] == "failed":
+        print(f"解析失败: {status_data}")
+        break
+
+    print(f"状态: {status_data['status']}，等待中...")
+    time.sleep(5)
+```
+
+<Tip>
+  异步 API 还支持 `webhook` 回调通知，无需轮询。详见 [异步解析 API 文档](/api-reference/endpoint/xparse/v1/parse-async)。
+</Tip>
+
+---
+
+## 理解返回结果
+
+解析成功后，返回的核心数据结构如下：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "schema_version": "1.3.0",
+    "file_id": "doc_7f3a2b",
+    "markdown": "# 文档标题\n\n这是正文内容...\n\n| 列1 | 列2 |\n|---|---|\n| 值1 | 值2 |",
+    "elements": [
+      {
+        "element_id": "el_001",
+        "type": "Title",
+        "text": "文档标题",
+        "page_number": 1,
+        "coordinates": [0.10, 0.12, 0.32, 0.12, 0.32, 0.16, 0.10, 0.16]
+      },
+      {
+        "element_id": "el_002",
+        "type": "NarrativeText",
+        "text": "这是正文内容...",
+        "page_number": 1,
+        "coordinates": [0.10, 0.18, 0.90, 0.18, 0.90, 0.22, 0.10, 0.22]
+      }
+    ],
+    "metadata": {
+      "filename": "document.pdf",
+      "filetype": "application/pdf",
+      "page_count": 5
+    },
+    "success_count": 5
+  }
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `markdown` | 文档的 Markdown 表示，可直接用于 LLM 输入 |
+| `elements` | 文档元素列表，包含类型、文本、坐标等详细信息 |
+| `metadata` | 文件元信息（文件名、类型、页数等） |
+| `success_count` | 成功解析的页数（计费依据） |
+
+<Info>
+  更详细的返回结构说明请参考 [返回结构详解](/xparse/v1/parse-response)。
+</Info>
+
+---
+
+## 下一步
+
+<CardGroup cols={2}>
+  <Card title="返回结构详解" icon="code" href="/xparse/v1/parse-response">
+    了解 Elements、坐标、表格结构等完整返回字段
+  </Card>
+  <Card title="Python SDK" icon="python" href="/xparse/v1/sdk-python">
+    SDK 高级用法：异步任务、错误处理、自定义配置
+  </Card>
+  <Card title="API 参考" icon="book" href="/api-reference/endpoint/xparse/v1/parse-sync">
+    完整的 API 参数与响应说明
+  </Card>
+  <Card title="计费说明" icon="credit-card" href="/xparse/v1/charge">
+    了解定价与计费规则
+  </Card>
+</CardGroup>

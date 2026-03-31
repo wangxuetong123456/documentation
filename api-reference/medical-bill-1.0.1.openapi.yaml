@@ -391,6 +391,7 @@ components:
         - medical_visit_institution_information
         - expense_information
         - item_summary_table
+        - expense_item_summary_table
       description: 住院发票识别结果
       properties:
         invoice_information:
@@ -521,6 +522,7 @@ components:
               - amount
               - reimbursement_type
               - remarks
+              - expense_item
             description: 单行识别结果
             properties:
               project_name: { $ref: '#/components/schemas/BasicField' }
@@ -530,6 +532,20 @@ components:
               amount: { $ref: '#/components/schemas/BasicField' }
               reimbursement_type: { $ref: '#/components/schemas/BasicField' }
               remarks: { $ref: '#/components/schemas/BasicField' }
+              expense_item: { $ref: '#/components/schemas/BasicField' }
+        expense_item_summary_table:
+          type: array
+          description: 费目金额汇总表
+          items:
+            type: object
+            required:
+              - expense_item
+              - amount
+            description: 单行识别结果
+            properties:
+              expense_item: { $ref: '#/components/schemas/BasicField' }
+              amount: { $ref: '#/components/schemas/BasicField' }
+
 
     Type_outpatient_medical_invoice:
       type: object
@@ -539,6 +555,7 @@ components:
         - medical_visit_institution_information
         - expense_information
         - item_summary_table
+        - expense_item_summary_table
       description: 门诊发票识别结果
       properties:
         invoice_information:
@@ -667,6 +684,20 @@ components:
               amount: { $ref: '#/components/schemas/BasicField' }
               reimbursement_type: { $ref: '#/components/schemas/BasicField' }
               remarks: { $ref: '#/components/schemas/BasicField' }
+              expense_item: { $ref: '#/components/schemas/BasicField' }
+        expense_item_summary_table:
+          type: array
+          description: 费目金额汇总表
+          items:
+            type: object
+            required:
+              - expense_item
+              - amount
+            description: 单行识别结果
+            properties:
+              expense_item: { $ref: '#/components/schemas/BasicField' }
+              amount: { $ref: '#/components/schemas/BasicField' }
+
 
     Type_medical_cost_details:
       type: object
@@ -893,6 +924,7 @@ components:
             - rounding_amount
             - current_year_balance
             - cumulative_balance
+            - category_b_prepaid_total
           description: 费用汇总信息
           properties:
             total_expense_amount: { $ref: '#/components/schemas/BasicField' }
@@ -912,6 +944,7 @@ components:
             rounding_amount: { $ref: '#/components/schemas/BasicField' }
             current_year_balance: { $ref: '#/components/schemas/BasicField' }
             cumulative_balance: { $ref: '#/components/schemas/BasicField' }
+            category_b_prepaid_total: { $ref: '#/components/schemas/BasicField' }
         expense_summary_table:
           type: array
           description: 费用明细汇总表
@@ -921,15 +954,18 @@ components:
               - expense_name
               - amount
               - self_funded_amount
-              - category_b_advance_payment
-              - excess_price_self_payment
+              - category_a_expense_amount
+              - category_b_expense_amount
+              - category_c_expense_amount
             description: 单行识别结果
             properties:
               expense_name: { $ref: '#/components/schemas/BasicField' }
               amount: { $ref: '#/components/schemas/BasicField' }
               self_funded_amount: { $ref: '#/components/schemas/BasicField' }
-              category_b_advance_payment: { $ref: '#/components/schemas/BasicField' }
-              excess_price_self_payment: { $ref: '#/components/schemas/BasicField' }
+              category_a_expense_amount: { $ref: '#/components/schemas/BasicField' }
+              category_b_expense_amount: { $ref: '#/components/schemas/BasicField' }
+              category_c_expense_amount: { $ref: '#/components/schemas/BasicField' }
+
         funds_payment_summary_table:
           type: array
           description: 基金支付合计汇总表

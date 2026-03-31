@@ -1,0 +1,407 @@
+---
+title: "返回结构详解"
+description: "了解文档解析 API 返回的 Elements、Markdown、坐标、表格结构等完整字段说明"
+---
+
+文档解析 API 返回统一的 JSON 结构，包含文档的 Markdown 表示、结构化元素列表、页面元信息等。本文档详细说明返回结果的各个字段。
+
+## 响应总览
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "schema_version": "1.3.0",
+    "file_id": "doc_7f3a2b",
+    "job_id": "job_x9k2m",
+    "success_count": 5,
+    "metadata": { ... },
+    "markdown": "# 标题\n\n正文内容...",
+    "elements": [ ... ],
+    "title_tree": [ ... ],
+    "pages": [ ... ],
+    "summary": { ... }
+  }
+}
+```
+
+### 顶层字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `code` | int | 状态码，200 表示成功 |
+| `message` | string | 状态信息 |
+| `data` | object | 解析结果数据 |
+
+### data 字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `schema_version` | string | 数据结构版本号，当前为 `"1.3.0"` |
+| `file_id` | string | 文件唯一标识 |
+| `job_id` | string | 任务标识（异步任务时使用） |
+| `success_count` | int | 成功解析的页数（计费依据） |
+| `metadata` | object | 文件元信息 |
+| `markdown` | string | 文档的 Markdown 表示 |
+| `elements` | array | 文档元素列表 |
+| `title_tree` | array | 文档目录树（需开启 `title_tree` 能力） |
+| `pages` | array | 页面元信息列表（需开启 `pages` 能力） |
+| `summary` | object | 处理耗时统计 |
+
+---
+
+## metadata（文件元信息）
+
+```json
+{
+  "filename": "document.pdf",
+  "filetype": "application/pdf",
+  "page_count": 10,
+  "data_source": "upload"
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `filename` | string | 文件名 |
+| `filetype` | string | 文件 MIME 类型 |
+| `page_count` | int | 文档总页数 |
+| `data_source` | string | 数据来源 |
+
+---
+
+## elements（文档元素）
+
+`elements` 是解析结果的核心，每个元素代表文档中的一个结构化单元（标题、段落、表格、图片等）。
+
+### 基本结构
+
+```json
+{
+  "element_id": "el_001",
+  "type": "Title",
+  "text": "第一章 概述",
+  "page_number": 1,
+  "coordinates": [0.10, 0.12, 0.32, 0.12, 0.32, 0.16, 0.10, 0.16],
+  "metadata": {
+    "category_depth": 0,
+    "children_ids": ["el_002", "el_003"],
+    "is_continuation": false,
+    "data_source": "textin"
+  }
+}
+```
+
+### 基础字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `element_id` | string | 元素唯一标识 |
+| `type` | string | 元素类型（见下方类型表） |
+| `text` | string | 元素文本内容 |
+| `page_number` | int | 所在页码（从 1 开始） |
+| `coordinates` | array | 四点坐标，归一化到 [0, 1]，顺序为左上、右上、右下、左下 |
+| `metadata` | object | 元素元信息 |
+
+### 元素类型
+
+| 类型 | 说明 |
+|------|------|
+| `Title` | 标题 |
+| `NarrativeText` | 正文段落 |
+| `Table` | 表格 |
+| `TableCaption` | 表格标题 |
+| `Image` | 图片 |
+| `FigureCaption` | 图片标题 |
+| `Formula` | 数学公式 |
+| `Header` | 页眉 |
+| `Footer` | 页脚 |
+| `PageNumber` | 页码 |
+| `CodeSnippet` | 代码片段 |
+| `UncategorizedText` | 未分类文本 |
+
+### metadata 字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `category_depth` | int | 标题层级深度（0 为顶级标题） |
+| `children_ids` | array | 子元素 ID 列表（需开启 `include_hierarchy`） |
+| `is_continuation` | bool | 是否为跨页续接的元素 |
+| `data_source` | string | 处理引擎来源 |
+
+---
+
+## 坐标系统
+
+坐标使用归一化的四点表示法，每个坐标值在 `[0, 1]` 范围内，表示相对于页面宽高的比例。
+
+```
+coordinates: [x1, y1, x2, y2, x3, y3, x4, y4]
+```
+
+四个点的顺序为：
+
+```
+(x1,y1) -------- (x2,y2)
+   |                |
+   |     元素区域    |
+   |                |
+(x4,y4) -------- (x3,y3)
+```
+
+要将归一化坐标转换为像素坐标，需要乘以页面的实际宽高：
+
+```python
+# 假设页面宽 595px, 高 842px (A4)
+page_width, page_height = 595, 842
+pixel_x1 = coordinates[0] * page_width
+pixel_y1 = coordinates[1] * page_height
+```
+
+---
+
+## 表格结构（table_structure）
+
+当开启 `include_table_structure` 能力时，类型为 `Table` 的元素会包含 `table_structure` 字段。
+
+```json
+{
+  "element_id": "el_010",
+  "type": "Table",
+  "text": "| 姓名 | 年龄 |\n|---|---|\n| 张三 | 28 |",
+  "table_structure": {
+    "rows": 2,
+    "cols": 2,
+    "cells": [
+      {
+        "row": 0,
+        "col": 0,
+        "row_span": 1,
+        "col_span": 1,
+        "text": "姓名",
+        "is_header": true,
+        "coordinates": [0.10, 0.30, 0.30, 0.30, 0.30, 0.34, 0.10, 0.34]
+      },
+      {
+        "row": 0,
+        "col": 1,
+        "row_span": 1,
+        "col_span": 1,
+        "text": "年龄",
+        "is_header": true,
+        "coordinates": [0.30, 0.30, 0.50, 0.30, 0.50, 0.34, 0.30, 0.34]
+      },
+      {
+        "row": 1,
+        "col": 0,
+        "row_span": 1,
+        "col_span": 1,
+        "text": "张三",
+        "is_header": false,
+        "coordinates": [0.10, 0.34, 0.30, 0.34, 0.30, 0.38, 0.10, 0.38]
+      },
+      {
+        "row": 1,
+        "col": 1,
+        "row_span": 1,
+        "col_span": 1,
+        "text": "28",
+        "is_header": false,
+        "coordinates": [0.30, 0.34, 0.50, 0.34, 0.50, 0.38, 0.30, 0.38]
+      }
+    ]
+  }
+}
+```
+
+### 单元格字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `row` | int | 行索引（从 0 开始） |
+| `col` | int | 列索引（从 0 开始） |
+| `row_span` | int | 跨行数 |
+| `col_span` | int | 跨列数 |
+| `text` | string | 单元格文本 |
+| `is_header` | bool | 是否为表头单元格 |
+| `coordinates` | array | 单元格四点坐标 |
+
+---
+
+## 图片数据（image_data）
+
+当开启 `include_image_data` 能力时，类型为 `Image` 的元素会包含 `image_data` 字段。
+
+```json
+{
+  "element_id": "el_020",
+  "type": "Image",
+  "text": "",
+  "image_data": {
+    "url": "https://api.textin.com/images/xxx.png",
+    "mime_type": "image/png",
+    "ocr_text": "图片中识别出的文字",
+    "description": "图片描述信息"
+  }
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `url` | string | 图片访问 URL |
+| `mime_type` | string | 图片 MIME 类型 |
+| `ocr_text` | string | 图片中 OCR 识别的文字 |
+| `description` | string | 图片描述 |
+
+---
+
+## 字符级详情（char_details）
+
+当开启 `include_char_details` 能力时，元素会包含 `char_details` 字段，提供字符级别的坐标和识别置信度。
+
+```json
+{
+  "element_id": "el_001",
+  "type": "Title",
+  "text": "概述",
+  "char_details": [
+    {
+      "char_id": "ch_001",
+      "index": 0,
+      "text": "概",
+      "coordinates": [0.10, 0.12, 0.14, 0.12, 0.14, 0.16, 0.10, 0.16],
+      "recognition": {
+        "confidence": 0.999,
+        "candidates": [
+          {"text": "概", "confidence": 0.999}
+        ]
+      }
+    },
+    {
+      "char_id": "ch_002",
+      "index": 1,
+      "text": "述",
+      "coordinates": [0.14, 0.12, 0.18, 0.12, 0.18, 0.16, 0.14, 0.16],
+      "recognition": {
+        "confidence": 0.998,
+        "candidates": [
+          {"text": "述", "confidence": 0.998}
+        ]
+      }
+    }
+  ]
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `char_id` | string | 字符唯一标识 |
+| `index` | int | 字符在文本中的位置索引 |
+| `text` | string | 字符文本 |
+| `coordinates` | array | 字符四点坐标 |
+| `recognition.confidence` | float | 识别置信度 (0-1) |
+| `recognition.candidates` | array | 候选识别结果 |
+
+---
+
+## 行内对象（objects）
+
+当开启 `include_inline_objects` 能力时，包含行内对象的元素会返回 `objects` 字段，标识文本中的公式、手写体、复选框等行内元素。
+
+---
+
+## 目录树（title_tree）
+
+当开启 `title_tree` 能力时，返回文档的层级目录结构：
+
+```json
+{
+  "title_tree": [
+    {
+      "element_id": "el_001",
+      "text": "第一章 概述",
+      "depth": 0,
+      "children": [
+        {
+          "element_id": "el_005",
+          "text": "1.1 背景",
+          "depth": 1,
+          "children": []
+        },
+        {
+          "element_id": "el_010",
+          "text": "1.2 目标",
+          "depth": 1,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## 页面信息（pages）
+
+当开启 `pages` 能力时，返回每一页的元信息：
+
+```json
+{
+  "pages": [
+    {
+      "page_number": 1,
+      "width": 595,
+      "height": 842,
+      "element_ids": ["el_001", "el_002", "el_003"],
+      "status": "success"
+    }
+  ]
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `page_number` | int | 页码 |
+| `width` | int | 页面宽度（像素） |
+| `height` | int | 页面高度（像素） |
+| `element_ids` | array | 该页包含的元素 ID 列表 |
+| `status` | string | 页面解析状态 |
+
+---
+
+## 错误码
+
+当 `code` 不为 200 时，表示请求出错。常见错误码如下：
+
+| 错误码 | 说明 |
+|--------|------|
+| 40101 | `x-ti-app-id` 无效 |
+| 40102 | `x-ti-secret-code` 无效 |
+| 40103 | IP 不在白名单内 |
+| 40003 | 余额不足 |
+| 40004 | 参数错误 |
+| 40301 | 不支持的文件类型 |
+| 40302 | 文件超过大小限制（500MB） |
+| 40422 | 文件损坏，无法解析 |
+| 40423 | PDF 文件已加密，需要密码 |
+| 30203 | 服务暂时不可用 |
+| 50001 | 服务内部错误 |
+
+<Tip>
+  遇到错误时，可以通过响应头中的 `x-request-id` 联系技术支持排查问题。
+</Tip>
+
+---
+
+## 相关链接
+
+<CardGroup cols={2}>
+  <Card title="快速入门" icon="rocket" href="/xparse/v1/quickstart">
+    从零开始完成第一次文档解析
+  </Card>
+  <Card title="API 参考" icon="book" href="/api-reference/endpoint/xparse/v1/parse-sync">
+    完整的请求参数与响应 Schema
+  </Card>
+</CardGroup>

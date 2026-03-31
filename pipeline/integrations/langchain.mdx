@@ -1,0 +1,291 @@
+---
+title: "LangChain"
+description: "使用 xParse LangChain 插件，为 RAG、Agent、信息提取等场景的提供高效文档解析。"
+---
+
+**LangChain** 是一个用于构建基于大语言模型应用的框架，提供了丰富的工具和组件，帮助开发者快速构建 RAG（检索增强生成）、Agent、信息提取等应用。
+
+**xParse** 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的数据资产。
+
+**langchain-xparse** 是 xParse 与 LangChain 的集成插件，通过 `XParseLoader` 将 xParse Pipeline API 的强大文档解析能力无缝集成到 LangChain 应用中，让您轻松实现文档解析、分块、向量化等功能。
+
+- GitHub 地址：https://github.com/intsig-textin/langchain-xparse
+- PyPI 地址：https://pypi.org/project/langchain-xparse/
+
+## xParse LangChain 插件亮点
+
+- **强大的文档处理能力**：支持 PDF、Word、Excel、PPT、图片等多种格式，准确提取标题、公式、图表、表格等元素，保留文档的语义结构
+- **灵活的解析配置**：支持 TextIn、MinerU、PaddleOCR 等多种解析引擎，可根据文档类型灵活选择
+- **便捷的集成方式**：提供 `XParseLoader` 类，与 LangChain 的文档加载器接口完全兼容，支持同步、异步、懒加载等多种加载方式
+- **完整的 Pipeline 支持**：支持 parse、chunk、embed 三个阶段，可单独使用或组合使用，满足不同场景需求
+- **丰富的元数据**：解析结果包含丰富的元数据信息，如页码、元素类型、坐标等，便于后续处理和分析
+
+# 安装与配置
+
+## 安装
+
+从 PyPI 安装：
+
+```bash
+pip install langchain-xparse
+```
+
+## 配置 API 凭证
+
+在使用 `XParseLoader` 之前，需要配置 xParse 的 API 凭证。您可以通过以下两种方式配置：
+
+### 方式一：环境变量（推荐）
+
+在终端中设置环境变量：
+
+```bash
+export XPARSE_APP_ID="your-app-id"
+export XPARSE_SECRET_CODE="your-secret-code"
+```
+
+或在 Python 代码中设置：
+
+```python
+import os
+os.environ["XPARSE_APP_ID"] = "your-app-id"
+os.environ["XPARSE_SECRET_CODE"] = "your-secret-code"
+```
+
+### 方式二：直接传参
+
+在创建 `XParseLoader` 时直接传入凭证：
+
+```python
+from langchain_xparse import XParseLoader
+
+loader = XParseLoader(
+    file_path="doc.pdf",
+    app_id="your-app-id",
+    secret_code="your-secret-code",
+)
+```
+
+> 提示：请前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取 API Key，详细获取方式请参考 [API Key 文档](/pipeline/api-key)
+
+# 基本使用方法
+
+## 基础解析（parse only）
+
+最简单的使用方式，仅解析文档内容：
+
+```python
+from langchain_xparse import XParseLoader
+
+# 创建加载器
+loader = XParseLoader(file_path="example.pdf")
+
+# 加载文档
+docs = loader.load()
+
+# 查看解析结果
+print(docs[0].page_content[:200])  # 文档内容（Markdown 格式）
+print(docs[0].metadata)  # 元数据：source, category, element_id, filename, page_number, ...
+```
+
+## 懒加载（lazy load）
+
+对于大文件或多个文件，使用懒加载可以节省内存：
+
+```python
+from langchain_xparse import XParseLoader
+
+loader = XParseLoader(file_path="large_document.pdf")
+
+# 懒加载，逐个返回文档
+for doc in loader.lazy_load():
+    print(f"页码: {doc.metadata.get('page_number')}")
+    print(f"内容: {doc.page_content[:100]}...")
+    # 处理文档
+```
+
+## 异步加载（async）
+
+支持异步加载，适合异步应用场景：
+
+```python
+import asyncio
+from langchain_xparse import XParseLoader
+
+async def load_documents():
+    loader = XParseLoader(file_path="example.pdf")
+    async for doc in loader.alazy_load():
+        print(doc.page_content[:100])
+        # 处理文档
+
+# 运行异步函数
+asyncio.run(load_documents())
+```
+
+## 便捷参数（parse + chunk）
+
+使用便捷参数快速配置解析和分块：
+
+```python
+from langchain_xparse import XParseLoader
+
+# 解析 + 分块
+loader = XParseLoader(
+    file_path="doc.pdf",
+    parse_provider="textin",
+    chunk_strategy="by_title",  # 按标题分块
+    chunk_max_characters=500,   # 最大字符数
+    chunk_overlap=50,           # 重叠字符数
+)
+
+docs = loader.load()
+```
+
+## 解析 + 分块 + 向量化
+
+一步完成解析、分块和向量化：
+
+```python
+from langchain_xparse import XParseLoader
+
+loader = XParseLoader(
+    file_path="doc.pdf",
+    parse_provider="textin",
+    chunk_strategy="basic",
+    chunk_max_characters=1000,
+    embed_provider="qwen",
+    embed_model_name="text-embedding-v4",
+)
+
+docs = loader.load()
+# docs 中的每个文档都包含向量（embedding）
+```
+
+## 自定义 stages（高级用法）
+
+对于需要更精细控制的场景，可以使用自定义 stages：
+
+```python
+from langchain_xparse import XParseLoader
+
+loader = XParseLoader(
+    file_path="doc.pdf",
+    stages=[
+        {"type": "parse", "config": {"provider": "textin"}},
+        {"type": "chunk", "config": {"strategy": "by_page", "max_characters": 800}},
+    ],
+)
+
+docs = loader.load()
+```
+
+## 多文件处理
+
+支持同时处理多个文件：
+
+```python
+from langchain_xparse import XParseLoader
+
+loader = XParseLoader(file_path=["a.pdf", "b.pdf", "c.pdf"])
+
+for doc in loader.lazy_load():
+    print(f"文件: {doc.metadata.get('source')}")
+    print(f"内容预览: {doc.page_content[:50]}...")
+```
+
+## 文件对象处理
+
+支持直接传入文件对象：
+
+```python
+from langchain_xparse import XParseLoader
+
+with open("doc.pdf", "rb") as f:
+    loader = XParseLoader(file=f, metadata_filename="doc.pdf")
+    docs = loader.load()
+```
+
+> 注意：当传入文件对象时，必须设置 `metadata_filename` 参数。
+
+
+
+# 常见问题
+
+## Q: 如何获取 API Key？
+
+A: 
+**xParse API 凭证**：请前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取 `XPARSE_APP_ID` 和 `XPARSE_SECRET_CODE`，详细获取方式请参考 [API Key 文档](/pipeline/api-key)。
+
+## Q: xParse 支持哪些文件格式？
+
+A: xParse 支持以下文件格式：
+- **文档格式**：PDF、Word（.docx）、Excel（.xlsx）、PPT（.pptx）
+- **图片格式**：JPG、PNG、BMP、TIFF 等常见图片格式
+
+## Q: 如何选择合适的解析引擎？
+
+A: 根据文档类型和需求选择合适的解析引擎：
+- **textin**：适合大多数场景，速度和准确性俱佳（推荐）
+- **textin-lite**：适合纯文本、表格图片、电子档 PDF 等场景，速度更快，价格更低
+- **mineru**：适合学术论文等场景，表现优异
+- **paddle**：适合多语言和复杂文档场景（如 PPT），表现优异
+
+## Q: 分块策略（chunk_strategy）如何选择？
+
+A: 根据文档类型和用途选择：
+- **basic**：基础分块，按固定字符数切分，适合简单文档
+- **by_title**：按标题分块，保留文档的层级结构，适合结构化文档（推荐）
+- **by_page**：按页分块，适合页面独立性强的文档
+
+## Q: 解析后的结果格式是什么？
+
+A: `XParseLoader` 返回的是 LangChain 的 `Document` 对象，包含：
+- **page_content**：文档内容（Markdown 格式）
+- **metadata**：元数据信息，包括：
+  - `source`：文件路径或标识
+  - `filename`：文件名
+  - `page_number`：页码
+  - `category`：元素类型（如 title、paragraph、table 等）
+  - `element_id`：元素 ID
+  - 其他解析相关的元数据
+
+## Q: 支持异步处理吗？
+
+A: 支持。使用 `alazy_load()` 方法进行异步加载：
+
+```python
+async for doc in loader.alazy_load():
+    # 处理文档
+```
+
+## Q: 可以处理多个文件吗？
+
+A: 可以。传入文件路径列表即可：
+
+```python
+loader = XParseLoader(file_path=["file1.pdf", "file2.pdf"])
+```
+
+## Q: 如何自定义解析配置？
+
+A: 使用 `stages` 参数进行高级配置：
+
+```python
+loader = XParseLoader(
+    file_path="doc.pdf",
+    stages=[
+        {"type": "parse", "config": {"provider": "textin", "parse_mode": "auto"}},
+        {"type": "chunk", "config": {"strategy": "by_title", "max_characters": 800}},
+    ],
+)
+```
+
+更多配置选项请参考 [Pipeline API 文档](/api-reference/endpoint/pipeline)。
+
+# 相关资源
+
+- **GitHub 仓库**：https://github.com/intsig-textin/langchain-xparse
+- **PyPI 包**：https://pypi.org/project/langchain-xparse/
+- **xParse 产品文档**：[/pipeline/overview](/pipeline/overview)
+- **Pipeline API 参考**：[/api-reference/endpoint/pipeline](/api-reference/endpoint/pipeline)
+- **快速启动指南**：[/pipeline/quickstart](/pipeline/quickstart)
+- **TextIn xParse 产品介绍**：https://www.textin.com/market/detail/xparse

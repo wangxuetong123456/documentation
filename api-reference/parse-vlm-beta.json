@@ -1,0 +1,385 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Xparse",
+        "description": "Xparse is a service for parsing image",
+        "version": "4.0.0.dev0"
+    },
+    "paths": {
+        "/": {
+            "get": {
+                "summary": "Root",
+                "description": "Root information",
+                "operationId": "root__get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RootResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/healthy": {
+            "get": {
+                "summary": "Healthy",
+                "description": "View healthy information",
+                "operationId": "healthy_healthy_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HealthResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/info": {
+            "get": {
+                "summary": "Info",
+                "description": "View request information",
+                "operationId": "info_info_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InfoResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ai/service/v4/recognize/document": {
+            "post": {
+                "summary": "Parse",
+                "description": "Parse image",
+                "operationId": "parse_ai_service_v4_recognize_document_post",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DocumentResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ChunkType": {
+                "type": "string",
+                "enum": [
+                    "textchunk",
+                    "table",
+                    "image",
+                    "stamp",
+                    "qrcode_barcode",
+                    "chart",
+                    "card_doc_image",
+                    "formula",
+                    "algorithm_code_block",
+                    "textchunk_text_title",
+                    "textchunk_table_title",
+                    "textchunk_image_title",
+                    "header_footer"
+                ],
+                "title": "ChunkType"
+            },
+            "DocumentResponse": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "default": 200
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "default": "success"
+                    },
+                    "duration": {
+                        "type": "number",
+                        "title": "Duration",
+                        "default": 1250.87
+                    },
+                    "result": {
+                        "$ref": "#/components/schemas/VLMResult"
+                    },
+                    "version": {
+                        "type": "string",
+                        "title": "Version",
+                        "default": "4.0.0.dev0"
+                    }
+                },
+                "type": "object",
+                "title": "DocumentResponse",
+                "examples": [
+                    {
+                        "code": "200",
+                        "duration": 1250.87,
+                        "message": "success",
+                        "result": {
+                            "image_angle": 0,
+                            "image_angle_score": 0.93,
+                            "image_height": 1701,
+                            "image_width": 1205,
+                            "parse_chunk_results": [
+                                {
+                                    "chunk_type": "textchunk",
+                                    "position": [
+                                        178,
+                                        174,
+                                        582,
+                                        174,
+                                        582,
+                                        872,
+                                        178,
+                                        872
+                                    ],
+                                    "text": "的偷去了。家人告知杨翥，杨说：“又不只我一家姓杨，随他骂去。”又一邻居，每遇下雨天，便将自家院中的积水排放进杨翥家中，使杨家深受脏污潮湿之苦。家人告诉杨翥，他却劝解家人：“总是晴天干燥的时日多，下雨的日子少。”久而久之，邻居们被杨翥的忍让所感动。有一年，一伙贼人密谋欲抢杨家的财宝。邻人们得知后，主动组织起来帮杨家守夜防贼，使杨家免去了这场灾祸。"
+                                },
+                                {
+                                    "chunk_type": "table",
+                                    "position": [
+                                        316,
+                                        155,
+                                        903,
+                                        155,
+                                        903,
+                                        655,
+                                        316,
+                                        655
+                                    ],
+                                    "text": "<table border=\"1\"><tr><td>5</td><td>3</td><td>4</td><td>6</td><td>7</td><td>8</td><td>9</td><td>1</td><td>2</td></tr><tr><td>6</td><td>7</td><td>2</td><td>1</td><td>9</td><td>5</td><td>3</td><td>4</td><td>8</td></tr><tr><td>1</td><td>9</td><td>8</td><td>3</td><td>4</td><td>2</td><td>5</td><td>6</td><td>7</td></tr><tr><td>8</td><td>5</td><td>9</td><td>7</td><td>6</td><td>1</td><td>4</td><td>2</td><td>3</td></tr><tr><td>4</td><td>2</td><td>6</td><td>8</td><td>5</td><td>3</td><td>7</td><td>9</td><td>1</td></tr><tr><td>7</td><td>1</td><td>3</td><td>9</td><td>2</td><td>4</td><td>8</td><td>5</td><td>6</td></tr><tr><td>9</td><td>6</td><td>1</td><td>5</td><td>3</td><td>7</td><td>2</td><td>8</td><td>4</td></tr><tr><td>2</td><td>8</td><td>7</td><td>4</td><td>1</td><td>9</td><td>6</td><td>3</td><td>5</td></tr><tr><td>3</td><td>4</td><td>5</td><td>2</td><td>8</td><td>6</td><td>1</td><td>7</td><td>9</td></tr></table>"
+                                },
+                                {
+                                    "chunk_type": "textchunk_text_title",
+                                    "position": [
+                                        621,
+                                        464,
+                                        1023,
+                                        464,
+                                        1023,
+                                        558,
+                                        621,
+                                        558
+                                    ],
+                                    "text": "生活中有许多事当忍则忍，能让则让。"
+                                },
+                                {
+                                    "chunk_type": "formula",
+                                    "position": [
+                                        274,
+                                        562,
+                                        808,
+                                        562,
+                                        808,
+                                        647,
+                                        274,
+                                        647
+                                    ],
+                                    "text": "$$\\begin{array}{c}\\text {if }x=1\\text { \\text {$\\longleftarrow $} Assignment in conditional }\\\\\n \\text { }\\\\\n \\text {$y=2\\text { \\text {$\\longleftarrow $} Assignment in conditional }\\\\\n \\text {end}\\end{array}$$"
+                                },
+                                {
+                                    "chunk_type": "image",
+                                    "position": [
+                                        468,
+                                        265,
+                                        1032,
+                                        265,
+                                        1032,
+                                        637,
+                                        468,
+                                        637
+                                    ],
+                                    "text": "<description>这幅图显示了一个简化的树结构图，其中包含各种节点。根节点标有“Root”，有两条路径从它延伸出去：一条通向“8”，另一条通向“1”。这些路径分别标有“Edge”。在根节点下方，有另外两个节点，标有“7”和“11”，它们分别与“8”和“1”连接。这些节点被包裹在一个虚线框内，标有“Leaves”。总共有八个节点，包括根节点，总共有三条边。</description>\n<text>Root  \nNode  \n2  \n8  \nEdge  \n1  \n7  \n11  \n5  \nLeaves</text>"
+                                },
+                                {
+                                    "chunk_type": "algorithm_code_block",
+                                    "position": [
+                                        274,
+                                        1059,
+                                        354,
+                                        1059,
+                                        354,
+                                        1087,
+                                        274,
+                                        1087
+                                    ],
+                                    "text": "x = 1"
+                                },
+                                {
+                                    "chunk_type": "header_footer",
+                                    "position": [
+                                        1068,
+                                        1549,
+                                        1121,
+                                        1549,
+                                        1121,
+                                        1581,
+                                        1068,
+                                        1581
+                                    ],
+                                    "text": "209"
+                                }
+                            ]
+                        },
+                        "version": "4.0.0.dev0"
+                    },
+                    {
+                        "code": "422",
+                        "duration": 0,
+                        "message": "Input is error",
+                        "result": {},
+                        "version": "4.0.0.dev0"
+                    }
+                ]
+            },
+            "HealthResponse": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "default": 200
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "default": "success"
+                    }
+                },
+                "type": "object",
+                "title": "HealthResponse",
+                "examples": [
+                    {
+                        "code": 200,
+                        "message": "success"
+                    }
+                ]
+            },
+            "InfoResponse": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "default": 200
+                    },
+                    "pending_tasks": {
+                        "type": "integer",
+                        "title": "Pending Tasks",
+                        "default": 2
+                    },
+                    "version": {
+                        "type": "string",
+                        "title": "Version",
+                        "default": "4.0.0.dev0"
+                    }
+                },
+                "type": "object",
+                "title": "InfoResponse",
+                "examples": [
+                    {
+                        "code": "200",
+                        "pending_tasks": 2,
+                        "version": "4.0.0.dev0"
+                    }
+                ]
+            },
+            "ParseChunkResult": {
+                "properties": {
+                    "chunk_type": {
+                        "$ref": "#/components/schemas/ChunkType"
+                    },
+                    "position": {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array",
+                        "title": "Position"
+                    },
+                    "text": {
+                        "type": "string",
+                        "title": "Text",
+                        "default": ""
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "chunk_type"
+                ],
+                "title": "ParseChunkResult"
+            },
+            "RootResponse": {
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "default": "Xparse"
+                    }
+                },
+                "type": "object",
+                "title": "RootResponse",
+                "examples": [
+                    {
+                        "message": "Xparse"
+                    }
+                ]
+            },
+            "VLMResult": {
+                "properties": {
+                    "image_angle": {
+                        "type": "integer",
+                        "title": "Image Angle",
+                        "default": 0
+                    },
+                    "image_angle_score": {
+                        "type": "number",
+                        "title": "Image Angle Score",
+                        "default": 0
+                    },
+                    "image_width": {
+                        "type": "integer",
+                        "title": "Image Width",
+                        "default": 0
+                    },
+                    "image_height": {
+                        "type": "integer",
+                        "title": "Image Height",
+                        "default": 0
+                    },
+                    "parse_chunk_results": {
+                        "items": {
+                            "$ref": "#/components/schemas/ParseChunkResult"
+                        },
+                        "type": "array",
+                        "title": "Parse Chunk Results"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "parse_chunk_results"
+                ],
+                "title": "VLMResult"
+            }
+        }
+    }
+}

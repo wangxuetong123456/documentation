@@ -111,9 +111,12 @@ type可以设置为字符串（如`"type": "string"`）或者包含null的数组
 
 - **page_start**：当上传的是pdf时，page_start 表示从第几页开始抽取，取值范围从1开始，不传该参数时默认从首页开始。
 - **page_count**：当上传的是pdf时，page_count 表示要进行抽取的pdf页数。
-- **parse_mode**：pdf文档的解析模式，默认为scan模式。图片不用设置，均默认按scan模式处理。
-  - auto 综合文字识别和解析模式：对pdf电子档解析，会直接提取pdf中的文字
-  - scan 仅按文字识别模式：将pdf当成图片处理
+- **parse_mode**：文档的解析模式，默认为scan模式。
+  - auto 由引擎自动选择，适用范围最广
+  - scan 文档统一当成图片解析（如pdf每一页都当成图片解析）
+  - lite 轻量版，只输出表格和文字结果
+  - parse 仅电子档文字解析，速度最快
+  - vlm 视觉语言模型解析模式
 - **get_image**：获取图片，默认为objects。
   - none 不返回任何图像
   - page 返回每一页的整页图像：即pdf页的完整页图片
@@ -153,7 +156,7 @@ type可以设置为字符串（如`"type": "string"`）或者包含null的数组
 <Tip>
   这里为您提供了一份Textin官方示例图片，您可以点击下载使用：[文档抽取png示例.png](https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726)
 
-  ![Extract Sample Image](https://static.textin.com/docs/images/sample_image.webp)
+  ![Extract Sample Image](/images/sample_image.webp)
 </Tip>
 
 ### 先决条件：获取API Key

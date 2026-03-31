@@ -361,6 +361,23 @@ destination = LocalDestination(
 
 更多向量化配置参考：[向量化 - Embed](/pipeline/embed)
 
+### Extract（信息抽取）配置
+
+信息抽取配置决定了从文档中提取哪些结构化信息：
+
+| 参数 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| **schema** | object | JSON Schema定义，用于指定要抽取的字段结构 | 必填 |
+| **generate_citations** | bool | 是否生成引用信息（坐标位置） | `false` |
+| **stamp** | bool | 是否调用印章识别 | `false` |
+
+**使用限制**：
+- Extract必须与Parse组合使用
+- Extract必须在Parse之后
+- Extract不能与Chunk、Embed同时使用
+
+更多抽取配置参考：[信息抽取 - Extract](/pipeline/extract)
+
 ## 使用示例
 
 ### 示例 1：本地文件到本地输出（测试）
@@ -583,7 +600,101 @@ pipeline = Pipeline(
 pipeline.run()
 ```
 
-### 示例 4：处理单个文件并获取统计信息
+### 示例 4：解析 + 抽取
+
+<Tip>
+  这里为您提供了一份Textin官方示例图片，您可以点击下载使用：[文档抽取png示例.png](https://web-api.textin.com/open/image/download?filename=54efc36a05cf475aa6b39137b0717726)
+
+  ![Extract Sample Image](/images/sample_image.webp)
+</Tip>
+
+如果您需要从文档中提取结构化信息：
+
+```python
+from xparse_client import (
+    Pipeline,
+    LocalSource,
+    LocalDestination,
+    Stage,
+    ParseConfig,
+    ExtractConfig
+)
+
+# 创建数据源
+source = LocalSource(
+    directory='./documents',
+    pattern=['*.pdf']
+)
+
+# 创建目标存储
+destination = LocalDestination(
+    output_dir='./output'
+)
+
+# 创建解析配置
+parse_config = ParseConfig(
+    provider='textin'
+)
+
+# 创建抽取配置
+extract_config = ExtractConfig(
+    schema={
+        "type": "object",
+        "properties": {
+            "商品": {
+                "type": ["string", "null"],
+                "description": "商品名称"
+            },
+            "商品列表": {
+                "type": "array",
+                "description": "商品列表",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "名称": {
+                            "type": ["string", "null"],
+                            "description": "商品名称"
+                        },
+                        "类型": {
+                            "type": ["string", "null"],
+                            "description": "商品类型"
+                        }
+                    },
+                    "required": ["名称", "类型"]
+                }
+            }
+        },
+        "required": ["商品", "商品列表"]
+    },
+    generate_citations=False,
+    stamp=False
+)
+
+# 创建 Pipeline
+pipeline = Pipeline(
+    source=source,
+    destination=destination,
+    api_base_url='https://api.textin.com/api/xparse',
+    api_headers={
+        'x-ti-app-id': 'your-app-id',
+        'x-ti-secret-code': 'your-secret-code'
+    },
+    stages=[
+        Stage(
+            type='parse',
+            config=parse_config
+        ),
+        Stage(
+            type='extract',
+            config=extract_config
+        )
+    ]
+)
+
+pipeline.run()
+```
+
+### 示例 5：处理单个文件并获取统计信息
 
 如果您需要处理单个文件并获取详细的统计信息：
 
@@ -715,6 +826,59 @@ results = client.search(
 print(results)
 ```
 
+## API选择指南
+
+xParse提供了多种API接口，适用于不同的使用场景：
+
+### Pipeline API
+
+**适用场景**：
+- 需要组合多个处理阶段（parse + chunk + embed）
+- 需要组合解析和抽取（parse + extract）
+- 需要批量处理文档
+- 需要将结果存储到向量数据库
+
+**API文档**：[Pipeline API](/api-reference/endpoint/pipeline)
+
+### Parse同步API
+
+**适用场景**：
+- 只需要文档解析功能
+- 需要同步获取结果
+- 处理单个文档或小文件（&lt;10MB）
+
+**API文档**：[Parse同步API](/api-reference/endpoint/parse-sync)
+
+### Parse异步API
+
+**适用场景**：
+- 处理大文件（&gt;10MB）或批量文件
+- 需要异步处理，避免长时间等待
+- 需要webhook回调通知
+
+**API文档**：[Parse异步API](/api-reference/endpoint/parse-async)
+
+### Extract同步API
+
+**适用场景**：
+- 只需要抽取功能
+- 不需要保留解析结果
+- 处理单个文档
+
+**API文档**：[Extract同步API](/api-reference/endpoint/extract-sync)
+
+**使用教程**：详细的使用示例和最佳实践请参考[API使用指南](/pipeline/tutorial/standalone-api-tutorial)。
+
+### 选择建议
+
+| 需求 | 推荐API |
+|------|---------|
+| 解析 + 分块 + 向量化 | Pipeline API |
+| 解析 + 抽取 | Pipeline API |
+| 仅解析（小文件） | Parse同步API |
+| 仅解析（大文件/批量） | Parse异步API |
+| 仅抽取 | Extract同步API |
+
 ## 下一步
 
 - **了解[文档元素和元数据](/pipeline/elements-metadata)**：了解 Pipeline 处理后的数据结构
@@ -722,6 +886,7 @@ print(results)
   - [文档解析（Parse）](/pipeline/parse) - 了解如何配置解析参数
   - [文本分块（Chunk）](/pipeline/chunk) - 了解分块策略和参数配置
   - [向量化（Embed）](/pipeline/embed) - 了解向量模型选择和配置
+  - [信息抽取（Extract）](/pipeline/extract) - 了解如何配置抽取参数
 - **阅读[Agent/RAG 实战教程](/pipeline/tutorial/overview)**：了解如何使用 xParse 构建完整的 RAG 应用与 LangChain Agent
 - **查看[API 文档](/api-reference/endpoint/pipeline)**：了解 Pipeline API 的详细参数和返回格式
 

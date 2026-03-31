@@ -363,9 +363,68 @@ parse_config = ParseConfig(
 # )
 ```
 
+## Parse API说明
+
+xParse提供了三种方式使用Parse功能：
+
+### 1. Pipeline中的Parse节点
+
+在Pipeline API中使用Parse作为第一个stage，可以与其他stage（chunk、embed、extract）组合使用。
+
+**适用场景**：
+- 需要组合多个处理阶段（parse + chunk + embed）
+- 需要批量处理文档
+- 需要将结果存储到向量数据库
+
+**API文档**：[Pipeline API](/api-reference/endpoint/pipeline)
+
+### 2. Parse同步API
+
+直接调用Parse API，立即返回解析结果。
+
+**适用场景**：
+- 只需要文档解析功能
+- 需要同步获取结果
+- 处理单个文档
+
+**API文档**：[Parse同步API](/api-reference/endpoint/parse-sync)
+
+### 3. Parse异步API
+
+提交Parse任务，通过job_id查询处理状态和结果。
+
+**适用场景**：
+- 处理大文件或批量文件
+- 需要异步处理，避免长时间等待
+- 需要webhook回调通知
+
+**API文档**：[Parse异步API](/api-reference/endpoint/parse-async)
+
+**使用教程**：详细的使用示例和最佳实践请参考[API使用指南](/pipeline/tutorial/standalone-api-tutorial)。
+
+## 同步 vs 异步API比较
+
+| 特性 | 同步API | 异步API |
+|------|---------|---------|
+| 响应方式 | 立即返回结果 | 返回job_id，需查询状态 |
+| 等待时间 | 需要等待处理完成 | 立即返回，后台处理 |
+| 适用场景 | 小文件、单个文档 | 大文件、批量处理 |
+| 超时限制 | 受HTTP超时限制 | 无超时限制 |
+| Webhook支持 | 不支持 | 支持 |
+| 使用复杂度 | 简单 | 需要轮询或webhook |
+
+### 选择建议
+
+- **小文件（&lt;10MB）**：使用同步API，简单直接
+- **大文件（&gt;10MB）或批量处理**：使用异步API，避免超时
+- **需要组合处理**：使用Pipeline API
+- **需要实时响应**：使用同步API
+- **需要后台处理**：使用异步API + Webhook
+
 ## 相关文档
 
 - [文档元素和元数据](/pipeline/elements-metadata) - 了解解析后的元素结构
 - [分块模块](/pipeline/chunk) - 了解如何对解析后的元素进行分块
 - [向量化模块](/pipeline/embed) - 了解如何对元素进行向量化
+- [信息抽取模块](/pipeline/extract) - 了解如何对解析后的元素进行信息抽取
 

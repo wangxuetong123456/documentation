@@ -1,0 +1,323 @@
+openapi: 3.0.3
+info:
+  title: XParse Parse Sync API
+  description: |
+    独立的文档解析同步API接口，支持将非结构化文档转换为结构化元素。
+    
+    该API与Pipeline中的Parse节点功能一致，但作为独立接口提供，适用于只需要文档解析功能的场景。
+  version: 1.0.0
+  contact:
+    name: TextIn API Team
+
+servers:
+  - url: https://api.textin.com
+    description: 生产环境
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /api/xparse/parse/sync:
+    post:
+      summary: 同步文档解析
+      description: |
+        同步执行文档解析，将非结构化文档转换为结构化元素。
+        
+        该接口会立即返回解析结果，适用于小文件或需要同步获取结果的场景。
+        
+        输出格式与Pipeline Parse节点完全一致。
+      operationId: parseSync
+      tags:
+        - XParse Parse
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 需要处理的文档文件（支持 PDF、WORD、EXCEL、PPT、图片等[多种格式](/pipeline/sources/overview#支持的文件格式)）
+                config:
+                  type: string
+                  description: |
+                    Parse配置的 JSON 字符串（可选），与Pipeline Parse节点配置一致。
+                    
+                    如果未提供，将使用默认配置（provider: "textin"）。
+                    
+                    配置格式参考[文档解析 - Parse](/pipeline/parse)。
+                  example: '{"provider": "textin", "parse_mode": "auto"}'
+            encoding:
+              config:
+                contentType: application/json
+      responses:
+        '200':
+          description: 解析结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/codemessage'
+                  - $ref: '#/components/schemas/ParseSyncResponse'
+              examples:
+                success:
+                  summary: 成功示例
+                  value:
+                    code: 200
+                    msg: "success"
+                    data:
+                      file_id: "xxx"
+                      status: "completed"
+                      result:
+                        elements:
+                          - element_id: "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc"
+                            type: "NarrativeText"
+                            metadata:
+                              filename: "example.pdf"
+                              filetype: "application/pdf"
+                              last_modified: "1758624866230"
+                              page_number: 1
+                              page_width: 1191
+                              page_height: 1684
+                              coordinates: [0.1822, 0.2316, 0.6717, 0.2316, 0.6717, 0.2732, 0.1822, 0.2732]
+                            text: "这是解析出的文本内容"
+                error:
+                  summary: 错误示例
+                  value:
+                    code: 40004
+                    msg: "Parameter error"
+                    data:
+                      file_id: "xxx"
+                      status: "failed"
+                      message: "File not uploaded"
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+
+  schemas:
+    codemessage:
+      type: object
+      required:
+        - code
+        - msg
+      properties:
+        code:
+          type: integer
+          default: 200
+          description: |
+            状态码
+            - 200: Success
+            - 40101: x-ti-app-id 或 x-ti-secret-code 为空
+            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败
+            - 40004: 参数错误，请查看技术文档，检查传参
+            - 500: 服务器内部错误
+            
+            更多详细错误信息参考[错误码说明](/pipeline/error)。
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40004
+            - 500
+        msg:
+          type: string
+          description: 错误信息
+          example: "success"
+    
+    ParseSyncResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ParseSyncData'
+    
+    ParseSyncData:
+      type: object
+      required:
+        - file_id
+        - status
+      properties:
+        file_id:
+          type: string
+          description: 文件ID
+          example: "xxx"
+        status:
+          type: string
+          description: 处理状态
+          enum: [completed, failed]
+          example: "completed"
+        result:
+          type: object
+          description: 解析结果（仅在status为completed时返回）
+          properties:
+            elements:
+              type: array
+              description: 解析后的元素列表，与Pipeline Parse节点输出一致
+              items:
+                $ref: '#/components/schemas/Element'
+        message:
+          type: string
+          description: 错误信息（仅在status为failed时返回）
+          example: "error msg"
+    
+    Element:
+      type: object
+      required:
+        - element_id
+        - type
+        - metadata
+        - text
+      properties:
+        element_id:
+          type: string
+          description: 元素唯一标识符
+          example: "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc"
+        type:
+          type: string
+          description: 元素类型（如 Title, NarrativeText, Table 等）
+          example: "NarrativeText"
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        text:
+          type: string
+          description: 元素的文本内容
+          example: "这是文档中的一段文本"
+    
+    Metadata:
+      type: object
+      required:
+        - filename
+      properties:
+        filename:
+          type: string
+          description: 文件名
+          example: "example.pdf"
+        filetype:
+          type: string
+          description: 文件类型
+          example: "application/pdf"
+        last_modified:
+          type: string
+          description: 文件最后修改时间（Unix 毫秒时间戳）
+          example: "1758624866230"
+        page_number:
+          type: integer
+          description: 元素所在的页码
+          example: 1
+        page_width:
+          type: integer
+          description: 元素所在的页面的宽度（单位：像素）
+          example: 1191
+        page_height:
+          type: integer
+          description: 元素所在的页面的高度（单位：像素）
+          example: 1684
+        parent_id:
+          type: string
+          description: 父元素 ID
+          example: "24a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc"
+        category_depth:
+          type: integer
+          description: 元素在同类元素中的目录深度
+          example: 1
+        coordinates:
+          type: array
+          description: |
+            元素在页面上的坐标。以长度为 8 的浮点数组表示四边形，8 个数两两一组为一个点的横纵坐标，分别是左上、右上、右下、左下。
+            坐标为归一化坐标，范围在 [0, 1] 之间，保留4位小数。坐标值相对于页面尺寸（page_width × page_height）进行归一化。
+          items:
+            type: number
+            format: float
+          minItems: 8
+          maxItems: 8
+          example: [0.1822, 0.2316, 0.6717, 0.2316, 0.6717, 0.2732, 0.1822, 0.2732]
+        text_as_html:
+          type: string
+          description: 表格或富文本的 HTML 表示
+          example: "<table>...</table>"
+        image_base64:
+          type: string
+          description: |
+            图片的 base64 编码。
+            当开启get_sub_image时返回，图片元素的base64表示。
+        image_mine_type:
+          type: string
+          description: 图片的 MIME 类型
+          example: "image/png"
+        page_image_url:
+          type: string
+          description: |
+            页面图片的下载链接。当开启get_page_image时返回。
+            如果开启预处理参数（切边增强-crop_dewarp、去水印-remove_watermark），
+            返回的是预处理后的页面图片。
+          example: "https://your-file-server.com/download?filename=abc123.png"
+        original_image_url:
+          type: string
+          description: |
+            未经预处理的原始页面图片链接。
+            仅在开启预处理参数（切边增强或去水印）时返回。
+          example: "https://your-file-server.com/download?filename=def456.png"
+        figure_caption_id:
+          type: string
+          description: |
+            当元素type为Image时，表示对应的图片标题（type=FigureCaption）元素id。
+          example: "caption_element_id_here"
+        data_source:
+          type: object
+          description: 数据源详细信息
+          properties:
+            record_locator:
+              type: object
+              properties:
+                protocol:
+                  type: string
+                  example: "file"
+                remote_file_path:
+                  type: string
+                  example: "/projects/demo/example.pdf"
+            url:
+              type: string
+              example: "file:///projects/demo/example.pdf"
+            version:
+              type: string
+              example: "1758624866230967485"
+            date_created:
+              type: string
+              example: "1764555574237"
+            date_modified:
+              type: string
+              example: "1758624866230"
+            date_processed:
+              type: string
+              example: "1764742970688"
+
+tags:
+  - name: XParse Parse
+    description: |
+      独立的文档解析API接口
+      
+      ## 功能特性
+      - 📄 多格式支持：支持 PDF、图片等多种文档格式
+      - 🔍 多引擎支持：支持 TextIn、MinerU、PaddleOCR 等多种解析引擎
+      - 📊 结构化输出：将文档转换为标准化的元素结构
+      - 🎯 语义保留：保留文档的语义结构，如标题、段落、表格等
+      
+      ## 计费说明
+      - 按照处理的页数计费
+      - 计费信息通过 x-ti-app-id 和 x-ti-secret-code 进行关联

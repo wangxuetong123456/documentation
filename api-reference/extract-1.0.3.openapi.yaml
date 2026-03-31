@@ -21,7 +21,7 @@ paths:
       operationId: llm_uie_v3
       description: |
         智能抽取API已更新至v3， 如需查看旧版API请[点击](https://www.textin.com/document/legacy/open_kie_vlm_engine)
-        
+
         快速调试：请参考[Postman调试教程](/xparse/extract-debug-postman)或[Apifox调试教程](/xparse/extract-debug-apifox)
       requestBody:
         description: |
@@ -175,7 +175,14 @@ components:
           example: 0
         parse_mode:
           type: string
-          description: PDF解析模式，默认为scan模式
+          description: |
+            文档的解析模式，默认为scan模式。
+            - auto 由引擎自动选择，适用范围最广
+            - scan 文档统一当成图片解析（如pdf每一页都当成图片解析）
+            - lite 轻量版，只输出表格和文字结果
+            - parse 仅电子档文字解析，速度最快
+            - vlm 视觉语言模型解析模式
+          enum: [auto, scan, lite, parse, vlm]
           default: "scan"
           example: "scan"
         formula_level:

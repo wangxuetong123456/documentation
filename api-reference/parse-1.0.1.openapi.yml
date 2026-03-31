@@ -20,10 +20,25 @@ paths:
       summary: 文档解析
       description: |
         上传图片/pdf/word/html/excel/ppt/txt，进行版面检测，文字识别，表格识别，版面分析等操作，并生成markdown文档及结构化数据
-        
+
         快速调试：请参考[Postman调试教程](/xparse/parse-debug-postman)或[Apifox调试教程](/xparse/parse-debug-apifox)
       operationId: pdf_to_markdown
       parameters:
+        - in: query
+          required: false
+          name: parse_mode
+          schema:
+            type: string
+            default: scan
+            enum: [auto, scan, lite, parse, vlm]
+          description: |
+            文档的解析模式，默认为scan模式。
+            - auto 由引擎自动选择，适用范围最广
+            - scan 文档统一当成图片解析
+            - lite 轻量版，只输出表格和文字结果
+            - parse 仅电子档文字解析，速度最快
+            - vlm 视觉语言模型解析模式
+
         - in: query
           required: false
           name: pdf_pwd
@@ -50,18 +65,6 @@ paths:
             default: 1000
           description: |
             当上传的是pdf时，page_count 表示要进行转换的pdf页数，总页数不得超过1000页，默认为1000页
-
-        - in: query
-          required: false
-          name: parse_mode
-          schema:
-            type: string
-            default: scan
-            enum: [auto, scan]
-          description: |
-            pdf文档的解析模式，默认为scan模式。图片不用设置，均默认按scan模式处理。
-            - auto 综合文字识别和解析模式：对pdf电子档解析，会直接提取pdf中的文字
-            - scan 仅按文字识别模式：将pdf当成图片处理
 
         - in: query
           required: false
@@ -567,6 +570,17 @@ components:
               type: string
               description: excel的base64结果，仅当get_excel=1时返回。
               example: ""
+            success_count:
+              type: integer
+              description: 解析成功页数。当parse_mode为lite或vlm时返回。
+              example: 1
+            elements:
+              type: array
+              description: |
+                元素数组。当parse_mode为lite或vlm时返回此字段，替代原有的detail和pages结构。
+                如需将elements格式转换为统一的`detail`/`pages`格式，请参考[转换脚本](/xparse/parse-quickstart#elements格式转换脚本)。
+              items:
+                $ref: "#/components/schemas/element"
         version:
           type: string
           description: doc_restore 引擎版本号
@@ -1589,3 +1603,110 @@ components:
     #   text:
     #     type: string
     #     description: 题干或选项的文本内容
+    element:
+      type: object
+      description: |
+        元素对象。当parse_mode为lite或vlm时返回此结构。
+        如需将elements格式转换为原有格式，请参考[转换脚本](/xparse/parse-quickstart#elements格式转换脚本)。
+      properties:
+        element_id:
+          type: string
+          description: 唯一标识
+          example: ""
+        type:
+          type: string
+          description: 类型，具体见Element type类型说明
+          enum:
+            - NarrativeText
+            - Title
+            - Table
+            - TableCaption
+            - Image
+            - FigureCaption
+            - Formula
+            - Header
+            - Footer
+            - CodeSnippet
+            - PageNumber
+            - UncategorizedText
+          example: NarrativeText
+        text:
+          type: string
+          description: 文本内容
+          example: "xParse 是一个端到端文档处理 AI 基础设施"
+        metadata:
+          $ref: "#/components/schemas/element_metadata"
+      required:
+        - element_id
+        - type
+        - text
+        - metadata
+    element_metadata:
+      type: object
+      description: 元素元数据
+      properties:
+        page_image_url:
+          type: string
+          description: 页图url
+          example: "https://web-api.textin.com/ocr_image/external/01a91572ca81092c.jpg"
+        original_image_url:
+          type: string
+          description: 原始页图url，仅当开启去水印或切边时返回
+          example: ""
+        angle:
+          type: integer
+          description: 页面角度
+          example: 0
+        page_number:
+          type: integer
+          description: 页码
+          example: 1
+        page_width:
+          type: integer
+          description: 页宽
+          example: 600
+        page_height:
+          type: integer
+          description: 页高
+          example: 800
+        coordinates:
+          type: array
+          description: element的归一化坐标（六位小数）
+          items:
+            type: number
+            format: float
+          example: [0.182212, 0.231623, 0.671714, 0.231633, 0.671711, 0.273233, 0.182244, 0.273255]
+        is_continue:
+          type: boolean
+          description: 是否和下一个element合并
+          example: false
+        category_depth:
+          type: integer
+          description: 目录层级，0表示一级标题，1表示2级标题，依次增加。-1表示正文段落
+          example: -1
+        parent_id:
+          type: string
+          description: 父节点的element_id。表格和图片等父节点为对应的表格标题和图片标题。文本段落的父节点为对应的文本标题
+          example: ""
+        sub_type:
+          type: string
+          description: 仅当type为Image时返回，包括stamp, card, qrcode_barcode, chart
+          example: "stamp"
+        image_url:
+          type: string
+          description: 仅当type为Image 且请求参数 image_output_type=default 时返回，值为子图的url
+          example: "https://web-api.textin.com/ocr_image/external/e47f8aed69ccabce.jpg"
+        image_base64:
+          type: string
+          description: 仅当type为Image 且请求参数 image_output_type=base64str时返回，值为子图的base64字符串
+          example: ""
+      required:
+        - page_image_url
+        - angle
+        - page_number
+        - page_width
+        - page_height
+        - coordinates
+        - is_continue
+        - category_depth
+        - parent_id

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  version: 1.2.0
-  title: 医疗票据识别v1.2.0接口
+  version: 1.3.0
+  title: 医疗票据识别v1.3.0接口
 servers:
   - url: https://api.textin.com
     description: Production server
@@ -39,7 +39,7 @@ paths:
         - name: category
           in: query
           description: |
-            指定样本类型，不进行样本分类，直接抽取结果，默认为0不使用该功能 |
+            指定样本类型，不进行样本分类，直接抽取结果，默认为0不使用该功能
             1: 医疗住院收费票据（纸质） 
             2: 医疗门诊收费票据（纸质） 
             3: 医疗住院收费票据（电子） 
@@ -52,6 +52,12 @@ paths:
             10: 门急诊病历 
             11: 出院小结 
             12: 诊断证明书
+            13: 入院记录
+            14: 病理报告
+            15: 体检报告
+            16: 病案首页
+            17: 手术记录单
+
           schema:
             type: integer
             enum:
@@ -67,6 +73,11 @@ paths:
               - 10
               - 11
               - 12
+              - 13
+              - 14
+              - 15
+              - 16
+              - 17
             default: 0
 
         - name: coord_restore
@@ -139,7 +150,7 @@ components:
         version:
           type: string
           description: 接口版本
-          example: v1.2.0
+          example: v1.3.0
         result:
           type: object
           required:
@@ -253,7 +264,13 @@ components:
             - outpatient_medical_record
             - discharge_summary
             - diagnosis_certificate
+            - admission_record
+            - pathology_report
+            - physical_examination_report
+            - medical_record_front_sheet
+            - surgical_record
             - other
+
         doc_label:
           type: string
           description: 票据类型中文描述
@@ -270,7 +287,13 @@ components:
             - 门急诊病历
             - 出院小结
             - 诊断证明书
+            - 入院记录
+            - 病理报告
+            - 体检报告
+            - 病案首页
+            - 手术记录单
             - 其他
+
         page_ids:
           type: array
           description: 如果是pdf文件，该份票据样本在pdf中的页码
@@ -308,6 +331,11 @@ components:
         - $ref: "#/components/schemas/Type_outpatient_medical_record"
         - $ref: "#/components/schemas/Type_discharge_summary"
         - $ref: "#/components/schemas/Type_diagnosis_certificate"
+        - $ref: "#/components/schemas/Type_admission_record"
+        - $ref: "#/components/schemas/Type_pathology_report"
+        - $ref: "#/components/schemas/Type_physical_examination_report"
+        - $ref: "#/components/schemas/Type_medical_record_front_sheet"
+        - $ref: "#/components/schemas/Type_medical_surgical_record"
         - $ref: "#/components/schemas/Type_other"
 
       discriminator:
@@ -325,6 +353,11 @@ components:
           outpatient_medical_record: "#/components/schemas/Type_outpatient_medical_record"
           discharge_summary: "#/components/schemas/Type_discharge_summary"
           diagnosis_certificate: "#/components/schemas/Type_diagnosis_certificate"
+          admission_record: "#/components/schemas/Type_admission_record"
+          pathology_report: "#/components/schemas/Type_pathology_report"
+          physical_examination_report: "#/components/schemas/Type_physical_examination_report"
+          medical_record_front_sheet: "#/components/schemas/Type_medical_record_front_sheet"
+          medical_surgical_record: "#/components/schemas/Type_medical_surgical_record"
           other: "#/components/schemas/Type_other"
 
     BoundingRegions:
@@ -2404,6 +2437,614 @@ components:
                       - invoice_information
                       - patient_information
                       - visit_and_institution_information
+                    example: invoice_information
+
+    Type_admission_record:
+      type: object
+      required:
+        - fields
+      description: 入院记录
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/BasicField'
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |  
+                      识别字段key  
+                      - document_title_name             单据标题名称
+                      - name                            姓名
+                      - gender                          性别
+                      - age                             年龄
+                      - marital_status                  婚姻状况
+                      - history_narrator                病史陈述者
+                      - birth_place                     出生地
+                      - ethnicity                       民族
+                      - ward                            病区
+                      - inpatient_number                住院号
+                      - medical_institution_name        医疗机构名称
+                      - department                      科室
+                      - admission_method                入院方式
+                      - admission_time                  入院时间
+                      - record_time                     记录时间
+                      - chief_complaint                 主诉
+                      - present_illness_history         现病史
+                      - past_medical_history            既往史
+                      - allergy_history                 过敏史
+                      - personal_history                个人史
+                      - family_medical_history          家族史
+                      - marital_history                 婚姻史
+                      - obstetric_history               孕产史
+                      - marital_reproductive_history    婚育史
+                      - physical_examination            体格检查
+                      - specialized_examination         专科检查
+                      - auxiliary_examination           辅助检查
+                      - admission_diagnosis             入院诊断
+                      - supplementary_diagnosis         补充诊断
+                      - admission_record_doctor         入院记录医生
+                      - supplementary_diagnosis_doctor  补充诊断医生
+                    enum:
+                      - document_title_name
+                      - name
+                      - gender
+                      - age
+                      - marital_status
+                      - history_narrator
+                      - birth_place
+                      - ethnicity
+                      - ward
+                      - inpatient_number
+                      - medical_institution_name
+                      - department
+                      - admission_method
+                      - admission_time
+                      - record_time
+                      - chief_complaint
+                      - present_illness_history
+                      - past_medical_history
+                      - allergy_history
+                      - personal_history
+                      - family_medical_history
+                      - marital_history
+                      - obstetric_history
+                      - marital_reproductive_history
+                      - physical_examination
+                      - specialized_examination
+                      - auxiliary_examination
+                      - admission_diagnosis
+                      - supplementary_diagnosis
+                      - admission_record_doctor
+                      - supplementary_diagnosis_doctor 
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息         
+                    enum:
+                      - invoice_information                  
+                      - patient_information                  
+                      - visit_and_institution_information    
+                    example: invoice_information
+
+    Type_pathology_report:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 病理报告
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/BasicField'
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name            单据标题名称
+                      - report_time                    报告时间
+                      - name                           姓名
+                      - gender                         性别
+                      - age                            年龄
+                      - outpatient_number              门诊号
+                      - inpatient_number               住院号
+                      - medical_record_number          病历号
+                      - bed_number                     床号
+                      - ward                           病区
+                      - medical_institution_name       医疗机构名称
+                      - department                     科室
+                      - inspection_time                检查时间
+                      - specimen_site                  标本部位
+                      - pathology_number               病理号
+                      - specimen_submission_time       送检时间
+                      - clinical_diagnosis_symptoms    临床诊断症状
+                      - clinical_doctor                临床医生
+                      - laboratory_doctor              检验医生
+                      - audit_doctor                   审核医生
+                      - gross_examination              大体检查
+                      - microscopic_findings           光镜所见
+                      - pathological_diagnosis         病理诊断
+                      - supplementary_comments         补充意见
+                    enum:
+                      - document_title_name
+                      - report_time
+                      - name
+                      - gender
+                      - age
+                      - outpatient_number
+                      - inpatient_number
+                      - medical_record_number
+                      - bed_number
+                      - ward
+                      - medical_institution_name
+                      - department
+                      - inspection_time
+                      - specimen_site
+                      - pathology_number
+                      - specimen_submission_time
+                      - clinical_diagnosis_symptoms
+                      - clinical_doctor
+                      - laboratory_doctor
+                      - audit_doctor
+                      - gross_examination
+                      - microscopic_findings
+                      - pathological_diagnosis
+                      - supplementary_comments
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息         
+                    enum:
+                      - invoice_information                  
+                      - patient_information                  
+                      - visit_and_institution_information    
+                    example: invoice_information
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            type: object
+            required:
+            - name
+            - label
+            - items
+            properties:
+              name:
+                type: string
+                description: |
+                  表格名称
+                  - pathology_additional_test_detail_table 病理附加检测/指标明细表
+                enum:
+                  - pathology_additional_test_detail_table
+                example: "pathology_additional_test_detail_table"
+              label:
+                type: string
+                description: 表格名称中文描述
+                example: "病理附加检测/指标明细表"
+              items:
+                type: array
+                description: 表格所有行数据
+                items:
+                  type: array
+                  description: 表格单行数据
+                  items:
+                    type: object
+                    description: 字段识别结果
+                    allOf:
+                      - $ref: '#/components/schemas/BasicField'
+                      - type: object
+                        required:
+                          - key
+                        properties:
+                          key:
+                            type: string
+                            example: drug_name
+                            description: |
+                              识别字段key
+                              - test_category         检测类别
+                              - indicator_name        指标名称
+                              - indicator_result      指标结果
+                              - prompt                提示
+                            enum:
+                              - test_category
+                              - indicator_name
+                              - indicator_result
+                              - prompt
+
+    Type_physical_examination_report:
+      type: object
+      required:
+        - fields
+      description: 体检报告
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/BasicField'
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |  
+                      识别字段key  
+                      - document_title_name             单据标题名称
+                      - exam_time                       体检时间
+                      - name                            姓名
+                      - gender                          性别
+                      - age                             年龄
+                      - exam_number                     体检编号
+                      - birth_date                      出生日期
+                      - birth_place                     公民身份证号
+                      - work_unit                       工作单位
+                      - home_address                    家庭地址
+                      - medical_institution_name        医疗机构名称
+                      - health_self_report              健康自述
+                      - past_medical_history            既往史
+                      - family_medical_history          家族史
+                      - exam_summary                    体检检查摘要
+                      - lab_summary                     实验室检查摘要
+                      - imaging_summary                 影像检查摘要
+                      - abnormal_summary                体检异常汇总
+                      - exam_conclusion                 体检结论
+                      - health_advice                   健康建议
+                      - audit_doctor                    审核医生
+                    enum:
+                      - document_title_name
+                      - exam_time
+                      - name
+                      - gender
+                      - age
+                      - exam_number
+                      - birth_date
+                      - birth_place
+                      - work_unit
+                      - home_address
+                      - medical_institution_name
+                      - health_self_report
+                      - past_medical_history
+                      - family_medical_history          
+                      - exam_summary
+                      - lab_summary
+                      - imaging_summary
+                      - abnormal_summary
+                      - exam_conclusion
+                      - health_advice
+                      - audit_doctor
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息         
+                    enum:
+                      - invoice_information                  
+                      - patient_information                  
+                      - visit_and_institution_information    
+                    example: invoice_information
+    
+    Type_medical_record_front_sheet:
+      type: object
+      required:
+        - fields
+        - tables
+      description: 病案首页
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/BasicField'
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name        单据标题名称
+                      - name                       姓名
+                      - gender                     性别
+                      - age                        年龄
+                      - birth_date                 出生日期
+                      - id_number                  公民身份证号
+                      - ethnicity                  民族
+                      - native_place               籍贯
+                      - occupation                 职业
+                      - current_address            现住地址
+                      - household_address          户籍地址
+                      - patient_phone              联系电话
+                      - contact_name               联系人姓名
+                      - contact_relationship       联系人关系
+                      - contact_phone              联系人电话
+                      - inpatient_number           住院号
+                      - medical_institution_name   医疗机构名称
+                      - medical_institution_code   医疗机构组织机构编码
+                      - medical_record_number      病案号
+                      - admission_department       入院科别
+                      - discharge_department       出院科别
+                      - admission_datetime         入院日期时间
+                      - discharge_datetime         出院日期时间
+                      - hospitalization_days       住院天数
+                      - opd_emer_diagnosis         门急诊诊断
+                      - opd_emer_diag_code         门急诊诊断疾病编码
+                      - admission_diagnosis        入院诊断
+                      - admission_diagnosis_code   入院诊断疾病编码
+                    enum:
+                      - document_title_name
+                      - name
+                      - gender
+                      - age
+                      - birth_date
+                      - id_number
+                      - ethnicity
+                      - native_place
+                      - occupation
+                      - current_address
+                      - household_address
+                      - patient_phone
+                      - contact_name
+                      - contact_relationship
+                      - contact_phone
+                      - inpatient_number
+                      - medical_institution_name
+                      - medical_institution_code
+                      - medical_record_number
+                      - admission_department
+                      - discharge_department
+                      - admission_datetime
+                      - discharge_datetime
+                      - hospitalization_days
+                      - opd_emer_diagnosis
+                      - opd_emer_diag_code
+                      - admission_diagnosis
+                      - admission_diagnosis_code
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息         
+                    enum:
+                      - invoice_information                  
+                      - patient_information                  
+                      - visit_and_institution_information    
+                    example: invoice_information
+
+        tables:
+          type: array
+          description: 票据表格识别结果
+          items:
+            anyOf:
+              - type: object
+                required:
+                - name
+                - label
+                - items
+                properties:
+                  name:
+                    type: string
+                    description: |
+                      表格名称
+                      - discharge_diagnosis_table          出院诊断表
+                    enum:
+                      - discharge_diagnosis_table
+                    example: "discharge_diagnosis_table"
+                  label:
+                    type: string
+                    description: 表格名称中文描述
+                    example: "出院诊断表"
+                  items:
+                    type: array
+                    description: 出院诊断表所有行数据
+                    items:
+                      type: array
+                      description: 出院诊断表单行数据
+                      items:
+                        type: object
+                        description: 出院诊断表中字段识别结果
+                        allOf:
+                          - $ref: '#/components/schemas/BasicField'
+                          - type: object
+                            required:
+                              - key
+                            properties:
+                              key:
+                                type: string
+                                example: discharge_diagnosis
+                                description: |
+                                  识别字段key
+                                  - discharge_diagnosis  出院诊断
+                                  - disease_code         疾病编码
+                                  - admission_condition  入院病情 
+                                  - discharge_condition  出院情况
+                                enum:
+                                  - discharge_diagnosis
+                                  - disease_code
+                                  - admission_condition  
+                                  - discharge_condition
+              - type: object
+                required:
+                - name
+                - label
+                - items
+                properties:
+                  name:
+                    type: string
+                    description: |
+                      表格名称
+                      - operation_record_table      手术记录表
+                    enum:
+                      - operation_record_table
+                    example: "operation_record_table"
+                  label:
+                    type: string
+                    description: 表格名称中文描述
+                    example: "手术记录表"
+                  items:
+                    type: array
+                    description: 手术记录表所有行数据
+                    items:
+                      type: array
+                      description: 手术记录表单行数据
+                      items:
+                        type: object
+                        description: 手术记录表中字段识别结果
+                        allOf:
+                          - $ref: '#/components/schemas/BasicField'
+                          - type: object
+                            required:
+                              - key
+                            properties:
+                              key:
+                                type: string
+                                example: drug_name
+                                description: |
+                                  识别字段key
+                                  - operation_name           手术操作名称
+                                  - operation_code           手术操作编码
+                                  - operation_date           术及操作日期
+                                  - operation_level          手术级别
+                                  - surgeon_main             手术及操作医师-术者
+                                  - surgeon_first_assist     手术及操作医师-一助
+                                  - surgeon_second_assist    手术及操作医师-二助
+                                  - anesthesia_method        麻醉方式
+                                  - incision_healing_grade   切口愈合等级
+                                  - anesthesiologist         麻醉医师
+                                enum:
+                                  - operation_name
+                                  - operation_code
+                                  - operation_date
+                                  - operation_level
+                                  - surgeon_main
+                                  - surgeon_first_assist
+                                  - surgeon_second_assist
+                                  - anesthesia_method
+                                  - incision_healing_grade
+                                  - anesthesiologist
+ 
+    Type_surgical_record:
+      type: object
+      required:
+        - fields
+      description: 手术记录单
+      properties:
+        fields:
+          type: array
+          description: 票据kv字段识别结果
+          items:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/BasicField'
+              - type: object
+                required:
+                  - key
+                  - type
+                properties:
+                  key:
+                    type: string
+                    example: document_title_name
+                    description: |
+                      识别字段key
+                      - document_title_name         单据标题名称
+                      - name                        姓名
+                      - gender                      性别
+                      - age                         年龄
+                      - department                  科室
+                      - bed_number                  床号
+                      - ward                        病区
+                      - inpatient_number            住院号
+                      - medical_record_number       病案号
+                      - operation_name              手术名称
+                      - operation_datetime          手术日期时间
+                      - operation_level             手术级别
+                      - preoperative_diagnosis      术前诊断
+                      - intraoperative_diagnosis    术中诊断
+                      - postoperative_diagnosis     术后诊断
+                      - operation_position          手术部位
+                      - anesthesiologist            麻醉医师
+                      - anesthesia_method           麻醉方式
+                      - surgeon_name                术者姓名
+                      - assistant_name              助手姓名
+                      - intraoperative_bleeding_vol 术中出血量
+                      - operation_conclusion        手术结论
+                      - operation_record_time       手术记录时间
+                      - operation_start_time        手术开始时间
+                      - operation_end_time          手术结束时间
+                    enum:
+                      - document_title_name
+                      - name
+                      - gender
+                      - age
+                      - department
+                      - bed_number
+                      - ward
+                      - inpatient_number
+                      - medical_record_number
+                      - operation_name
+                      - operation_datetime
+                      - operation_level
+                      - preoperative_diagnosis
+                      - intraoperative_diagnosis
+                      - postoperative_diagnosis
+                      - operation_position
+                      - anesthesiologist
+                      - anesthesia_method
+                      - surgeon_name
+                      - assistant_name
+                      - intraoperative_bleeding_vol
+                      - operation_conclusion
+                      - operation_record_time
+                      - operation_start_time
+                      - operation_end_time
+                  type:
+                    type: string
+                    description: |
+                      字段类型
+                      - invoice_information                      票据信息
+                      - patient_information                      患者信息
+                      - visit_and_institution_information        就诊与机构信息         
+                    enum:
+                      - invoice_information                  
+                      - patient_information                  
+                      - visit_and_institution_information    
                     example: invoice_information
 
     Type_other:

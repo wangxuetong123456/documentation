@@ -1,0 +1,56 @@
+---
+title: "计费说明"
+---
+
+您可以[在此处](https://www.textin.com/market/chager/pdf_to_markdown?cache=7919)查看定价选项及购买套餐。
+
+## 具体使用计费规则说明
+
+TextIn xParse智能文档解析采用「按量计费」制，计费单位为"T币/页"。在实际使用时，您可以选择[购买页数套餐](https://www.textin.com/market/chager/pdf_to_markdown?cache=7921)包，也可以直接[充值T币](https://www.textin.com/console/dashboard/userCenter/charge)使用。套餐和T币的计费规则为：
+
+- 扣费顺序：优先消耗即将到期的套餐包，未购买套餐包则按实际使用量扣减T币余额。
+- 购买套餐后，会自动开启按量计费模式；当套餐额度使用完毕后，如果未购买新套餐包，则会按实际使用量扣减T币余额，扣减T币余额时按[套餐](https://www.textin.com/market/chager/pdf_to_markdown?cache=7921)中的最高单价进行扣减。
+- 可以在【[工作台-我的套餐](https://www.textin.com/console/dashboard/userCenter/package_management)】中查看套餐使用情况，可以在【[工作台-充值与消费明细](https://www.textin.com/console/dashboard/userCenter/finance)】中查看T币订单和消费情况。
+
+TextIn xParse智能文档解析的使用方式包括：在线Web平台使用、API使用、SDK使用、第三方Agent平台使用。
+
+下面会为您详细介绍不同使用方式的计费说明。
+
+### 在线Web平台使用
+
+在Web平台使用时，可以直接在页面左下角账号信息处看到当前拥有的总额度和已消耗额度。
+
+![Charge Web Pn](/images/charge_web.png)
+
+<Tip>
+  在平台上使用示例文件进行解析是**完全免费**的！您可以先通过示例文件快速感受效果。
+</Tip>
+
+同时我们为每位新注册的用户朋友**免费赠送100页**使用额度，添加TextIn福利官还可获得**免费加赠1000页**使用额度和其他超多福利！您可以自行上传文档进行解析，验证TextIn xParse智能文档解析在您实际业务场景中的表现。
+
+当您的免费额度使用完毕后，需要[购买页数套餐](https://www.textin.com/market/chager/pdf_to_markdown?cache=7921)包或[充值T币](https://www.textin.com/console/dashboard/userCenter/charge)使用。
+
+- 文档解析会根据您实际解析成功的文件页数进行计费扣减，解析失败的页数不计费。
+  - 您可以通过 `scope.page_range` 参数控制要解析的页数范围。
+  - 文档解析成功后，在返回的 JSON 结果中有 `success_count` 字段，即为解析成功的页数。
+  - 文档解析成功后，解析结果会在Web平台缓存；无论您何时重新查看解析结果，还是修改参数配置后重新解析识别，都是**限时免费**的！
+
+### 通过 API / SDK 使用
+
+通过 API 或 SDK 使用时，仍然是根据实际解析的文件页数进行计费扣减。API 请求失败不会计费。
+
+<Warning>
+  与Web平台使用不同的是：无论何种文件，每次成功调用 API 进行解析后均会产生计费扣减。
+</Warning>
+
+您可以通过返回结果中的 `success_count` 字段核验解析成功的页数。
+
+### 第三方Agent平台使用
+
+TextIn xParse智能文档解析在Coze、Dify等主流Agent平台上架了文档解析官方插件。
+
+<Tip>
+  详情可见：[TextIn官方插件使用教程](https://vrk3wty1lu.feishu.cn/docx/Mhh2dJJFLoFjl2x7i2Ic7VrBnyc)
+</Tip>
+
+在Agent平台使用文档解析插件时，需要先前往【[**工作台 - 账号与开发者信息**](https://www.textin.com/console/dashboard/setting)】获取 `x-ti-app-id` 和 `x-ti-secret-code`；当插件运行后，会根据账号信息进行套餐页数额度和T币余额扣减。

@@ -1,0 +1,993 @@
+openapi: 3.0.3
+info:
+  title: XParse Parse Sync API
+  description: |
+    智能文档解析
+  version: 1.3.0
+  contact:
+    name: TextIn API Team
+
+servers:
+  - url: https://api.textin.com
+    description: 生产环境
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /api/v1/xparse/parse/sync:
+    post:
+      summary: 文档解析
+      description: |
+        将非结构化文档（image/pdf/word/html/excel/ppt/txt等）解析为 AI 友好的结构化数据（JSON、Markdown），包含丰富的元数据（可追溯、可解释、可验证）
+      operationId: parseSync
+      tags:
+        - XParse Parse
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 上传文档文件，与 file_url 二选一
+                file_url:
+                  type: string
+                  description: 文档 URL，与 file 二选一
+                config:
+                  allOf:
+                    - $ref: '#/components/schemas/ParseConfig'
+                  example:
+                    schema_version: "1.3.0"
+                    document:
+                      password: "example-pdf-password"
+                    capabilities:
+                      include_hierarchy: true
+                      include_inline_objects: true
+                      include_char_details: true
+                      include_image_data: true
+                      include_table_structure: true
+                      pages: true
+                      title_tree: true
+                      table_view: "html"
+                    scope:
+                      page_range: "1-2"
+                    config:
+                      force_engine: "textin"
+                      engine_params:
+                        formula_level: 0
+                        image_output_type: "url"
+            encoding:
+              file:
+                contentType: application/octet-stream
+              config:
+                contentType: application/json
+      responses:
+        '200':
+          description: 解析结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                success:
+                  summary: 成功示例
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      schema_version: "1.3.0"
+                      file_id: "doc_7f3a2b"
+                      job_id: "job_x9k2m"
+                      success_count: 2
+                      metadata:
+                        filename: "quarterly_report.pdf"
+                        filetype: "application/pdf"
+                        page_count: 2
+                        data_source:
+                          record_locator:
+                            protocol: "file"
+                            remote_file_path: "/projects/demo/quarterly_report.pdf"
+                          url: "file:///projects/demo/quarterly_report.pdf"
+                      markdown: "# 检验结果\n\n<table>\n  <thead>\n    <tr><th>项目</th><th>公式项</th><th>参考范围</th></tr>\n  </thead>\n  <tbody>\n    <tr><td>空腹血糖</td><td>x^2+1</td><td>3.9-6.1</td></tr>\n  </tbody>\n</table>\n\n乙方签字：李四\n\n设违约金函数f(x)=x^2+1。\n该违约金函数适用于逾期超过30日的场景。"
+                      elements:
+                        - element_id: "el_001"
+                          type: "Title"
+                          text: "检验结果"
+                          page_number: 1
+                          coordinates: [0.10, 0.12, 0.32, 0.12, 0.32, 0.16, 0.10, 0.16]
+                          metadata:
+                            category_depth: 0
+                            children_ids: ["el_002", "el_003", "el_004", "el_005"]
+                            is_continuation: false
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                        - element_id: "el_002"
+                          type: "Table"
+                          text: "项目 公式项 参考范围\n空腹血糖 x^2+1 3.9-6.1"
+                          page_number: 1
+                          coordinates: [0.10, 0.20, 0.82, 0.20, 0.82, 0.36, 0.10, 0.36]
+                          metadata:
+                            parent_id: "el_001"
+                            ref_element_id: "el_001"
+                            is_continuation: false
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                          table_structure:
+                            rows: 2
+                            cols: 3
+                            cells:
+                              - cell_id: "tbl_001_r1_c1"
+                                row: 1
+                                col: 1
+                                row_span: 1
+                                col_span: 1
+                                content_type: "text"
+                                text: "项目"
+                                coordinates: [0.10, 0.20, 0.26, 0.20, 0.26, 0.24, 0.10, 0.24]
+                              - cell_id: "tbl_001_r2_c2"
+                                row: 2
+                                col: 2
+                                row_span: 1
+                                col_span: 1
+                                content_type: "formula"
+                                text: "x^2+1"
+                                coordinates: [0.33, 0.24, 0.52, 0.24, 0.52, 0.28, 0.33, 0.28]
+                                char_details:
+                                  - char_id: "tblch_001"
+                                    index: 0
+                                    text: "x"
+                                    coordinates: [0.33, 0.24, 0.34, 0.24, 0.34, 0.28, 0.33, 0.28]
+                                    recognition:
+                                      confidence: 0.998
+                                      candidates:
+                                        - text: "8"
+                                          confidence: 0.998
+                        - element_id: "el_003"
+                          type: "Image"
+                          sub_type: "diagram"
+                          text: ""
+                          page_number: 1
+                          coordinates: [0.56, 0.20, 0.80, 0.20, 0.80, 0.34, 0.56, 0.34]
+                          image_data:
+                            image_url: "https://example.com/fig-1.png"
+                            mime_type: "image/png"
+                            ocr_text: "签署流程"
+                            description: "一张展示签署流程的流程图"
+                          metadata:
+                            parent_id: "el_001"
+                            width: 640
+                            height: 360
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                        - element_id: "el_004"
+                          type: "NarrativeText"
+                          text: "乙方签字：李四"
+                          page_number: 1
+                          coordinates: [0.10, 0.40, 0.30, 0.40, 0.30, 0.46, 0.10, 0.46]
+                          metadata:
+                            parent_id: "el_001"
+                            has_inline_objects: true
+                            inline_object_types: ["handwriting"]
+                            is_continuation: false
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                          objects:
+                            - object_id: "obj_001"
+                              type: "handwriting"
+                              text: "李四"
+                              text_range: [5, 7]
+                              coordinates: [0.18, 0.40, 0.26, 0.40, 0.26, 0.46, 0.18, 0.46]
+                              metadata: {}
+                          char_details:
+                            - char_id: "ch_004_1"
+                              index: 0
+                              text: "乙"
+                              coordinates: [0.10, 0.40, 0.11, 0.40, 0.11, 0.46, 0.10, 0.46]
+                              recognition:
+                                confidence: 0.997
+                                candidates:
+                                  - text: "乙"
+                                    confidence: 0.997
+                        - element_id: "el_005"
+                          type: "NarrativeText"
+                          text: "设违约金函数f(x)=x^2+1。"
+                          page_number: 1
+                          coordinates: [0.10, 0.48, 0.36, 0.48, 0.36, 0.54, 0.10, 0.54]
+                          metadata:
+                            parent_id: "el_001"
+                            is_continuation: false
+                            has_inline_objects: true
+                            inline_object_types: ["formula"]
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                          objects:
+                            - object_id: "obj_002"
+                              type: "formula"
+                              text: "x^2+1"
+                              text_range: [11, 16]
+                              coordinates: [0.22, 0.48, 0.30, 0.48, 0.30, 0.54, 0.22, 0.54]
+                              metadata:
+                                display_mode: "inline"
+                          char_details:
+                            - char_id: "ch_005_1"
+                              index: 0
+                              text: "设"
+                              coordinates: [0.10, 0.48, 0.11, 0.48, 0.11, 0.54, 0.10, 0.54]
+                              recognition:
+                                confidence: 0.999
+                                candidates:
+                                  - text: "设"
+                                    confidence: 0.999
+                        - element_id: "el_006"
+                          type: "NarrativeText"
+                          text: "该违约金函数适用于逾期超过30日的场景。"
+                          page_number: 2
+                          coordinates: [0.10, 0.10, 0.44, 0.10, 0.44, 0.16, 0.10, 0.16]
+                          metadata:
+                            is_continuation: true
+                            continuation_of: "el_005"
+                            data_source:
+                              record_locator:
+                                protocol: "file"
+                                remote_file_path: "/projects/demo/quarterly_report.pdf"
+                              url: "file:///projects/demo/quarterly_report.pdf"
+                      title_tree:
+                        - element_id: "el_001"
+                          title: "检验结果"
+                          level: 1
+                          page_number: 1
+                          children: []
+                      pages:
+                        - page_number: 1
+                          page_width: 1576
+                          page_height: 1683
+                          page_image_url: "https://example.com/page-1.jpg"
+                          element_ids: ["el_001", "el_002", "el_003", "el_004", "el_005"]
+                          dpi: 144
+                          angle: 0
+                          status: "Success"
+                        - page_number: 2
+                          page_width: 1576
+                          page_height: 1683
+                          page_image_url: "https://example.com/page-2.jpg"
+                          element_ids: ["el_006"]
+                          dpi: 144
+                          angle: 0
+                          status: "Success"
+                      summary:
+                        duration_ms: 812
+                error:
+                  summary: 错误示例
+                  value:
+                    code: 40004
+                    message: "参数错误，请查看技术文档，检查传参"
+                    location:
+                      stage: "parse"
+                      page_number: 3
+                      element_id: "el_045"
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              examples:
+                server_error:
+                  summary: 服务器内部错误
+                  value:
+                    code: 500
+                    message: "服务器内部错误"
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+
+  schemas:
+    # ──────────────────────────────────────
+    # 请求 config
+    # ──────────────────────────────────────
+    ParseConfig:
+      type: object
+      description: 解析参数配置
+      properties:
+        schema_version:
+          type: string
+          default: '1.3.0'
+          description: 目标 schema 版本
+        document:
+          $ref: '#/components/schemas/DocumentConfig'
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
+        scope:
+          $ref: '#/components/schemas/Scope'
+        config:
+          $ref: '#/components/schemas/ExpertConfig'
+
+    DocumentConfig:
+      type: object
+      description: 文档相关配置
+      properties:
+        password:
+          type: string
+          description: 文档密码（如加密pdf）
+
+    Capabilities:
+      type: object
+      description: 解析策略与格式配置
+      properties:
+        include_hierarchy:
+          type: boolean
+          default: true
+          description: 是否返回 element 间的层级与关联字段。开启后，返回元素间的父子关系、引用关系等信息（如parent_id、children_ids、ref_element_id），用于表达文档的结构化关系图谱。
+        include_inline_objects:
+          type: boolean
+          default: false
+          description: 是否返回细粒度对象。开启后，文本类元素会返回其中包含的细粒度对象（如公式、图片、手写签名、复选框等）。若同时启用表格结构，表格单元格内的内嵌对象也会被识别并返回。
+        include_char_details:
+          type: boolean
+          default: false
+          description: 是否返回字符级详细信息（char_details）。开启后，返回文本中每个字符的详细信息（如坐标、置信度、候选字）。若同时启用表格结构，表格单元格内的字符也会返回此类详情。
+        include_image_data:
+          type: boolean
+          default: false
+          description: 是否返回图片数据（image_data）。开启后，图片元素将返回完整的图片数据（包含图片 URL、MIME 类型、Base64 编码及图中识别文字）。若图片以内嵌对象形式出现在文本或表格单元格中，系统也会自动补充相应图片信息。
+        include_table_structure:
+          type: boolean
+          default: false
+          description: 是否返回表格的详细结构化信息。开启后，以 JSON 格式返回表格的行、列以及每个单元格的详细信息。
+        pages:
+          type: boolean
+          default: false
+          description: 是否返回页面元信息列表，包含页面的页码、宽高、旋转角度、渲染图片地址（page_image_url）、包含的元素列表（element_ids）等。
+        title_tree:
+          type: boolean
+          default: false
+          description: 是否返回标题树（目录）。
+        table_view:
+          type: string
+          enum: [markdown, html]
+          default: html
+          description: 表格在 markdown 中的表达格式
+
+    Scope:
+      type: object
+      description: 处理范围控制
+      properties:
+        page_range:
+          type: string
+          description: 页码范围，从1开始，支持多个闭区间，如 "1-2,3-4,5-10"
+          example: '1-5'
+
+    ExpertConfig:
+      type: object
+      description: 高级配置（专家模式）
+      properties:
+        force_engine:
+          type: string
+          enum: [textin, mineru, paddle_ocr]
+          description: 强制指定内部引擎，仅专家模式使用
+        engine_params:
+          type: object
+          additionalProperties: true
+          description: 引擎级自定义参数
+
+    # ──────────────────────────────────────
+    # API 响应包装
+    # ──────────────────────────────────────
+    ApiResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: |
+            状态码
+            - 200: 成功
+            - 40101: x-ti-app-id 或 x-ti-secret-code 为空
+            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败
+            - 40103: 客户端IP不在白名单
+            - 40003: 余额不足，请充值后再使用
+            - 40004: 参数错误，请查看技术文档，检查传参
+            - 40007: 机器人不存在或未发布
+            - 40008: 机器人未开通，请至市场开通后重试
+            - 40301: 图片类型不支持
+            - 40302: 上传文件大小不符，文件大小不超过 500M
+            - 40303: 文件类型不支持
+            - 40304: 图片尺寸不符
+            - 40305: 识别文件未上传
+            - 40422: 文件损坏
+            - 40423: PDF密码错误
+            - 40424: 页数设置超出文件范围
+            - 40425: 文件格式不支持
+            - 40427: DPI参数不在支持列表中
+            - 40428: word和ppt转pdf失败或者超时
+            - 40429: 不支持的引擎
+            - 50207: 部分页面解析失败
+            - 40400: 无效的请求链接
+            - 30203: 基础服务故障，请稍后重试
+            - 500: 服务器内部错误
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40103
+            - 40003
+            - 40004
+            - 40007
+            - 40008
+            - 40301
+            - 40302
+            - 40303
+            - 40304
+            - 40305
+            - 40422
+            - 40423
+            - 40424
+            - 40425
+            - 40427
+            - 40428
+            - 40429
+            - 50207
+            - 40400
+            - 30203
+            - 500
+          example: 200
+        message:
+          type: string
+          description: 状态信息
+          example: "success"
+        location:
+          $ref: '#/components/schemas/ErrorLocation'
+        data:
+          $ref: '#/components/schemas/ParseResponse'
+
+    ErrorLocation:
+      type: object
+      description: 错误定位信息，仅在解析错误时返回
+      properties:
+        stage:
+          type: string
+          description: 出错阶段
+        page_number:
+          type: integer
+          description: 出错页码
+        element_id:
+          type: string
+          description: 出错元素ID
+
+    # ──────────────────────────────────────
+    # 响应数据
+    # ──────────────────────────────────────
+    ParseResponse:
+      type: object
+      required:
+        - schema_version
+        - file_id
+        - job_id
+        - success_count
+        - metadata
+        - elements
+      properties:
+        schema_version:
+          type: string
+          example: '1.3.0'
+        file_id:
+          type: string
+          description: 文档唯一标识
+        job_id:
+          type: string
+          description: 任务唯一标识
+        success_count:
+          type: integer
+          description: 计费页数 / 成功页数
+        metadata:
+          $ref: '#/components/schemas/DocumentMetadata'
+        elements:
+          type: array
+          description: 基础语义元素集合
+          items:
+            $ref: '#/components/schemas/Element'
+        title_tree:
+          type: array
+          items:
+            $ref: '#/components/schemas/TitleTreeNode'
+          description: 按需返回，标题树（目录）
+        # table_objects:
+        #   type: array
+        #   items:
+        #     $ref: '#/components/schemas/TableObject'
+        #   description: 按需返回，逻辑整表聚合对象（暂不实现）
+        markdown:
+          type: string
+          description: 文档级 Markdown
+        pages:
+          type: array
+          description: 页面信息列表
+          items:
+            $ref: '#/components/schemas/Page'
+        summary:
+          $ref: '#/components/schemas/Summary'
+
+    DocumentMetadata:
+      type: object
+      description: 文档元数据
+      properties:
+        filename:
+          type: string
+        filetype:
+          type: string
+          description: MIME 类型
+        page_count:
+          type: integer
+        data_source:
+          $ref: '#/components/schemas/DataSource'
+
+    # ──────────────────────────────────────
+    # Element
+    # ──────────────────────────────────────
+    Element:
+      type: object
+      required:
+        - element_id
+        - type
+        - text
+        - page_number
+        - coordinates
+        - metadata
+      properties:
+        element_id:
+          type: string
+          description: 元素唯一标识
+        type:
+          type: string
+          description: 元素类型
+          enum:
+            - Title
+            - NarrativeText
+            - ListItem
+            - CodeSnippet
+            - UncategorizedText
+            - Table
+            - Image
+            - Formula
+            - Header
+            - Footer
+            - PageNumber
+            - FigureCaption
+            - PageBreak
+            - TableCaption
+        sub_type:
+          type: string
+          description: | 
+           元素子类型，可选，用于在同一主类型下进一步细分:
+           | type | sub_type |
+           |---|---|
+           | Image | stamp, qrcode, barcode, chart |
+           | Table | bordered, borderless |
+        text:
+          type: string
+          description: 元素的语义文本内容，作为该 element 的文本表达
+        page_number:
+          type: integer
+          minimum: 1
+          description: 所在页码，从1开始
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        objects:
+          type: array
+          items:
+            $ref: '#/components/schemas/InlineObject'
+          description: 元素内按顺序出现的细粒度对象列表，如段落中的公式、手写体、checkbox 等，仅当 include_inline_objects=true 时返回
+        table_structure:
+          $ref: '#/components/schemas/TableStructure'
+        char_details:
+          type: array
+          description: 字符级详细信息，仅当 include_char_details=true 时返回；仅适用于文本类元素
+          items:
+            $ref: '#/components/schemas/CharDetail'
+        image_data:
+          $ref: '#/components/schemas/ImageData'
+        metadata:
+          $ref: '#/components/schemas/ElementMetadata'
+
+    ElementMetadata:
+      type: object
+      properties:
+        parent_id:
+          type: string
+          description: 父 element ID
+        children_ids:
+          type: array
+          description: 子 element ID 列表
+          items:
+            type: string
+        category_depth:
+          type: integer
+          description: 同类型 element 的嵌套深度，如 Title 的 0 表示一级标题、1 表示二级标题，ListItem 的 0 表示顶层列表、1 表示嵌套列表
+        ref_element_id:
+          type: string
+          description: 与当前 element 直接关联的另一个 element ID，如图片/表格与其标题的关联。
+        is_continuation:
+          type: boolean
+          description: 是否为跨页续接块
+        continuation_of:
+          type: string
+          description: 当 is_continuation=true 时，指向被续接的前一个 element ID。例如表格跨页时，第二页的 Table element 通过此字段指向第一页的 Table element
+        has_inline_objects:
+          type: boolean
+          description: 是否包含子对象，如文本中的公式、表格单元格中的图片等
+        inline_object_types:
+          type: array
+          description: 该 element 内包含的对象类型列表
+          items:
+            type: string
+        width:
+          type: integer
+          description: 图片宽度，仅 Image element
+        height:
+          type: integer
+          description: 图片高度，仅 Image element
+        data_source:
+          $ref: '#/components/schemas/DataSource'
+
+    # ──────────────────────────────────────
+    # Object
+    # ──────────────────────────────────────
+    InlineObject:
+      type: object
+      required:
+        - object_id
+        - type
+        - text
+        - coordinates
+      properties:
+        object_id:
+          type: string
+        type:
+          type: string
+          description: 对象类型，如 formula、handwriting、checkbox、image
+        sub_type:
+          type: string
+        text:
+          type: string
+        text_range:
+          type: array
+          items:
+            type: integer
+          minItems: 2
+          maxItems: 2
+          description: 对象在文本中的范围 [start, end)，0-based 半开区间
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        image_data:
+          $ref: '#/components/schemas/ImageData'
+        metadata:
+          type: object
+          properties:
+            display_mode:
+              type: string
+              enum: [inline, display]
+              description: 公式显示模式，inline-行内，display-行间
+
+    # ──────────────────────────────────────
+    # Table Structure
+    # ──────────────────────────────────────
+    TableStructure:
+      type: object
+      description: 表格片段的结构化详情，仅当 type=Table 且 include_table_structure=true 时返回
+      properties:
+        rows:
+          type: integer
+          description: 行数
+        cols:
+          type: integer
+          description: 列数
+        cells:
+          type: array
+          description: 单元格列表
+          items:
+            $ref: '#/components/schemas/Cell'
+
+    Cell:
+      type: object
+      required:
+        - cell_id
+        - row
+        - col
+        - row_span
+        - col_span
+        - content_type
+        - text
+        - coordinates
+      properties:
+        cell_id:
+          type: string
+        row:
+          type: integer
+          minimum: 1
+        col:
+          type: integer
+          minimum: 1
+        row_span:
+          type: integer
+        col_span:
+          type: integer
+        content_type:
+          type: string
+          enum: [text, formula, image, mixed]
+        text:
+          type: string
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        image_data:
+          $ref: '#/components/schemas/ImageData'
+        objects:
+          type: array
+          items:
+            $ref: '#/components/schemas/InlineObject'
+          description: 单元格内嵌入的细粒度对象，仅 content_type 为 text/mixed 且 include_inline_objects=true 时返回
+        char_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharDetail'
+
+    # ──────────────────────────────────────
+    # Char Details
+    # ──────────────────────────────────────
+    CharDetail:
+      type: object
+      description: 字符详细信息
+      properties:
+        char_id:
+          type: string
+          description: 字符 ID
+        index:
+          type: integer
+          description: 在所属文本中的字符索引
+        text:
+          type: string
+          description: 最终识别字符
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        recognition:
+          $ref: '#/components/schemas/Recognition'
+        # style:
+        #   $ref: '#/components/schemas/CharStyle'
+
+    Recognition:
+      type: object
+      description: 识别信息，包含置信度和候选字列表
+      properties:
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 最终字符置信度，范围 [0,1]
+        candidates:
+          type: array
+          description: 候选字列表
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+                description: 候选字符
+              confidence:
+                type: number
+                description: 候选字置信度
+
+    # CharStyle:
+    #   type: object
+    #   description: 样式信息（暂不实现）
+    #   properties:
+    #     bold:
+    #       type: boolean
+    #     italic:
+    #       type: boolean
+    #     underline:
+    #       type: boolean
+    #     strikethrough:
+    #       type: boolean
+    #     emphasis_dot:
+    #       type: boolean
+    #     text_color:
+    #       type: string
+    #     background_color:
+    #       type: string
+
+    # ──────────────────────────────────────
+    # Image Data
+    # ──────────────────────────────────────
+    ImageData:
+      type: object
+      description: 图片数据，仅当 type=Image 且 include_image_data=true 时返回
+      properties:
+        image_url:
+          type: string
+          description: 图片 URL
+        mime_type:
+          type: string
+          description: 图片 MIME 类型
+        base64:
+          type: string
+          description: 图片 base64，可选
+
+    # ──────────────────────────────────────
+    # Title Tree
+    # ──────────────────────────────────────
+    TitleTreeNode:
+      type: object
+      description: 标题节点
+      properties:
+        element_id:
+          type: string
+          description: 对应 Title element 的 ID
+        title:
+          type: string
+          description: 标题文本
+        level:
+          type: integer
+          minimum: 1
+          description: 标题层级，1 为最高
+        page_number:
+          type: integer
+          description: 所在页码
+        children:
+          type: array
+          description: 嵌套的子标题节点
+          items:
+            $ref: '#/components/schemas/TitleTreeNode'
+
+    # ──────────────────────────────────────
+    # Table Object（暂不实现）
+    # ──────────────────────────────────────
+    # TableObject:
+    #   type: object
+    #   properties:
+    #     table_object_id:
+    #       type: string
+    #     table_element_ids:
+    #       type: array
+    #       items:
+    #         type: string
+    #     caption_element_ids:
+    #       type: array
+    #       items:
+    #         type: string
+    #     data:
+    #       type: object
+    #       properties:
+    #         caption:
+    #           type: string
+    #         summary_text:
+    #           type: string
+    #         html:
+    #           type: string
+    #         markdown:
+    #           type: string
+
+    # ──────────────────────────────────────
+    # Page
+    # ──────────────────────────────────────
+    Page:
+      type: object
+      description: 页面信息
+      properties:
+        page_number:
+          type: integer
+          description: 页码
+        page_width:
+          type: number
+          description: 页面宽度
+        page_height:
+          type: number
+          description: 页面高度
+        page_image_url:
+          type: string
+          description: 页面渲染图 URL
+        element_ids:
+          type: array
+          description: 该页包含的 element ID 列表，顺序与页面内默认阅读顺序一致
+          items:
+            type: string
+        dpi:
+          type: integer
+          description: 当前页转成图片所用的 DPI
+        angle:
+          type: number
+          description: 页面旋转角度。定义0度为人类阅读文字的图像方向，称为正置图像， 本字段表示输入图像是正置图像进行顺时针若干角度的旋转所得。
+        status:
+          type: string
+          description: 页面处理状态
+
+
+    # ──────────────────────────────────────
+    # Summary
+    # ──────────────────────────────────────
+    Summary:
+      type: object
+      description: 处理摘要
+      properties:
+        duration_ms:
+          type: number
+          description: 总耗时（毫秒）
+
+    # ──────────────────────────────────────
+    # DataSource
+    # ──────────────────────────────────────
+    DataSource:
+      type: object
+      description: 数据源详细信息
+      properties:
+        record_locator:
+          type: object
+          properties:
+            protocol:
+              type: string
+              description: 协议类型
+              example: "file"
+            remote_file_path:
+              type: string
+              description: 远程文件路径
+              example: "/projects/demo/example.pdf"
+        url:
+          type: string
+          description: 文件完整 URL
+          example: "file:///projects/demo/example.pdf"
+
+    # ──────────────────────────────────────
+    # Coordinates
+    # ──────────────────────────────────────
+    Coordinates:
+      type: array
+      items:
+        type: number
+      minItems: 8
+      maxItems: 8
+      description: 归一化的四边形坐标 [x1,y1,x2,y2,x3,y3,x4,y4]，顺序为左上、右上、右下、左下，坐标值范围 [0,1]，保留六位有效数字。
+
+tags:
+  - name: XParse Parse
+    description: |
+      独立的文档解析API接口
+      
+      ## 功能特性
+      - 📄 多格式支持：支持 PDF、图片等多种文档格式
+      - 🔍 多引擎支持：支持 TextIn、MinerU、PaddleOCR 等多种解析引擎
+      - 📊 结构化输出：将文档转换为标准化的元素结构
+      - 🎯 语义保留：保留文档的语义结构，如标题、段落、表格等
+      
+      ## 计费说明
+      - 按照处理的页数计费
+      - 计费信息通过 x-ti-app-id 和 x-ti-secret-code 进行关联

@@ -1,0 +1,241 @@
+---
+title: "Dify"
+description: "使用 xParse Dify 插件，为 RAG、Agent、信息提取等场景的提供高效文档解析。"
+---
+
+# xParse Dify 插件简介
+
+**Dify** 是一个开源的大语言模型（LLM）应用开发平台，旨在简化和加速生成式 AI 应用的创建和部署。它结合了后端即服务（BaaS）和 LLMOps 的理念，为开发者提供了用户友好的界面和强大的工具，有效降低了 AI 应用开发的门槛。
+
+**xParse** 是一个端到端文档处理 AI 基础设施，致力于将非结构化文档高效转化为可查询、可分析的数据资产。
+目前 xParse 与 Dify 联合研发的 xParse 插件已在 Dify 市场上架，帮助用户搭建工作流，提供强大的文档解析和处理能力。
+
+- Dify 官网地址：https://dify.ai/zh
+- xParse Dify 插件下载地址：https://marketplace.dify.ai/plugins/intsig-textin/xparse
+
+# xParse 在 Dify 中的使用方法
+
+## 一、xParse Dify 插件亮点
+
+* **多种解析引擎支持**：支持 TextIn 自研高性能解析引擎（推荐）、MinerU、PaddleOCR 等多种行业内先进的解析引擎，可根据文档类型灵活选择。
+* **强大的文档处理能力**：支持 PDF、Word、Excel、PPT、图片等多种格式，准确提取标题、公式、图表、表格等元素，保留文档的语义结构。
+* **赋能工作流**：让 Dify 的 Agent 拥有强大的文档"读写"能力，轻松处理复杂任务，支持 RAG、知识库构建、信息提取等场景。
+* **灵活的配置选项**：支持自定义解析引擎、去水印、切边增强等参数，满足不同业务需求。
+
+## 二、实战演练：两个案例带你快速上手
+
+空谈不如实战。下面我们通过两个典型场景，向你展示 xParse 插件的强大之处。
+
+### 准备
+
+1. 在 Dify 插件页面安装 xParse 插件（私有化部署的 Dify 同理）
+2. 填写 API 配置信息
+
+![插件配置示例](/images/integrations/dify-plugin-apikey.png)
+
+在插件配置页面，需要填写以下信息：
+
+- **x-ti-app-id**：xParse 的应用 ID，必填
+- **x-ti-secret-code**：xParse 的密钥，必填
+
+> 提示：请前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取 API Key，详细获取方式请参考 [API Key 文档](/pipeline/api-key)
+
+### 案例一：解析单文件，搭建 Chat Document 应用
+
+想借助 AI 与你的文档对话吗？跟着下面几步，轻松实现。
+
+#### 第一步：创建空白应用，选择 "Chatflow"
+
+输入应用名称与描述
+
+![创建应用](/images/integrations/dify-chatflow-create.png)
+
+#### 第二步：创建的初始模板中，选择 "开始" 节点
+
+点击右侧 "+" 按钮添加变量，选择字段类型选为单文件，填写变量名称（此处填为 `input_file`），支持文档类型选为文档与图片，上传文件类型选为本地上传。
+
+![开始节点配置](/images/integrations/dify-chatflow-inputfile.png)
+
+#### 第三步：添加工具节点——xParse 插件来解析上一步开始节点上传的文件
+
+![添加 xParse 工具节点](/images/integrations/dify-chatflow-xparse-add.png)
+
+#### 第四步：设置 xParse 的输入变量，选择上一步开始节点添加的 `input_file`
+
+![xParse 输入配置](/images/integrations/dify-chatflow-xparse-params.png)
+
+xParse 插件支持以下配置选项：
+
+- **文件输入**：选择要解析的文件（必填）
+- **解析引擎**：可选择 `Textin`（推荐）、`Textin Lite`、`Mineru`、`PaddleOCR` 等（陆续接入中）
+- **预处理**：可选择 `切边矫正`、`去水印` 等
+
+其他参数详情可参考 [插件说明文档](https://marketplace.dify.ai/plugins/intsig-textin/xparse)。
+
+#### 第五步：配置 LLM 模型
+
+选择 "LLM" 节点后，如果没有模型可用，需要单独在插件市场安装（这里使用 gpt-5 作为示例）
+
+"上下文"选择 xParse 的输出变量 `text`（xParse 解析文档后的 markdown 格式）
+
+![LLM 配置](/images/integrations/dify-chatflow-llm-params.png)
+
+在 "SYSTEM" 区域根据实际需求填写提示词，可如图填写 "在 文档解析 `text` 中提取用户的问题答案"
+
+![系统提示词配置](/images/integrations/dify-chatflow-llm-system.png)
+
+#### 第六步：预览，上传文件并提问机器人关于文档的内容
+
+至此一个简单的文档问答应用 Chat PDF 搭建完成，点击 "预览"，查看效果如何：
+
+![预览效果](/images/integrations/dify-chatflow-preview.png)
+
+结果如下：
+
+![问答结果](/images/integrations/dify-chatflow-chat.png)
+
+#### 第七步：发布与测试
+
+保存并发布你的应用。现在，上传一份 PDF 或图片，你就可以和它自由对话了！
+
+![发布应用](/images/integrations/dify-chatflow-published.png)
+
+### 案例二：自动化批量处理文档，并上传至云端 S3
+
+需要处理大量文档并归档？xParse 插件同样能胜任。
+
+#### 第一步：安装 S3 插件
+
+![安装 S3 插件](/images/integrations/dify-batch-s3-install.png)
+
+#### 第二步：配置 S3 bucket
+
+![配置 OSS](/images/integrations/dify-batch-s3-apikey.png)
+
+#### 第三步：创建工作流
+
+选择字段类型为 "文件列表"，填写变量名称（此处填为 `upload_files`），支持的文档类型选为文档与图片
+
+![文件列表配置](/images/integrations/dify-batch-input-files.png)
+
+#### 第四步：添加 "迭代"
+
+在 "开始" 节点后添加 "迭代"，并配置迭代内的 xParse 节点，设置迭代的输入为上一步开始节点的 `upload_files`，输出节点暂时不填写，在整个迭代配置完成后选择 xParse 节点文档解析的 `files`
+
+![迭代配置](/images/integrations/dify-batch-iterate-input.png)
+
+将 xParse 的输入参数 文件（file） 选择为迭代器的 `item`
+
+![xParse 迭代输入](/images/integrations/dify-batch-xparse-params.png)
+
+![xParse 迭代输出](/images/integrations/dify-batch-iterate-output.png)
+
+#### 第五步：增加中间节点 "代码执行" 来转换 xParse 的解析结果
+
+**输入变量（变量名称需与代码定义一致）**
+
+* **text**：选择 xParse 文档解析的输出变量 `text`
+* **fileName**：选择 "迭代" 节点的 `item` 的 `name`
+
+**输出变量（变量名称需与代码定义一致）**
+
+* **fileName**：String
+* **base64**：String
+
+![代码执行节点](/images/integrations/dify-batch-iterate-code-excute.png)
+
+代码选择 JavaScript，编写转换代码：
+
+```javascript
+function main({text, fileName}) {
+    const fileContent = Buffer.from(text, 'utf-8').toString('base64');
+    return {
+        fileName,
+        base64: fileContent
+    };
+}
+```
+
+以下为 Python 版本：
+
+```python
+import base64
+
+def main(text: str, fileName: str):
+    base64_content = base64.b64encode(text.encode('utf-8')).decode('utf-8')
+    return {
+        'fileName': fileName,
+        'base64': base64_content
+    }
+```
+
+#### 第六步：配置 S3 插件来上传内容
+
+添加工具节点 S3，选择 "通过S3上传base64"
+
+![S3 配置](/images/integrations/dify-batch-iterate-s3-add.png)
+
+文件 base64 选择代码执行（图中为**转换 xParse MD 文本**）输出的 base64 字段
+
+![Botos3 base64 配置](/images/integrations/dify-batch-iterate-s3-params.png)
+
+S3 对象 key，S3 对象 key 填写文件存储的路径，在 botos3 插件配置界面已经填写了 bucket 名称，这里只需要填写在 bucket 下存储的目录即可。选择代码执行（图中为**转换 xParse MD 文本**）的 `fileName`
+
+![Botos3 key 配置](/images/integrations/dify-batch-iterate-s3-key.png)
+
+#### 第七步：预览效果
+
+连接结束节点，至此，一个简单的上传到 s3 的工作流配置完成，点击 "运行" 看看效果：
+
+![工作流运行](/images/integrations/dify-batch-excute.png)
+
+![运行结果](/images/integrations/dify-batch-excute-result.png)
+
+#### 第八步：查看文档
+
+运行结束，可在云存储服务后台查看 S3 桶内是否已上传解析后的 md 文件。
+
+## 三、更多应用场景
+
+xParse Dify 插件还支持以下应用场景：
+
+### RAG 应用构建
+
+使用 xParse 解析文档后，结合 Dify 的知识库功能，构建智能问答系统。xParse 的智能分块功能可以确保文档被合理切分，保留语义完整性，提升检索效果。
+
+### 信息提取 Agent
+
+结合 xParse 的信息抽取能力，构建自动化的信息提取 Agent，从合同、发票、订单等文档中提取结构化信息，自动完成数据录入和验证。
+
+### 批量文档处理
+
+使用迭代节点批量处理文档，结合 xParse 的多种解析引擎，根据文档类型自动选择最适合的解析方案，提升处理效率和准确性。
+
+## 四、常见问题
+
+### Q: 如何选择合适的解析引擎？
+
+A: 
+- **textin**：适合大多数场景，速度和准确性俱佳（推荐）
+- **textin-lite**：适合纯文本、表格图片、电子档 PDF 等场景，速度更快，价格更低
+- **mineru**：适合学术论文等场景，表现优异
+- **paddle**：适合多语言和复杂文档场景（如 PPT），表现优异
+
+### Q: xParse 支持哪些文件格式？
+
+A: xParse 支持 PDF、Word、Excel、PPT、图片（JPG、PNG 等）等多种格式。
+
+### Q: 如何获取 API Key？
+
+A: 请前往 [TextIn 工作台 - 账号与开发者信息](https://www.textin.com/console/dashboard/setting) 获取 `x-ti-app-id` 和 `x-ti-secret-code`，详细获取方式请参考 [API Key 文档](/pipeline/api-key)。
+
+### Q: 解析后的结果格式是什么？
+
+A: xParse 默认返回 Markdown 格式的文本，同时支持返回 JSON 格式的结构化数据，包含文档元素、坐标信息等详细信息。
+
+## 五、相关资源
+
+- [xParse 产品文档](/pipeline/overview)
+- [API 参考文档](/api-reference/endpoint/pipeline)
+- [快速启动指南](/pipeline/quickstart)
+- [TextIn xParse 产品介绍](https://www.textin.com/market/detail/xparse)

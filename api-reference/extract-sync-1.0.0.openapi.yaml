@@ -1,0 +1,397 @@
+openapi: 3.0.3
+info:
+  title: XParse Extract Sync API
+  description: |
+    独立的信息抽取同步API接口，支持从文档中提取结构化信息。
+    
+    该API内部会自动调用Parse进行文档解析，然后根据提供的schema进行信息抽取。
+  version: 1.0.0
+  contact:
+    name: TextIn API Team
+
+servers:
+  - url: https://api.textin.com
+    description: 生产环境
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /api/xparse/extract/sync:
+    post:
+      summary: 同步文档抽取
+      description: |
+        同步执行文档抽取，内部会自动调用Parse进行文档解析，然后根据提供的schema进行信息抽取。
+        
+        该接口会立即返回抽取结果，适用于小文件或需要同步获取结果的场景。
+      operationId: extractSync
+      tags:
+        - XParse Extract
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - extract_config
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 需要处理的文档文件（支持 PDF、WORD、EXCEL、PPT、图片等[多种格式](/pipeline/sources/overview#支持的文件格式)）
+                parse_config:
+                  type: string
+                  description: |
+                    Parse配置的 JSON 字符串（可选），与Pipeline Parse节点配置一致。
+                    
+                    如果未提供，将使用默认的Parse配置（provider: "textin"）。
+                    
+                    配置格式参考[文档解析 - Parse](/pipeline/parse)。
+                  example: '{"provider": "textin", "parse_mode": "auto"}'
+                extract_config:
+                  type: string
+                  description: |
+                    抽取配置的 JSON 字符串（必填），与Pipeline Extract节点配置一致。
+                    
+                    必须包含以下字段：
+                    - schema: JSON Schema定义，用于指定要抽取的字段结构
+                    - generate_citations: 是否生成引用信息（坐标位置），默认 false
+                    - stamp: 是否调用印章识别，默认 false
+                    
+                    配置格式参考[信息抽取 - Extract](/pipeline/extract)。
+                  example: '{"schema": {"type": "object", "properties": {"商品": {"type": ["string","null"], "description": ""}}, "required": ["商品"]}, "generate_citations": false, "stamp": false}'
+            encoding:
+              parse_config:
+                contentType: application/json
+              extract_config:
+                contentType: application/json
+      responses:
+        '200':
+          description: 抽取结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/codemessage'
+                  - $ref: '#/components/schemas/ExtractSyncResponse'
+              examples:
+                success:
+                  summary: 成功示例
+                  value:
+                    code: 200
+                    msg: "success"
+                    data:
+                      file_id: "xxx"
+                      status: "completed"
+                      result:
+                        success_count: 1
+                        extracted_schema:
+                          商品: "童装 Looney Tunes UT（短袖T恤）女装SUPIMA COTTON圆领T恤（短袖）"
+                        citations:
+                          商品:
+                            value: "童装 Looney Tunes UT（短袖T恤）女装SUPIMA COTTON圆领T恤（短袖）"
+                            bounding_regions:
+                              - page_number: 1
+                                position: [137, 599, 1129, 599, 1129, 625, 182, 625]
+                                text: "童装 Looney Tunes UT（短袖T恤）"
+                        pages:
+                          - page_number: 1
+                            image_id: "62bfe3c3a8e9c9cf.jpg"
+                            height: 1824
+                            width: 600
+                            angle: 0
+                            status: "Success"
+                            durations: 930.178466796875
+                        stamps: []
+                error:
+                  summary: 错误示例
+                  value:
+                    code: 40004
+                    msg: "Parameter error"
+                    data:
+                      file_id: "xxx"
+                      status: "failed"
+                      message: "extract_config is required"
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+
+  schemas:
+    codemessage:
+      type: object
+      required:
+        - code
+        - msg
+      properties:
+        code:
+          type: integer
+          default: 200
+          description: |
+            状态码
+            - 200: Success (成功)
+            - 40101: x-ti-app-id 或 x-ti-secret-code 为空
+            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败
+            - 40103: 客户端IP不在白名单
+            - 40003: 余额不足，请充值后再使用
+            - 40004: Parameter error (参数错误，请检查入参）
+            - 40007: 机器人不存在或未发布
+            - 40008: 机器人未开通，请至市场开通后重试
+            - 40302: 上传文件大小不符，文件大小不超过 50M
+            - 40303: 文件类型不支持，接口会返回实际检测到的文件类型，如"当前文件类型为.gif"
+            - 40304: 图片尺寸不符，长宽比小于2的图片宽高需在20～20000像素范围内，其他图片的宽高需在20～10000像素范围内
+            - 40305: File not uploaded (识别文件未上传）
+            - 40306: qps超过限制
+            - 40400: 无效的请求链接，请检查链接是否正确
+            - 40422: The file is corrupted (文件损坏)
+            - 40423: Password required or incorrect password (PDF密码错误)
+            - 40424: Page number out of range (页面设置超出文件范围）
+            - 40425: The input file format is not supported (输入文件格式不支持）
+            - 40428: Process office file failed (word和ppt转pdf失败或者超时)
+            - 500: Engine failed (服务器内部错误）
+            - 50011: LLM Connection Failed （访问大模型超时）
+            - 50012: LLM Engine Failed (大模型引擎错误）     
+            - 50207: Partial failed (部分页面解析失败)
+            
+            更多详细错误信息参考[错误码说明](/pipeline/error)。
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40103
+            - 40003
+            - 40004
+            - 40007
+            - 40008
+            - 40302
+            - 40303
+            - 40304
+            - 40305
+            - 40306
+            - 40400
+            - 40422
+            - 40423
+            - 40424
+            - 40425
+            - 40428
+            - 500
+            - 50011
+            - 50012
+            - 50207
+        msg:
+          type: string
+          description: 错误信息
+          example: "success"
+    
+    ExtractSyncResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/ExtractSyncData'
+    
+    ExtractSyncData:
+      type: object
+      required:
+        - file_id
+        - status
+      properties:
+        file_id:
+          type: string
+          description: 文件ID
+          example: "xxx"
+        status:
+          type: string
+          description: 处理状态
+          enum: [completed, failed]
+          example: "completed"
+        result:
+          type: object
+          description: 抽取结果（仅在status为completed时返回）
+          $ref: '#/components/schemas/ExtractResult'
+        message:
+          type: string
+          description: 错误信息（仅在status为failed时返回）
+          example: "error msg"
+    
+    ExtractResult:
+      type: object
+      description: Extract阶段返回的抽取结果，与extract v3对齐
+      properties:
+        success_count:
+          type: integer
+          description: 成功处理的文档页数
+          example: 1
+        extracted_schema:
+          type: object
+          description: |
+            结构化的抽取结果，以json格式返回，与抽取时传入的schema定义的结构一致。
+            
+            由于使用结构化抽取，具体的字段名称和数据类型由用户的schema决定，无法预先确定。
+          additionalProperties: true
+          example:
+            商品: "童装 Looney Tunes UT（短袖T恤）女装SUPIMA COTTON圆领T恤（短袖）"
+        citations:
+          type: object
+          description: |
+            抽取结果的详细信息，包含坐标位置，结构与schema定义一致。
+            
+            仅在 generate_citations=true 时返回。每个抽取字段的详细信息包含：
+            - value: 该字段的抽取结果
+            - bounding_regions: 抽取结果value对应的坐标位置
+              - page_number: 所在页码，从1开始
+              - text: 边界框所在区域内的文本内容
+              - position: 坐标位置，长度为8的数组，表示四个顶点的像素坐标 [左上x, 左上y, 右上x, 右上y, 右下x, 右下y, 左下x, 左下y]
+          additionalProperties:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/CitationItem'
+        stamps:
+          type: array
+          description: 印章相关信息（仅在 stamp=true 且文档中包含印章时返回）
+          items:
+            $ref: '#/components/schemas/StampInfo'
+        pages:
+          type: array
+          description: 文档页面相关信息
+          items:
+            $ref: '#/components/schemas/PageInfo'
+    
+    CitationItem:
+      type: object
+      required:
+        - value
+        - bounding_regions
+      properties:
+        value:
+          type: string
+          nullable: true
+          description: 该字段的抽取结果
+          example: "童装 Looney Tunes UT（短袖T恤）"
+        bounding_regions:
+          type: array
+          description: 抽取结果value对应的坐标位置
+          items:
+            $ref: '#/components/schemas/BoundingRegion'
+    
+    BoundingRegion:
+      type: object
+      required:
+        - page_number
+        - position
+        - text
+      properties:
+        page_number:
+          type: integer
+          description: 所在页码，从1开始
+          example: 1
+        position:
+          type: array
+          description: |
+            坐标位置，长度为8的数组，表示四个顶点的像素坐标
+            [左上x, 左上y, 右上x, 右上y, 右下x, 右下y, 左下x, 左下y]
+          items:
+            type: number
+          minItems: 8
+          maxItems: 8
+          example: [137, 599, 1129, 599, 1129, 625, 182, 625]
+        text:
+          type: string
+          description: 边界框所在区域内的文本内容
+          example: "童装 Looney Tunes UT（短袖T恤）"
+    
+    StampInfo:
+      type: object
+      description: 印章相关信息
+      properties:
+        color:
+          type: string
+          description: 当前印章颜色
+          enum: [红色, 蓝色, 黑色, 其他]
+          example: "红色"
+        position:
+          type: array
+          description: 印章的坐标信息，长度为8的数组
+          items:
+            type: number
+          minItems: 8
+          maxItems: 8
+        stamp_shape:
+          type: string
+          description: 当前印章形状
+          enum: [圆章, 椭圆章, 方章, 三角章, 菱形章, 其他]
+          example: "圆章"
+        type:
+          type: string
+          description: 当前印章类型
+          enum: [公章, 个人章, 专用章, 其他, 合同专用章, 财务专用章, 发票专用章, 业务专用章]
+          example: "公章"
+        value:
+          type: string
+          description: 印章的文本内容
+          example: "某某公司"
+    
+    PageInfo:
+      type: object
+      required:
+        - page_number
+        - status
+        - durations
+      properties:
+        page_number:
+          type: integer
+          description: 当前页码
+          example: 1
+        image_id:
+          type: string
+          description: 当前页面图片id
+          example: "62bfe3c3a8e9c9cf.jpg"
+        height:
+          type: integer
+          description: 文档页面高度
+          example: 1824
+        width:
+          type: integer
+          description: 文档页面宽度
+          example: 600
+        angle:
+          type: integer
+          description: 页面角度（可选值0, 90, 180, 270）
+          enum: [0, 90, 180, 270]
+          example: 0
+        status:
+          type: string
+          description: 当前页处理状态
+          example: "Success"
+        durations:
+          type: number
+          description: 当前页处理耗时(毫秒)
+          example: 930.178466796875
+
+tags:
+  - name: XParse Extract
+    description: |
+      独立的信息抽取API接口
+      
+      ## 功能特性
+      - 📄 自动解析：内部自动调用Parse进行文档解析
+      - 📊 结构化抽取：基于JSON Schema的结构化信息抽取
+      - 📍 坐标信息：支持返回字段的坐标位置信息
+      - 🔍 印章识别：支持识别文档中的印章信息
+      
+      ## 计费说明
+      - 按照处理的页数计费
+      - 计费信息通过 x-ti-app-id 和 x-ti-secret-code 进行关联

@@ -4,6 +4,13 @@ title: "返回JSON结构说明"
 
 当您使用文档解析API解析文档时，解析后的数据将按照以下结构的JSON格式返回。
 
+**重要说明：根据 `parse_mode` 参数的不同，返回结构会有所不同**：
+
+- 当 `parse_mode` 为 `auto`、`scan`、`parse` 时，返回 `markdown`、`detail`、`pages` 等字段
+- 当 `parse_mode` 为 `lite` 或 `vlm` 时，返回新的 `elements` 结构（包含 `success_count`、`elements` 数组等字段）
+
+如需将 `elements` 格式转换为统一的`detail`/`pages`格式，请参考[转换脚本](/xparse/parse-quickstart#elements格式转换脚本)。
+
 ```json expandable
 {
   "code": 200,
@@ -16,26 +23,8 @@ title: "返回JSON结构说明"
         "paragraph_id": 123,
         "outline_level": -1,
         "text": "hello markdown",
-        "position": [
-          217,
-          390,
-          1336,
-          390,
-          1336,
-          460,
-          217,
-          460
-        ],
-        "origin_position": [
-          217,
-          390,
-          1336,
-          390,
-          1336,
-          460,
-          217,
-          460
-        ],
+        "position": [217,390,1336,390,1336,460,217,460],
+        "origin_position": [217,390,1336,390,1336,460,217,460],
         "content": 0,
         "type": "paragraph",
         "sub_type": "catalog",
@@ -54,16 +43,7 @@ title: "返回JSON结构说明"
             "col": 123,
             "row_span": 123,
             "col_span": 123,
-            "position": [
-              10,
-              10,
-              100,
-              10,
-              100,
-              50,
-              10,
-              50
-            ],
+            "position": [10,10,100,10,100,50,10,50],
             "origin_position": [
               123
             ],
@@ -71,42 +51,11 @@ title: "返回JSON结构说明"
             "type": "<string>"
           }
         ],
-        "split_section_page_ids": [
-          1,
-          2,
-          3
-        ],
+        "split_section_page_ids": [1,2,3],
         "split_section_positions": [
-          [
-            0,
-            0,
-            100,
-            100,
-            100,
-            200,
-            0,
-            200
-          ],
-          [
-            0,
-            0,
-            100,
-            100,
-            100,
-            200,
-            0,
-            200
-          ],
-          [
-            0,
-            0,
-            100,
-            100,
-            100,
-            200,
-            0,
-            200
-          ]
+          [0,0,100,100,100,200,0,200],
+          [0,0,100,100,100,200,0,200],
+          [0,0,100,100,100,200,0,200]
         ],
         "stamp": {
           "value": "<string>",
@@ -155,179 +104,60 @@ title: "返回JSON结构说明"
             "text": "这是一个例子。",
             "score": 0.99,
             "type": "text",
-            "position": [
-              10,
-              10,
-              100,
-              10,
-              100,
-              50,
-              10,
-              50
-            ],
+            "position": [10,10,100,10,100,50,10,50],
             "angle": 123,
             "direction": 1,
             "handwritten": 1,
-            "char_scores": [
-              0.99,
-              0.98,
-              0.95,
-              0.95,
-              0.99,
-              0.93,
-              0.87
-            ],
+            "char_scores": [0.99,0.98,0.95,0.95,0.99,0.93,0.87],
             "char_centers": [
-              [
-                20,
-                10
-              ],
-              [
-                30,
-                10
-              ],
-              [
-                40,
-                10
-              ],
-              [
-                50,
-                10
-              ],
-              [
-                60,
-                10
-              ],
-              [
-                70,
-                10
-              ],
-              [
-                80,
-                10
-              ]
+              [20,10],
+              [30,10],
+              [40,10],
+              [50,10],
+              [60,10],
+              [70,10],
+              [80,10]
             ],
             "char_positions": [
               [
-                18,
-                8,
-                22,
-                8,
-                22,
-                12,
-                18,
-                12
+                [18,8,22,8,22,12,18,12]
               ],
               [
-                28,
-                88,
-                32,
-                8,
-                32,
-                12,
-                28,
-                12
+                [28,88,32,8,32,12,28,12]
               ],
               [
-                38,
-                88,
-                42,
-                8,
-                42,
-                12,
-                38,
-                12
+                [38,88,42,8,42,12,38,12]
               ],
               [
-                48,
-                88,
-                52,
-                8,
-                52,
-                12,
-                48,
-                12
+                [48,88,52,8,52,12,48,12]
               ],
               [
-                58,
-                88,
-                62,
-                8,
-                62,
-                12,
-                58,
-                12
+                [58,88,62,8,62,12,58,12]
               ],
               [
-                68,
-                88,
-                72,
-                8,
-                72,
-                12,
-                68,
-                12
+                [68,88,72,8,72,12,68,12]
               ],
               [
-                78,
-                88,
-                82,
-                8,
-                82,
-                12,
-                78,
-                12
+                [78,88,82,8,82,12,78,12]
               ]
             ],
             "char_candidates": [
-              [
-                "这"
-              ],
-              [
-                "是"
-              ],
-              [
-                "一",
-                "-"
-              ],
-              [
-                "个"
-              ],
-              [
-                "例"
-              ],
-              [
-                "子"
-              ],
-              [
-                "。",
-                "O"
-              ]
+              ["这"],
+              ["是"],
+              ["一","-"],
+              ["个"],
+              ["例"],
+              ["子"],
+              ["。","O"]
             ],
             "char_candidates_score": [
-              [
-                0.99
-              ],
-              [
-                0.99
-              ],
-              [
-                0.95,
-                0.05
-              ],
-              [
-                0.99
-              ],
-              [
-                0.99
-              ],
-              [
-                0.99
-              ],
-              [
-                0.89,
-                0.11
-              ]
+              [0.99],
+              [0.99],
+              [0.95,0.05],
+              [0.99],
+              [0.99],
+              [0.99],
+              [0.89,0.11]
             ]
           }
         ],
@@ -340,11 +170,7 @@ title: "返回JSON结构说明"
             "origin_position": [
               123
             ],
-            "content": [
-              0,
-              1,
-              2
-            ],
+            "content": [0,1,2],
             "sub_type": "text",
             "continue": true,
             "next_page_id": 2,
@@ -362,38 +188,43 @@ title: "返回JSON结构说明"
             "hierarchy": 2,
             "title": "1.公司简介和主要财务指标",
             "page_id": 3,
-            "pos": [
-              10,
-              10,
-              100,
-              10,
-              100,
-              50,
-              10,
-              50
-            ]
+            "pos": [10,10,100,10,100,50,10,50]
           },
           {
             "hierarchy": 3,
             "title": "1.1 公司简介",
             "page_id": 4,
-            "pos": [
-              10,
-              10,
-              100,
-              10,
-              100,
-              50,
-              10,
-              50
-            ]
+            "pos": [10,10,100,10,100,50,10,50]
           }
         ]
       ]
     },
     "total_page_number": 10,
     "valid_page_number": 3,
-    "excel_base64": ""
+    "excel_base64": "",
+    "success_count": 1,
+    "elements": [
+      {
+        "element_id": "",
+        "type": "NarrativeText",
+        "text": "xParse 是一个端到端文档处理 AI 基础设施",
+        "metadata": {
+          "page_image_url": "https://web-api.textin.com/ocr_image/external/01a91572ca81092c.jpg",
+          "original_image_url": "",
+          "angle": 0,
+          "page_number": 1,
+          "page_width": 600,
+          "page_height": 800,
+          "coordinates": [0.182212, 0.231622, 0.671733, 0.231634, 0.671754, 0.273244, 0.182266, 0.273255],
+          "is_continue": false,
+          "category_depth": -1,
+          "parent_id": "",
+          "sub_type": "stamp",
+          "image_url": "https://web-api.textin.com/ocr_image/external/e47f8aed69ccabce.jpg",
+          "image_base64": ""
+        }
+      }
+    ]
   },
   "version": "2.1.0",
   "duration": 999,
@@ -609,10 +440,53 @@ detail包含markdown中不同类型元素的详细信息。受URL参数**markdow
     - **pos**：该目录区域的四个角点坐标，依次为左上，右上，右下，左下。
     - **pos_list**：发生标题合并时，为合并前多个标题的坐标；未发生标题合并时，即为该标题的坐标。
 
+### elements：元素数组（parse_mode 为 lite 或 vlm 时返回）
+
+当 `parse_mode` 为 `lite` 或 `vlm` 时，返回 `elements` 数组结构，替代原有的 `detail` 和 `pages` 结构。如需将 `elements` 格式转换为原有格式，请参考[转换脚本](/xparse/parse-quickstart#elements格式转换脚本)。
+
+- **success_count**：解析成功页数
+- **elements**：element 数组，包含文档中的所有元素
+  - **element_id**：唯一标识
+  - **type**：类型，具体见下文 Element type 类型说明
+  - **text**：文本内容
+  - **metadata**：元数据对象
+    - **page_image_url**：页图url
+    - **original_image_url**：原始页图url，仅当开启去水印或切边时返回
+    - **angle**：页面角度
+    - **page_number**：页码
+    - **page_width**：页宽
+    - **page_height**：页高
+    - **coordinates**：element的归一化坐标（float数组，8个值，六位小数）
+    - **is_continue**：是否和下一个element合并
+    - **category_depth**：目录层级，0表示一级标题，1表示2级标题，依次增加。-1表示正文段落
+    - **parent_id**：父节点的element_id。表格和图片等父节点为对应的表格标题和图片标题。文本段落的父节点为对应的文本标题
+    - **sub_type**：仅当type为Image时返回，包括stamp, card, qrcode_barcode, chart
+    - **image_url**：仅当type为Image 且请求参数 image_output_type=default 时返回，值为子图的url
+    - **image_base64**：仅当type为Image 且请求参数 image_output_type=base64str时返回，值为子图的base64字符串
+
+#### Element type 类型说明
+
+当 `parse_mode` 为 `lite` 或 `vlm` 时，返回的 `elements` 数组中每个 element 的 `type` 字段可能的值如下：
+
+| Element type      | 说明                                                 |
+| ----------------- | ---------------------------------------------------- |
+| NarrativeText     | 除了标题、页眉页脚、图片说明文字列表外的普通段落文字 |
+| Title             | 章节标题                                             |
+| Table             | 表格                                                 |
+| TableCaption      | 表格标题                                             |
+| Image             | 图片                                                 |
+| FigureCaption     | 图片标题                                             |
+| Formula           | 公式                                                 |
+| Header            | 页眉                                                 |
+| Footer            | 页脚                                                 |
+| CodeSnippet       | 代码片段                                             |
+| PageNumber        | 页码                                                 |
+| UncategorizedText | 其他文本                                             |
+
 ### 其他result字段
 
 - **total_count**：解析总页数
-- **success_count**：解析成功的页数
+- **success_count**：解析成功的页数（parse_mode 为 lite 或 vlm 时返回）
 - **total_page_number**：输入PDF时， 返回文档的总页数。
 - **valid_page_number**：记录本次解析成功的总页数。
 - **excel_base64**：excel的base64结果，受URL参数**get_excel**影响，仅当get_excel=1时返回。详情见[快速启动-URL参数说明](/xparse/parse-quickstart)。

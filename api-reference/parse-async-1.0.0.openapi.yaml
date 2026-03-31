@@ -1,0 +1,335 @@
+openapi: 3.0.3
+info:
+  title: XParse Parse Async API
+  description: |
+    独立的文档解析异步API接口，支持异步处理文档解析任务。
+    
+    该API适用于处理大文件或批量文件，通过job_id查询处理状态和结果，避免长时间等待。
+  version: 1.0.0
+  contact:
+    name: TextIn API Team
+
+servers:
+  - url: https://api.textin.com
+    description: 生产环境
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /api/xparse/parse/async:
+    post:
+      summary: 创建异步解析任务
+      description: |
+        创建异步文档解析任务，立即返回job_id，通过job_id查询处理状态和结果。
+        
+        适用于处理大文件或批量文件，避免HTTP超时限制。
+      operationId: createParseAsyncJob
+      tags:
+        - XParse Parse
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 需要处理的文档文件（支持 PDF、WORD、EXCEL、PPT、图片等[多种格式](/pipeline/sources/overview#支持的文件格式)）
+                config:
+                  type: string
+                  description: |
+                    Parse配置的 JSON 字符串（可选），与Pipeline Parse节点配置一致。
+                    
+                    如果未提供，将使用默认配置（provider: "textin"）。
+                    
+                    配置格式参考[文档解析 - Parse](/pipeline/parse)。
+                  example: '{"provider": "textin", "parse_mode": "auto"}'
+                webhook:
+                  type: string
+                  description: |
+                    Webhook回调URL（可选），当任务完成或失败时会调用该URL。
+                    
+                    Webhook请求格式：
+                    - Method: POST
+                    - Content-Type: application/json
+                    - Body: {"job_id": "xxx", "status": "completed", "result_url": "https://..."}
+                  example: "https://your-server.com/webhook"
+            encoding:
+              config:
+                contentType: application/json
+      responses:
+        '200':
+          description: 任务创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/codemessage'
+                  - $ref: '#/components/schemas/CreateJobResponse'
+              examples:
+                success:
+                  summary: 成功示例
+                  value:
+                    code: 200
+                    msg: "success"
+                    data:
+                      job_id: "xxx"
+                error:
+                  summary: 错误示例
+                  value:
+                    code: 40004
+                    msg: "Parameter error"
+                    data:
+                      message: "File not uploaded"
+  
+  /api/xparse/parse/async/{job_id}:
+    get:
+      summary: 查询异步解析任务状态
+      description: |
+        通过job_id查询异步解析任务的处理状态和结果。
+        
+        任务状态包括：
+        - pending: 排队中
+        - in_progress: 处理中
+        - completed: 已完成
+        - failed: 处理失败
+      operationId: getParseAsyncJobStatus
+      tags:
+        - XParse Parse
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: 任务ID
+          schema:
+            type: string
+          example: "xxx"
+      responses:
+        '200':
+          description: 任务状态
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/codemessage'
+                  - $ref: '#/components/schemas/JobStatusResponse'
+              examples:
+                pending:
+                  summary: 排队中
+                  value:
+                    code: 200
+                    msg: "success"
+                    data:
+                      job_id: "xxx"
+                      file_id: "xxx"
+                      status: "pending"
+                in_progress:
+                  summary: 处理中
+                  value:
+                    code: 200
+                    msg: "success"
+                    data:
+                      job_id: "xxx"
+                      file_id: "xxx"
+                      status: "in_progress"
+                completed:
+                  summary: 已完成
+                  value:
+                    code: 200
+                    msg: "success"
+                    data:
+                      job_id: "xxx"
+                      file_id: "xxx"
+                      status: "completed"
+                      result_url: "https://api.textin.com/api/xparse/parse/async/result/xxx"
+                failed:
+                  summary: 处理失败
+                  value:
+                    code: 200
+                    msg: "success"
+                    data:
+                      job_id: "xxx"
+                      file_id: "xxx"
+                      status: "failed"
+                      message: "error msg"
+  
+  /api/xparse/parse/async/result/{job_id}:
+    get:
+      summary: 查询异步解析任务结果
+      description: |
+        通过job_id查询异步解析任务的详细结果。
+        
+        该接口仅在任务状态为completed时可用，返回完整的解析结果，格式与同步API一致。
+      operationId: getParseAsyncJobResult
+      tags:
+        - XParse Parse
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: 任务ID
+          schema:
+            type: string
+          example: "xxx"
+      responses:
+        '200':
+          description: 解析结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/codemessage'
+                  - $ref: '#/components/schemas/ParseResultResponse'
+              examples:
+                success:
+                  summary: 成功示例
+                  value:
+                    code: 200
+                    msg: "success"
+                    data:
+                      file_id: "xxx"
+                      elements:
+                        - element_id: "13a9939f23e485ca20a16c741658bcf64efd82309a6f0a8cf35679a65b2fd0dc"
+                          type: "NarrativeText"
+                          metadata:
+                            filename: "example.pdf"
+                            filetype: "application/pdf"
+                            last_modified: "1758624866230"
+                            page_number: 1
+                            page_width: 1191
+                            page_height: 1684
+                          text: "这是解析出的文本内容"
+                notReady:
+                  summary: 任务未完成
+                  value:
+                    code: 40004
+                    msg: "Parameter error"
+                    data:
+                      message: "Job is not completed yet"
+
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+
+  schemas:
+    codemessage:
+      type: object
+      required:
+        - code
+        - msg
+      properties:
+        code:
+          type: integer
+          default: 200
+          description: |
+            状态码
+            - 200: Success
+            - 40101: x-ti-app-id 或 x-ti-secret-code 为空
+            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败
+            - 40004: 参数错误，请查看技术文档，检查传参
+            - 500: 服务器内部错误
+            
+            更多详细错误信息参考[错误码说明](/pipeline/error)。
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40004
+            - 500
+        msg:
+          type: string
+          description: 错误信息
+          example: "success"
+    
+    CreateJobResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/CreateJobData'
+    
+    CreateJobData:
+      type: object
+      required:
+        - job_id
+      properties:
+        job_id:
+          type: string
+          description: 任务ID，用于查询任务状态
+          example: "xxx"
+    
+    JobStatusResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/JobStatusData'
+    
+    JobStatusData:
+      type: object
+      required:
+        - job_id
+        - file_id
+        - status
+      properties:
+        job_id:
+          type: string
+          description: 任务ID
+          example: "xxx"
+        file_id:
+          type: string
+          description: 文件ID
+          example: "xxx"
+        status:
+          type: string
+          description: |
+            任务状态
+            - pending: 排队中
+            - in_progress: 处理中
+            - completed: 已完成
+            - failed: 处理失败
+          enum: [pending, in_progress, completed, failed]
+          example: "completed"
+        result_url:
+          type: string
+          description: |
+            结果下载URL（仅在status为completed时返回）
+            
+            通过该URL可以下载解析结果，结果格式与同步API一致。
+          example: "https://api.textin.com/api/xparse/parse/async/result/xxx"
+        message:
+          type: string
+          description: 错误信息（仅在status为failed时返回）
+          example: "error msg"
+
+tags:
+  - name: XParse Parse
+    description: |
+      独立的文档解析异步API接口
+      
+      ## 功能特性
+      - 📄 异步处理：支持大文件和批量文件处理
+      - 🔔 Webhook支持：支持任务完成回调通知
+      - 📊 状态查询：通过job_id查询任务状态
+      - ⏱️ 无超时限制：避免HTTP超时问题
+      
+      ## 计费说明
+      - 按照处理的页数计费
+      - 计费信息通过 x-ti-app-id 和 x-ti-secret-code 进行关联

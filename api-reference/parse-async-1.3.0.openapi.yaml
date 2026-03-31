@@ -1,0 +1,384 @@
+openapi: 3.0.3
+info:
+  title: XParse Parse Async API
+  description: |
+    独立的文档解析异步API接口，支持异步处理文档解析任务。
+    
+    该API适用于处理大文件或批量文件，通过job_id查询处理状态和结果，避免长时间等待。
+  version: 1.0.0
+  contact:
+    name: TextIn API Team
+
+servers:
+  - url: https://api.textin.com
+    description: 生产环境
+
+security:
+  - AppIdAuth: []
+    SecretCodeAuth: []
+
+paths:
+  /api/v1/xparse/parse/async:
+    post:
+      summary: 创建异步解析任务
+      description: |
+        创建异步文档解析任务，立即返回job_id，通过job_id查询处理状态和结果。
+        
+        适用于处理大文件或批量文件，避免HTTP超时限制。
+      operationId: createParseAsyncJob
+      tags:
+        - XParse Parse
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 上传文档文件，与 file_url 二选一
+                file_url:
+                  type: string
+                  description: 文档 URL，与 file 二选一
+                config:
+                  allOf:
+                    - $ref: '#/components/schemas/ParseConfig'
+                  example:
+                    schema_version: "1.3.0"
+                    document:
+                      password: "example-pdf-password"
+                    capabilities:
+                      include_hierarchy: true
+                      include_inline_objects: true
+                      include_char_details: true
+                      include_image_data: true
+                      include_table_structure: true
+                      pages: true
+                      title_tree: true
+                      table_view: "html"
+                    scope:
+                      page_range: "1-2"
+                    config:
+                      force_engine: "textin"
+                      engine_params:
+                        formula_level: 0
+                        image_output_type: "url"
+                webhook:
+                  type: string
+                  description: |
+                    Webhook回调URL（可选），当任务完成或失败时会调用该URL。
+                    
+                    Webhook请求格式：
+                    - Method: POST
+                    - Content-Type: application/json
+                    - Body: {"job_id": "xxx", "status": "completed", "result_url": "https://..."}
+                  example: "https://your-server.com/webhook"
+            encoding:
+              config:
+                contentType: application/json
+      responses:
+        '200':
+          description: 任务创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/codemessage'
+                  - $ref: '#/components/schemas/CreateJobResponse'
+              examples:
+                success:
+                  summary: 成功示例
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      job_id: "c020a1f03c994091a94d6763cdbe0684"
+                error:
+                  summary: 错误示例
+                  value:
+                    code: 40004
+                    message: "Parameter error"
+                    data:
+                      message: "File not uploaded"
+  
+  /api/v1/xparse/parse/async/{job_id}:
+    get:
+      summary: 查询异步解析任务状态
+      description: |
+        通过job_id查询异步解析任务的处理状态和结果。
+        
+        任务状态包括：
+        - pending: 排队中
+        - in_progress: 处理中
+        - completed: 已完成
+        - failed: 处理失败
+      operationId: getParseAsyncJobStatus
+      tags:
+        - XParse Parse
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: 任务ID
+          schema:
+            type: string
+          example: "xxx"
+      responses:
+        '200':
+          description: 任务状态
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/codemessage'
+                  - $ref: '#/components/schemas/JobStatusResponse'
+              examples:
+                pending:
+                  summary: 排队中
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      job_id: "c020a1f03c994091a94d6763cdbe0684"
+                      file_id: "00c685bad97544609d3607885d76bdc4"
+                      status: "pending"
+                in_progress:
+                  summary: 处理中
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      job_id: "c020a1f03c994091a94d6763cdbe0684"
+                      file_id: "00c685bad97544609d3607885d76bdc4"
+                      status: "in_progress"
+                completed:
+                  summary: 已完成
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      job_id: "c020a1f03c994091a94d6763cdbe0684"
+                      file_id: "00c685bad97544609d3607885d76bdc4"
+                      status: "completed"
+                      result_url: "https://api.textin.com/api/xparse/parse/async/result/xxx"
+                failed:
+                  summary: 处理失败
+                  value:
+                    code: 200
+                    message: "success"
+                    data:
+                      job_id: "c020a1f03c994091a94d6763cdbe0684"
+                      file_id: "00c685bad97544609d3607885d76bdc4"
+                      status: "failed"
+                      message: "error message"
+  
+components:
+  securitySchemes:
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: x-ti-app-id
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-app-id'
+    SecretCodeAuth:
+      type: apiKey
+      in: header
+      name: x-ti-secret-code
+      description: '请[登录Textin](https://www.textin.com/console/dashboard/setting)后前往 "工作台-账号设置-开发者信息" 查看 x-ti-secret-code'
+
+  schemas:
+    # ──────────────────────────────────────
+    # 请求 config
+    # ──────────────────────────────────────
+    ParseConfig:
+      type: object
+      description: 解析参数配置
+      properties:
+        schema_version:
+          type: string
+          default: '1.3.0'
+          description: 目标 schema 版本
+        document:
+          $ref: '#/components/schemas/DocumentConfig'
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
+        scope:
+          $ref: '#/components/schemas/Scope'
+        config:
+          $ref: '#/components/schemas/ExpertConfig'
+
+    DocumentConfig:
+      type: object
+      description: 文档相关配置
+      properties:
+        password:
+          type: string
+          description: 文档密码（如加密pdf）
+
+    Capabilities:
+      type: object
+      description: 解析策略与格式配置
+      properties:
+        include_hierarchy:
+          type: boolean
+          default: true
+          description: 是否返回 element 间的层级与关联字段。开启后，返回元素间的父子关系、引用关系等信息（如parent_id、children_ids、ref_element_id），用于表达文档的结构化关系图谱。
+        include_inline_objects:
+          type: boolean
+          default: false
+          description: 是否返回细粒度对象。开启后，文本类元素会返回其中包含的细粒度对象（如公式、图片、手写签名、复选框等）。若同时启用表格结构，表格单元格内的内嵌对象也会被识别并返回。
+        include_char_details:
+          type: boolean
+          default: false
+          description: 是否返回字符级详细信息（char_details）。开启后，返回文本中每个字符的详细信息（如坐标、置信度、候选字）。若同时启用表格结构，表格单元格内的字符也会返回此类详情。
+        include_image_data:
+          type: boolean
+          default: false
+          description: 是否返回图片数据（image_data）。开启后，图片元素将返回完整的图片数据（包含图片 URL、MIME 类型、Base64 编码及图中识别文字）。若图片以内嵌对象形式出现在文本或表格单元格中，系统也会自动补充相应图片信息。
+        include_table_structure:
+          type: boolean
+          default: false
+          description: 是否返回表格的详细结构化信息。开启后，以 JSON 格式返回表格的行、列以及每个单元格的详细信息。
+        pages:
+          type: boolean
+          default: false
+          description: 是否返回页面元信息列表，包含页面的页码、宽高、旋转角度、渲染图片地址（page_image_url）、包含的元素列表（element_ids）等。
+        title_tree:
+          type: boolean
+          default: false
+          description: 是否返回标题树（目录）。
+        table_view:
+          type: string
+          enum: [markdown, html]
+          default: html
+          description: 表格在 markdown 中的表达格式
+
+    Scope:
+      type: object
+      description: 处理范围控制
+      properties:
+        page_range:
+          type: string
+          description: 页码范围，从1开始，支持多个闭区间，如 "1-2,3-4,5-10"
+          example: '1-5'
+
+    ExpertConfig:
+      type: object
+      description: 高级配置（专家模式）
+      properties:
+        force_engine:
+          type: string
+          enum: [textin, mineru, paddle_ocr]
+          description: 强制指定内部引擎，仅专家模式使用
+        engine_params:
+          type: object
+          additionalProperties: true
+          description: 引擎级自定义参数
+
+    codemessage:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          default: 200
+          description: |
+            状态码
+            - 200: Success
+            - 40101: x-ti-app-id 或 x-ti-secret-code 为空
+            - 40102: x-ti-app-id 或 x-ti-secret-code 无效，验证失败
+            - 40004: 参数错误，请查看技术文档，检查传参
+            - 500: 服务器内部错误
+            
+            更多详细错误信息参考[错误码说明](/pipeline/error)。
+          enum:
+            - 200
+            - 40101
+            - 40102
+            - 40004
+            - 500
+        message:
+          type: string
+          description: 错误信息
+          example: "success"
+    
+    CreateJobResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/CreateJobData'
+    
+    CreateJobData:
+      type: object
+      required:
+        - job_id
+      properties:
+        job_id:
+          type: string
+          description: 任务ID，用于查询任务状态
+          example: "c020a1f03c994091a94d6763cdbe0684"
+    
+    JobStatusResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/JobStatusData'
+    
+    JobStatusData:
+      type: object
+      required:
+        - job_id
+        - file_id
+        - status
+      properties:
+        job_id:
+          type: string
+          description: 任务ID
+          example: "c020a1f03c994091a94d6763cdbe0684"
+        file_id:
+          type: string
+          description: 文件 ID
+          example: "00c685bad97544609d3607885d76bdc4"
+        status:
+          type: string
+          description: |
+            任务状态
+            - pending: 排队中
+            - in_progress: 处理中
+            - completed: 已完成
+            - failed: 处理失败
+          enum: [pending, in_progress, completed, failed]
+          example: "completed"
+        result_url:
+          type: string
+          description: |
+            结果下载URL（仅在status为completed时返回）
+            
+            通过该URL可以下载解析结果，结果格式与同步API一致。
+          example: "https://api.textin.com/api/v1/xparse/parse/async/result/xxx"
+        message:
+          type: string
+          description: 错误信息（仅在status为failed时返回）
+          example: "error message"
+
+tags:
+  - name: XParse Parse
+    description: |
+      独立的文档解析异步API接口
+      
+      ## 功能特性
+      - 📄 异步处理：支持大文件和批量文件处理
+      - 🔔 Webhook支持：支持任务完成回调通知
+      - 📊 状态查询：通过job_id查询任务状态
+      - ⏱️ 无超时限制：避免HTTP超时问题
+      
+      ## 计费说明
+      - 按照处理的页数计费
+      - 计费信息通过 x-ti-app-id 和 x-ti-secret-code 进行关联

@@ -239,13 +239,16 @@ if __name__ == "__main__":
 
 以下是文档解析API的URL参数，URL参数指以 参数名=参数值 形式拼接到 URL 上的键值对。它以 `?` 开头，不同参数之间使用 `&` 连接，形如 `?p1=v1&p2=v2`。URL参数会影响文档的解析结果和JSON输出内容，您可按需进行设置。
 
+- **parse_mode**：文档的解析模式，默认为scan模式。
+  - auto 由引擎自动选择，适用范围最广
+  - scan 文档统一当成图片解析（如pdf每一页都当成图片解析）
+  - lite 轻量版，只输出表格和文字结果
+  - parse 仅电子档文字解析，速度最快
+  - vlm 视觉语言模型解析模式
 - **pdf_pwd**：当pdf为加密文档时，需要提供密码。
   - 备注：对前端封装该接口参数时，需要自行对密码进行安全防护。
 - **page_start**：当上传的是pdf时，表示从第几页开始解析，取值范围从1开始，不传该参数时默认从首页开始。
 - **page_count**：当上传的是pdf时，表示要进行解析的pdf页数。总页数不得超过1000页，默认为1000页。
-- **parse_mode**：pdf文档的解析模式，默认为scan模式。图片不用设置，均默认按scan模式处理。
-  - auto 综合文字识别和解析模式：对pdf电子档解析，会直接提取pdf中的文字
-  - scan 仅按文字识别模式：将pdf当成图片处理
 - **dpi**：pdf文档的坐标基准，默认144 dpi。 与**parse_mode**参数联动
   - 当parse_mode=auto时，默认动态，支持72，144，216；
   - 当parse_mode=scan时，默认144，支持72，144，216。
@@ -312,7 +315,14 @@ if __name__ == "__main__":
 
 ### 返回结果示例
 
-解析后的结果数据将按照以下JSON格式返回，下面为您提供了一段节选的返回示例。如果您想了解最全面的返回结果说明，可以在[返回JSON结构说明](/xparse/parse-getjson)中查看，也可以在[API](/api-reference/endpoint/parse)中查看和调试。
+解析后的结果数据将按照以下JSON格式返回。**根据 `parse_mode` 的不同，返回结构会有所不同**：
+
+- 当 `parse_mode` 为 `auto`、`scan`、`parse` 时，返回 `markdown`、`detail`、`pages` 等字段
+- 当 `parse_mode` 为 `lite` 或 `vlm` 时，返回新的 `elements` 结构（包含 `success_count`、`elements` 数组等字段）
+
+下面为您提供了两种格式的返回示例。如果您想了解最全面的返回结果说明，可以在[返回JSON结构说明](/xparse/parse-getjson)中查看，也可以在[API](/api-reference/endpoint/parse)中查看和调试。
+
+#### parse_mode 为 auto/scan/parse 时的返回结构
 
 ```json
 {
@@ -399,6 +409,328 @@ if __name__ == "__main__":
 }
 ```
 
+#### parse_mode 为 lite/vlm 时的返回结构
+
+```json
+{
+    "code": 200,
+    "message": "success",
+    "x_request_id": "81017abf0fdd3f63ca5c42872cd09a0b",
+    "result": {
+        "success_count": 1,
+        "elements": [
+            {
+                "element_id": "",
+                "type": "NarrativeText",
+                "text": "xParse 是一个端到端文档处理 AI 基础设施",
+                "metadata": {
+                    "page_image_url": "https://web-api.textin.com/ocr_image/external/01a91572ca81092c.jpg",
+                    "original_image_url": "",
+                    "angle": 0,
+                    "page_number": 1,
+                    "page_width": 600,
+                    "page_height": 800,
+                    "coordinates": [0.182222, 0.231623, 0.671734, 0.231643, 0.671744, 0.273255, 0.182266, 0.273211],
+                    "is_continue": false,
+                    "category_depth": -1,
+                    "parent_id": ""
+                }
+            },
+            {
+                "element_id": "",
+                "type": "Image",
+                "text": "椭圆章 ENABLINGTECHNOLOGIES\tGROUP\tOF\t威特立创能科技\t(苏州)有限公司",
+                "metadata": {
+                    "page_image_url": "https://web-api.textin.com/ocr_image/external/01a91572ca81092c.jpg",
+                    "original_image_url": "",
+                    "angle": 0,
+                    "page_number": 1,
+                    "page_width": 600,
+                    "page_height": 800,
+                    "coordinates": [0.182200, 0.231600, 0.671700, 0.231600, 0.671700, 0.273200, 0.182200, 0.273200],
+                    "is_continue": false,
+                    "category_depth": -1,
+                    "sub_type": "stamp",
+                    "image_url": "https://web-api.textin.com/ocr_image/external/e47f8aed69ccabce.jpg",
+                    "image_base64": ""
+                }
+            },
+            {
+                "element_id": "",
+                "type": "Table",
+                "text": "<table border=\"1\"><tr><td>这是一个表格</td></tr></table>",
+                "metadata": {
+                    "page_image_url": "https://web-api.textin.com/ocr_image/external/01a91572ca81092c.jpg",
+                    "original_image_url": "",
+                    "angle": 0,
+                    "page_number": 1,
+                    "page_width": 600,
+                    "page_height": 800,
+                    "coordinates": [0.182200, 0.231600, 0.671700, 0.231600, 0.671700, 0.273200, 0.182200, 0.273200],
+                    "is_continue": false,
+                    "category_depth": -1,
+                    "parent_id": ""
+                }
+            }
+        ]
+    }
+}
+```
+
+#### Element type 类型说明
+
+当 `parse_mode` 为 `lite` 或 `vlm` 时，返回的 `elements` 数组中每个 element 的 `type` 字段可能的值如下：
+
+| Element type      | 说明                                                 |
+| ----------------- | ---------------------------------------------------- |
+| NarrativeText     | 除了标题、页眉页脚、图片说明文字列表外的普通段落文字 |
+| Title             | 章节标题                                             |
+| Table             | 表格                                                 |
+| TableCaption      | 表格标题                                             |
+| Image             | 图片                                                 |
+| FigureCaption     | 图片标题                                             |
+| Formula           | 公式                                                 |
+| Header            | 页眉                                                 |
+| Footer            | 页脚                                                 |
+| CodeSnippet       | 代码片段                                             |
+| PageNumber        | 页码                                                 |
+| UncategorizedText | 其他文本                                             |
+
+#### elements格式转换脚本
+
+如果您需要将 `elements` 格式转换为统一的 `detail`/`pages` 格式，可以使用以下 Python 转换脚本：
+
+```python expandable
+def convert_elements_to_legacy_format(elements_result):
+    """
+    将 elements 格式转换为原有的 detail/pages 格式
+    
+    Args:
+        elements_result: parse_mode 为 lite 或 vlm 时返回的 result 对象，包含 success_count 和 elements
+    
+    Returns:
+        转换后的结果，包含 detail 和 pages 结构
+    """
+    if not elements_result or 'elements' not in elements_result:
+        raise ValueError("输入结果不包含 elements 字段")
+    
+    elements = elements_result.get('elements', [])
+    success_count = elements_result.get('success_count', 0)
+    
+    # 按页码分组 elements
+    pages_dict = {}
+    detail_list = []
+    paragraph_id_counter = 0
+    
+    # 用于生成 markdown：收集所有 text 和 is_continue 信息
+    markdown_parts = []
+    
+    for idx, element in enumerate(elements):
+        if not element or 'metadata' not in element:
+            continue
+            
+        metadata = element.get('metadata', {})
+        page_number = metadata.get('page_number', 1)
+        element_type = element.get('type', '')
+        text = element.get('text', '')
+        is_continue = metadata.get('is_continue', False)
+        coordinates = metadata.get('coordinates', [])
+        category_depth = metadata.get('category_depth', -1)
+        parent_id = metadata.get('parent_id', '')
+        sub_type = metadata.get('sub_type', '')
+        page_width = metadata.get('page_width', 0)
+        page_height = metadata.get('page_height', 0)
+        angle = metadata.get('angle', 0)
+        page_image_url = metadata.get('page_image_url', '')
+        original_image_url = metadata.get('original_image_url', '')
+        image_url = metadata.get('image_url', '')
+        image_base64 = metadata.get('image_base64', '')
+        
+        # 初始化页面数据
+        if page_number not in pages_dict:
+            pages_dict[page_number] = {
+                'page_id': page_number,
+                'status': 'success',
+                'width': page_width,
+                'height': page_height,
+                'angle': angle,
+                'image_id': '',
+                'content': [],
+                'structured': [],
+                'durations': 0.0
+            }
+        
+        page_data = pages_dict[page_number]
+        
+        # 转换坐标：从归一化坐标转换为像素坐标
+        # coordinates 是归一化的 [x1, y1, x2, y2, x3, y3, x4, y4]
+        position = []
+        if len(coordinates) >= 8 and page_width > 0 and page_height > 0:
+            for i in range(0, 8, 2):
+                x = int(coordinates[i] * page_width)
+                y = int(coordinates[i + 1] * page_height)
+                position.extend([x, y])
+        else:
+            position = [0, 0, 0, 0, 0, 0, 0, 0]
+        
+        # 创建 detail 条目
+        detail_item = {
+            'paragraph_id': paragraph_id_counter,
+            'page_id': page_number,
+            'outline_level': category_depth,
+            'text': text,
+            'position': position,
+            'type': '',
+            'sub_type': '',
+            'content': 0
+        }
+        
+        # 根据 element type 映射到 detail 的 type 和 sub_type
+        type_mapping = {
+            'NarrativeText': ('paragraph', 'text'),
+            'Title': ('paragraph', 'text_title'),
+            'Table': ('table', 'bordered'),
+            'TableCaption': ('paragraph', 'table_title'),
+            'Image': ('image', sub_type if sub_type else ''),
+            'FigureCaption': ('paragraph', 'image_title'),
+            'Formula': ('paragraph', 'text'),
+            'Header': ('paragraph', 'header'),
+            'Footer': ('paragraph', 'footer'),
+            'CodeSnippet': ('paragraph', 'text'),
+            'PageNumber': ('paragraph', 'text'),
+            'UncategorizedText': ('paragraph', 'text')
+        }
+        
+        detail_type, detail_sub_type = type_mapping.get(element_type, ('paragraph', 'text'))
+        detail_item['type'] = detail_type
+        detail_item['sub_type'] = detail_sub_type
+        
+        # 处理图片相关字段
+        if element_type == 'Image' and image_url:
+            detail_item['image_url'] = image_url
+        if element_type == 'Image' and image_base64:
+            detail_item['image_base64'] = image_base64
+        
+        detail_list.append(detail_item)
+        
+        # 创建 content 条目（文本行）
+        content_id = len(page_data['content'])
+        content_item = {
+            'id': content_id,
+            'type': 'line',
+            'text': text,
+            'pos': position,
+            'angle': angle,
+            'score': 1.0
+        }
+        page_data['content'].append(content_item)
+        
+        # 创建 structured 条目
+        structured_item = {
+            'type': 'textblock' if detail_type == 'paragraph' else detail_type,
+            'pos': position,
+            'content': [content_id],
+            'text': text,
+            'outline_level': category_depth
+        }
+        
+        if detail_sub_type:
+            structured_item['sub_type'] = detail_sub_type
+        
+        if detail_type == 'table':
+            structured_item['rows'] = 1
+            structured_item['cols'] = 1
+            structured_item['columns_width'] = [position[2] - position[0]] if len(position) >= 4 else [100]
+            structured_item['rows_height'] = [position[5] - position[1]] if len(position) >= 6 else [50]
+            structured_item['cells'] = []
+        
+        if detail_type == 'image':
+            structured_item['lines'] = [content_id]
+            structured_item['content'] = [content_id]
+        
+        page_data['structured'].append(structured_item)
+        
+        # 收集 markdown 内容
+        markdown_parts.append({
+            'text': text,
+            'is_continue': is_continue
+        })
+        
+        paragraph_id_counter += 1
+    
+    # 生成 markdown：根据 is_continue 决定拼接方式
+    markdown_lines = []
+    for idx, part in enumerate(markdown_parts):
+        if idx == 0:
+            # 第一个元素直接添加
+            markdown_lines.append(part['text'])
+        else:
+            # 如果前一个元素 is_continue=True，直接拼接；否则用换行符拼接
+            prev_is_continue = markdown_parts[idx - 1]['is_continue']
+            if prev_is_continue:
+                # 直接拼接（追加到最后一个元素）
+                markdown_lines[-1] += part['text']
+            else:
+                # 用换行符拼接
+                markdown_lines.append(part['text'])
+    
+    markdown = '\n'.join(markdown_lines)
+    
+    # 构建最终结果
+    pages_list = [pages_dict[page_num] for page_num in sorted(pages_dict.keys())]
+    
+    result = {
+        'markdown': markdown,  # 由 elements 中的 text 拼接而成
+        'detail': detail_list,
+        'pages': pages_list,
+        'valid_page_number': success_count,
+        'total_page_number': len(pages_dict),
+        'success_count': success_count
+    }
+    
+    return result
+
+
+# 使用示例
+if __name__ == "__main__":
+    # 示例：从 API 响应中提取 result
+    api_response = {
+        "code": 200,
+        "message": "success",
+        "result": {
+            "success_count": 1,
+            "elements": [
+                {
+                    "element_id": "",
+                    "type": "NarrativeText",
+                    "text": "xParse 是一个端到端文档处理 AI 基础设施",
+                    "metadata": {
+                        "page_image_url": "https://web-api.textin.com/ocr_image/external/01a91572ca81092c.jpg",
+                        "original_image_url": "",
+                        "angle": 0,
+                        "page_number": 1,
+                        "page_width": 600,
+                        "page_height": 800,
+                        "coordinates": [0.182200, 0.231600, 0.671700, 0.231600, 0.671700, 0.273200, 0.182200, 0.273200],
+                        "is_continue": False,
+                        "category_depth": -1,
+                        "parent_id": ""
+                    }
+                }
+            ]
+        }
+    }
+    
+    # 转换格式
+    try:
+        converted_result = convert_elements_to_legacy_format(api_response['result'])
+        print("转换成功！")
+        print(f"Detail 条目数: {len(converted_result['detail'])}")
+        print(f"Pages 条目数: {len(converted_result['pages'])}")
+    except Exception as e:
+        print(f"转换失败: {e}")
+```
+
 ### 错误码说明
 
 | **错误码** | **描述**                                                               |
@@ -428,4 +760,4 @@ if __name__ == "__main__":
 
 ### 示例代码下载
 
-我们提供了完整的多语言示例代码包，助您10s跑通接口示例，[点击下载](https://static.textin.com/docs/%E9%80%9A%E7%94%A8%E6%96%87%E6%A1%A3%E8%A7%A3%E6%9E%90-%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81.zip)。
+我们提供了完整的多语言示例代码包，助您10s跑通接口示例，[点击下载](https://static.textin.com/docs/%E9%80%9A%E7%94%A8%E6%96%87%E6%A1%A3%E8%A7%A3%E6%9E%90-%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81.zip?version=1)。

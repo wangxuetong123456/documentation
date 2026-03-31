@@ -28,7 +28,7 @@ description: ""
 2. 上传一个文件，或打开一个已存在的文件；
 3. 切换到**智能抽取**tab，并切换到**字段模式**；
 
-   ![Extract V3 Schema Empty Jp](https://static.textin.com/docs/images/extract-v3-schema-empty.jpg)
+   ![Extract V3 Schema Empty Jp](/images/extract-v3-schema-empty.jpg)
 4. 在**抽取配置**中，可以添加您想抽取的字段，如 ”商品名称“；
 5. 选择**字段类型**下拉框，可以设定您所期望返回的字段类型，详情请参考[支持的字段类型](/xparse/extract-quickstart-v3#json-schema-%E6%94%AF%E6%8C%81%E7%9A%84%E5%AD%97%E6%AE%B5%E7%B1%BB%E5%9E%8B)；
 6. 为字段增加一个**字段描述**（可选）；
@@ -37,7 +37,7 @@ description: ""
 9. 重复以上步骤，直到添加完您想抽取的全部字段；
 
    <img
-     src="https://static.textin.com/docs/images/extract-v3-schema-edit.png"
+     src="/images/extract-v3-schema-edit.png"
      alt="Extract V3 Schema Edit Jp"
      title="Extract V3 Schema Edit Jp"
      className="mx-auto"
@@ -49,11 +49,11 @@ description: ""
 
 1. 抽取完成后，会展示抽取结果面板，您可以点击字段抽取结果，会在左侧原文件区域找到对应的坐标边界（高亮显示）；
 
-   ![Extract V3 Schema Result Panel Jp](https://static.textin.com/docs/images/extract-v3-schema-result-panel.jpg)
+   ![Extract V3 Schema Result Panel Jp](/images/extract-v3-schema-result-panel.jpg)
 2. 抽取结果默认显示**预览**面板，您也可以切换到**JSON**面板查看对应的结构化数据；
 
    <img
-     src="https://static.textin.com/docs/images/extract-v3-json-preview.jpg"
+     src="/images/extract-v3-json-preview.jpg"
      alt="Extract V3 Json Preview Jp"
      title="Extract V3 Json Preview Jp"
      className="mx-auto"
@@ -102,28 +102,28 @@ print(response.json())
 
 当待抽取的字段在文件中仅会有一个值时，推荐单值抽取，使用`string`, `number`, `integer`, `enum`类型。
 
-![Extract V3 Mono Key Jp](https://static.textin.com/docs/images/extract-v3-mono-key.jpg)
+![Extract V3 Mono Key Jp](/images/extract-v3-mono-key.jpg)
 
 ### 抽取多值
 
 当待抽取的字段存在多个并列的值时，推荐多值抽取，使用`array/string`，`array/number`等类型。
 
-![Extract V3 Multi Value Jp](https://static.textin.com/docs/images/extract-v3-multi-value.jpg)
+![Extract V3 Multi Value Jp](/images/extract-v3-multi-value.jpg)
 
-![Extract V3 Multi Value Demo Jp](https://static.textin.com/docs/images/extract-v3-multi-value-demo.jpg)
+![Extract V3 Multi Value Demo Jp](/images/extract-v3-multi-value-demo.jpg)
 
 ### 抽取表格
 
 当待抽取的内容有多组重复属性的数据组成，一般在原文档中呈现为类表格形式时，推荐表格抽取，使用`array/object`加单值字段嵌套表示。
 
-![Extract V3 Schema Table Sample Jp](https://static.textin.com/docs/images/extract-v3-schema-table-sample.jpg)
+![Extract V3 Schema Table Sample Jp](/images/extract-v3-schema-table-sample.jpg)
 
 如果文件中存在多个表格，可以添加多个`array/object`类型的字段。
 
-![Extract V3 Schema Multi Table Jp](https://static.textin.com/docs/images/extract-v3-schema-multi-table.jpg)
+![Extract V3 Schema Multi Table Jp](/images/extract-v3-schema-multi-table.jpg)
 
 ### 抽取嵌套对象
 
 当待抽取的内容由多个相关联的属性字段组成，推荐使用嵌套对象抽取，使用`object`类型。
 
-![Extract V3 Object Jp](https://static.textin.com/docs/images/extract-v3-object.jpg)
+![Extract V3 Object Jp](/images/extract-v3-object.jpg)
