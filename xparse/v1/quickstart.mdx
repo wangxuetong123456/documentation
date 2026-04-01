@@ -304,6 +304,20 @@ while True:
   "data": {
     "schema_version": "1.3.0",
     "file_id": "doc_7f3a2b",
+    "job_id": "job_x9k2m",
+    "success_count": 5,
+    "metadata": {
+      "filename": "document.pdf",
+      "filetype": "application/pdf",
+      "page_count": 5,
+      "data_source": {
+        "record_locator": {
+          "protocol": "file",
+          "remote_file_path": "/path/to/document.pdf"
+        },
+        "url": "file:///path/to/document.pdf"
+      }
+    },
     "markdown": "# 文档标题\n\n这是正文内容...\n\n| 列1 | 列2 |\n|---|---|\n| 值1 | 值2 |",
     "elements": [
       {
@@ -311,32 +325,52 @@ while True:
         "type": "Title",
         "text": "文档标题",
         "page_number": 1,
-        "coordinates": [0.10, 0.12, 0.32, 0.12, 0.32, 0.16, 0.10, 0.16]
+        "coordinates": [0.100000, 0.120000, 0.320000, 0.120000, 0.320000, 0.160000, 0.100000, 0.160000],
+        "metadata": {
+          "category_depth": 0,
+          "children_ids": ["el_002"],
+          "is_continuation": false,
+          "data_source": {
+            "record_locator": {
+              "protocol": "file",
+              "remote_file_path": "/path/to/document.pdf"
+            },
+            "url": "file:///path/to/document.pdf"
+          }
+        }
       },
       {
         "element_id": "el_002",
         "type": "NarrativeText",
         "text": "这是正文内容...",
         "page_number": 1,
-        "coordinates": [0.10, 0.18, 0.90, 0.18, 0.90, 0.22, 0.10, 0.22]
+        "coordinates": [0.100000, 0.180000, 0.900000, 0.180000, 0.900000, 0.220000, 0.100000, 0.220000],
+        "metadata": {
+          "parent_id": "el_001",
+          "is_continuation": false,
+          "data_source": {
+            "record_locator": {
+              "protocol": "file",
+              "remote_file_path": "/path/to/document.pdf"
+            },
+            "url": "file:///path/to/document.pdf"
+          }
+        }
       }
-    ],
-    "metadata": {
-      "filename": "document.pdf",
-      "filetype": "application/pdf",
-      "page_count": 5
-    },
-    "success_count": 5
+    ]
   }
 }
 ```
 
 | 字段 | 说明 |
 |------|------|
-| `markdown` | 文档的 Markdown 表示，可直接用于 LLM 输入 |
-| `elements` | 文档元素列表，包含类型、文本、坐标等详细信息 |
-| `metadata` | 文件元信息（文件名、类型、页数等） |
+| `schema_version` | 数据结构版本号，当前为 `"1.3.0"` |
+| `file_id` | 文件唯一标识 |
+| `job_id` | 任务唯一标识 |
 | `success_count` | 成功解析的页数（计费依据） |
+| `metadata` | 文件元信息（文件名、类型、页数、数据源等） |
+| `markdown` | 文档的 Markdown 表示，可直接用于 LLM 输入 |
+| `elements` | 文档元素列表，每个元素包含类型、文本、坐标、元信息等详细信息 |
 
 <Info>
   更详细的返回结构说明请参考 [返回结构详解](/xparse/v1/parse-response)。
