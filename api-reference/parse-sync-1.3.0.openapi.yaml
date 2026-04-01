@@ -143,9 +143,8 @@ paths:
                                 content_type: "formula"
                                 text: "x^2+1"
                                 coordinates: [0.33, 0.24, 0.52, 0.24, 0.52, 0.28, 0.33, 0.28]
-                                char_details:
-                                  - char_id: "tblch_001"
-                                    index: 0
+                                char_details: 
+                                  - index: 0
                                     text: "x"
                                     coordinates: [0.33, 0.24, 0.34, 0.24, 0.34, 0.28, 0.33, 0.28]
                                     recognition:
@@ -196,8 +195,7 @@ paths:
                               coordinates: [0.18, 0.40, 0.26, 0.40, 0.26, 0.46, 0.18, 0.46]
                               metadata: {}
                           char_details:
-                            - char_id: "ch_004_1"
-                              index: 0
+                            - index: 0
                               text: "乙"
                               coordinates: [0.10, 0.40, 0.11, 0.40, 0.11, 0.46, 0.10, 0.46]
                               recognition:
@@ -229,8 +227,7 @@ paths:
                               metadata:
                                 display_mode: "inline"
                           char_details:
-                            - char_id: "ch_005_1"
-                              index: 0
+                            - index: 0
                               text: "设"
                               coordinates: [0.10, 0.48, 0.11, 0.48, 0.11, 0.54, 0.10, 0.54]
                               recognition:
@@ -769,9 +766,6 @@ components:
       type: object
       description: 字符详细信息
       properties:
-        char_id:
-          type: string
-          description: 字符 ID
         index:
           type: integer
           description: 在所属文本中的字符索引

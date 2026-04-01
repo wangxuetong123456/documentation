@@ -266,10 +266,21 @@ while True:
 
     if status_data["status"] == "completed":
         print("解析完成！")
-        print(status_data["result"]["markdown"])
+        print(status_data)
+        
+        # Step 3: 通过 result_url 获取实际结果
+        result_url = status_data["result_url"]
+        result_resp = requests.get(result_url, headers=headers)
+        result_data = result_resp.json()
+        
+        # 输出元素信息
+        print(f"共解析 {len(result_data['elements'])} 个元素")
+        for element in result_data["elements"][:5]:
+            print(f"[{element['type']}] {element['text'][:50]}")
         break
+        
     elif status_data["status"] == "failed":
-        print(f"解析失败: {status_data}")
+        print(f"解析失败: {status_data.get('message', '未知错误')}")
         break
 
     print(f"状态: {status_data['status']}，等待中...")
