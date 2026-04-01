@@ -7,6 +7,27 @@ description: "5 分钟内完成第一次文档解析，使用 Python SDK 或 RES
   推荐使用 **Python SDK** 快速上手。如果您更熟悉直接调用 REST API，可参考下方 [REST API 示例](#rest-api-示例)。
 </Tip>
 
+## 新版本核心升级
+
+相比旧版文档解析 API，新版本带来以下核心改进：
+
+<CardGroup cols={2}>
+  <Card title="更轻量的数据结构" icon="box">
+    采用标准化的 Element 模型，数据结构更简洁清晰，易于理解和使用。返回的 JSON 体积更小，传输更快。
+  </Card>
+  <Card title="标准输入输出协议" icon="file-code">
+    统一的请求配置（Config）和响应结构（Schema），兼容多种解析引擎，便于集成和迁移。
+  </Card>
+  <Card title="引擎可替换" icon="arrows-rotate">
+    支持多种解析引擎（TextIn、MinerU、PaddleOCR），可根据场景选择最优引擎，或对比不同引擎效果。
+  </Card>
+  <Card title="异步 API 支持" icon="clock">
+    新增异步解析接口，支持大文件和批量处理场景，避免 HTTP 超时。支持 Webhook 回调，无需轮询。
+  </Card>
+</CardGroup>
+
+---
+
 ## 准备工作
 
 ### 1. 获取 API Key
@@ -71,6 +92,10 @@ with open("document.pdf", "rb") as f:
         ),
     )
 ```
+
+<Tip>
+  上面的示例使用了简单的配置。你可以通过 `ParseConfig` 自定义更多能力，如字符详情、行内对象、图片数据等。详见 [解析配置详解](/xparse/v1/parse-config)。
+</Tip>
 
 ### Step 4：查看结果
 
@@ -229,6 +254,10 @@ curl -X POST "https://api.textin.com/api/v1/xparse/parse/sync" \
 
 </CodeGroup>
 
+<Note>
+  `config` 参数支持丰富的配置选项，包括层级关系、字符详情、行内对象、图片数据等。完整配置说明请参考 [解析配置详解](/xparse/v1/parse-config)。
+</Note>
+
 ### 异步解析（适用于大文件）
 
 对于大文件或需要批量处理的场景，建议使用异步 API：
@@ -381,6 +410,9 @@ while True:
 ## 下一步
 
 <CardGroup cols={2}>
+  <Card title="解析配置详解" icon="sliders" href="/xparse/v1/parse-config">
+    深入了解所有输入参数配置，包括能力开关、处理范围、引擎选择等
+  </Card>
   <Card title="返回结构详解" icon="code" href="/xparse/v1/parse-response">
     了解 Elements、坐标、表格结构等完整返回字段
   </Card>
@@ -389,6 +421,9 @@ while True:
   </Card>
   <Card title="API 参考" icon="book" href="/api-reference/endpoint/xparse/v1/parse-sync">
     完整的 API 参数与响应说明
+  </Card>
+  <Card title="异步解析" icon="clock" href="/api-reference/endpoint/xparse/v1/parse-async">
+    使用异步 API 处理大文件和批量任务
   </Card>
   <Card title="计费说明" icon="credit-card" href="/xparse/v1/charge">
     了解定价与计费规则

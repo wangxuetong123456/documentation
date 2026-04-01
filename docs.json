@@ -56,6 +56,7 @@
                 "tag": "NEW",
                 "pages": [
                   "xparse/v1/quickstart",
+                  "xparse/v1/parse-config",
                   "xparse/v1/parse-response"
                 ]
               },

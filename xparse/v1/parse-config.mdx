@@ -1,0 +1,642 @@
+---
+title: "解析配置详解"
+description: "详细说明文档解析 API 的输入参数配置，包括能力开关、处理范围、高级引擎配置等"
+---
+
+文档解析 API 支持通过 `config` 参数自定义解析行为。本文档详细说明所有可用的配置项。
+
+## 配置结构总览
+
+```json
+{
+  "schema_version": "1.3.0",
+  "document": {
+    "password": "example-pdf-password"
+  },
+  "capabilities": {
+    "include_hierarchy": true,
+    "include_inline_objects": false,
+    "include_char_details": false,
+    "include_image_data": false,
+    "include_table_structure": false,
+    "pages": false,
+    "title_tree": false,
+    "table_view": "html"
+  },
+  "scope": {
+    "page_range": "1-5"
+  },
+  "config": {
+    "force_engine": "textin",
+    "engine_params": {
+      "formula_level": 0,
+      "image_output_type": "url"
+    }
+  }
+}
+```
+
+---
+
+## schema_version
+
+指定返回数据的结构版本号。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `schema_version` | string | `"1.3.0"` | 目标 schema 版本，当前支持 `"1.3.0"` |
+
+<Info>
+  推荐显式指定 `schema_version`，以确保返回数据结构的稳定性。
+</Info>
+
+---
+
+## document（文档相关配置）
+
+配置文档本身的处理参数。
+
+```json
+{
+  "document": {
+    "password": "example-pdf-password"
+  }
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `password` | string | 否 | 加密文档的密码（如加密的 PDF 文件） |
+
+**使用场景**：
+- 处理受密码保护的 PDF 文档
+- 确保加密文档能够正常解析
+
+---
+
+## capabilities（解析策略与格式配置）
+
+控制返回数据的详细程度和格式。开启更多能力会增加解析耗时和返回数据量。
+
+### include_hierarchy
+
+是否返回元素间的层级与关联字段。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `include_hierarchy` | boolean | `true` | 开启后，返回元素间的父子关系、引用关系等信息 |
+
+**开启后返回的字段**：
+- `parent_id`：父元素 ID
+- `children_ids`：子元素 ID 列表
+- `ref_element_id`：关联元素 ID（如图片/表格与其标题的关联）
+
+**使用场景**：
+- 需要构建文档的结构化关系图谱
+- 需要理解元素之间的从属关系
+- 需要追踪标题与内容的层级关系
+
+```json
+{
+  "capabilities": {
+    "include_hierarchy": true
+  }
+}
+```
+
+### include_inline_objects
+
+是否返回细粒度的行内对象。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `include_inline_objects` | boolean | `false` | 开启后，文本类元素会返回其中包含的细粒度对象 |
+
+**支持的行内对象类型**：
+- `formula`：数学公式（LaTeX 格式）
+- `handwriting`：手写内容
+- `checkbox`：复选框
+- `image`：内嵌图片
+
+**使用场景**：
+- 需要精确定位和提取公式
+- 需要识别手写签名或批注
+- 需要处理表单中的复选框
+- 需要提取文本段落中的内嵌图片
+
+```json
+{
+  "capabilities": {
+    "include_inline_objects": true
+  }
+}
+```
+
+**返回示例**：
+```json
+{
+  "element_id": "el_004",
+  "type": "NarrativeText",
+  "text": "设违约金函数 $f(x)=x^2+1$ 。",
+  "objects": [
+    {
+      "object_id": "obj_001",
+      "type": "formula",
+      "text": "$f(x)=x^2+1$",
+      "text_range": [7, 20],
+      "coordinates": [0.220000, 0.480000, 0.300000, 0.480000, 0.300000, 0.540000, 0.220000, 0.540000],
+      "metadata": {
+        "display_mode": "inline"
+      }
+    }
+  ]
+}
+```
+
+### include_char_details
+
+是否返回字符级详细信息。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `include_char_details` | boolean | `false` | 开启后，返回文本中每个字符的详细信息 |
+
+**返回的字符信息包括**：
+- 字符坐标
+- 识别置信度
+- 候选字符列表
+
+**使用场景**：
+- 需要字符级别的精确定位
+- 需要评估识别质量
+- 需要处理低置信度字符
+- 需要实现字符级别的纠错
+
+```json
+{
+  "capabilities": {
+    "include_char_details": true
+  }
+}
+```
+
+**返回示例**：
+```json
+{
+  "char_details": [
+    {
+      "index": 0,
+      "text": "概",
+      "coordinates": [0.100000, 0.120000, 0.140000, 0.120000, 0.140000, 0.160000, 0.100000, 0.160000],
+      "recognition": {
+        "confidence": 0.999,
+        "candidates": [
+          {"text": "概", "confidence": 0.999},
+          {"text": "槪", "confidence": 0.001}
+        ]
+      }
+    }
+  ]
+}
+```
+
+### include_image_data
+
+是否返回图片数据。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `include_image_data` | boolean | `false` | 开启后，图片元素将返回完整的图片数据 |
+
+**返回的图片信息包括**：
+- 图片 URL
+- MIME 类型
+- Base64 编码（可选）
+
+**使用场景**：
+- 需要下载或显示文档中的图片
+- 需要对图片进行二次处理
+- 需要获取图片的 Base64 编码用于嵌入
+
+```json
+{
+  "capabilities": {
+    "include_image_data": true
+  }
+}
+```
+
+**返回示例**：
+```json
+{
+  "element_id": "el_020",
+  "type": "Image",
+  "image_data": {
+    "image_url": "https://example.com/images/xxx.png",
+    "mime_type": "image/png",
+    "base64": "iVBORw0KGgoAAAANSUhEUg..."
+  }
+}
+```
+
+### include_table_structure
+
+是否返回表格的详细结构化信息。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `include_table_structure` | boolean | `false` | 开启后，以 JSON 格式返回表格的行、列以及每个单元格的详细信息 |
+
+**返回的表格结构包括**：
+- 行数和列数
+- 每个单元格的位置（行、列）
+- 单元格的跨行跨列信息
+- 单元格内容类型（文本、公式、图片、混合）
+- 单元格坐标
+
+**使用场景**：
+- 需要程序化处理表格数据
+- 需要提取表格单元格的精确位置
+- 需要处理复杂表格（合并单元格）
+- 需要识别表格单元格中的公式或图片
+
+```json
+{
+  "capabilities": {
+    "include_table_structure": true
+  }
+}
+```
+
+**返回示例**：
+```json
+{
+  "element_id": "el_010",
+  "type": "Table",
+  "table_structure": {
+    "rows": 2,
+    "cols": 2,
+    "cells": [
+      {
+        "cell_id": "tbl_001_r1_c1",
+        "row": 1,
+        "col": 1,
+        "row_span": 1,
+        "col_span": 1,
+        "content_type": "text",
+        "text": "姓名",
+        "coordinates": [0.100000, 0.300000, 0.300000, 0.300000, 0.300000, 0.340000, 0.100000, 0.340000]
+      }
+    ]
+  }
+}
+```
+
+### pages
+
+是否返回页面元信息列表。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `pages` | boolean | `false` | 开启后，返回每一页的详细信息 |
+
+**返回的页面信息包括**：
+- 页码
+- 页面宽高
+- 旋转角度
+- 渲染图片地址（`page_image_url`）
+- 包含的元素列表（`element_ids`）
+- DPI
+- 处理状态
+
+**使用场景**：
+- 需要按页面组织文档内容
+- 需要获取页面的预览图
+- 需要了解页面的物理属性（宽高、DPI）
+- 需要定位某个元素所在的页面
+
+```json
+{
+  "capabilities": {
+    "pages": true
+  }
+}
+```
+
+**返回示例**：
+```json
+{
+  "pages": [
+    {
+      "page_number": 1,
+      "page_width": 1576,
+      "page_height": 1683,
+      "page_image_url": "https://example.com/page-1.jpg",
+      "element_ids": ["el_001", "el_002", "el_003"],
+      "dpi": 144,
+      "angle": 0,
+      "status": "Success"
+    }
+  ]
+}
+```
+
+### title_tree
+
+是否返回标题树（目录）。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `title_tree` | boolean | `false` | 开启后，返回文档的层级目录结构 |
+
+**返回的目录信息包括**：
+- 标题文本
+- 标题层级（1 为最高级）
+- 所在页码
+- 嵌套的子标题
+
+**使用场景**：
+- 需要生成文档目录导航
+- 需要按章节组织内容
+- 需要理解文档的大纲结构
+
+```json
+{
+  "capabilities": {
+    "title_tree": true
+  }
+}
+```
+
+**返回示例**：
+```json
+{
+  "title_tree": [
+    {
+      "element_id": "el_001",
+      "title": "第一章 概述",
+      "level": 1,
+      "page_number": 1,
+      "children": [
+        {
+          "element_id": "el_005",
+          "title": "1.1 背景",
+          "level": 2,
+          "page_number": 1,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+### table_view
+
+表格在 Markdown 中的表达格式。
+
+| 字段 | 类型 | 默认值 | 可选值 | 说明 |
+|------|------|--------|--------|------|
+| `table_view` | string | `"html"` | `markdown`, `html` | 控制 Markdown 字段中表格的渲染格式 |
+
+**格式对比**：
+
+**Markdown 格式**（`table_view: "markdown"`）：
+```markdown
+| 姓名 | 年龄 |
+|---|---|
+| 张三 | 28 |
+```
+
+**HTML 格式**（`table_view: "html"`）：
+```html
+<table>
+  <thead>
+    <tr><th>姓名</th><th>年龄</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>张三</td><td>28</td></tr>
+  </tbody>
+</table>
+```
+
+**使用场景**：
+- 需要简洁的 Markdown 表格格式
+- 需要支持复杂表格结构（合并单元格）时使用 HTML
+
+---
+
+## scope（处理范围控制）
+
+控制解析的页面范围，减少不必要的处理。
+
+```json
+{
+  "scope": {
+    "page_range": "1-5,10-15"
+  }
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `page_range` | string | 否 | 页码范围，从 1 开始，支持多个闭区间 |
+
+**格式说明**：
+- 单页：`"1"`
+- 连续页：`"1-5"`
+- 多个区间：`"1-2,3-4,5-10"`
+
+**使用场景**：
+- 仅处理文档的特定页面
+- 减少处理时间和成本
+- 分批处理大型文档
+
+---
+
+## config（高级配置）
+
+专家模式配置，用于强制指定解析引擎和引擎参数。
+
+<Warning>
+  **谨慎使用**：这些配置仅供专业用户使用。不当的配置可能导致解析质量下降或失败。
+</Warning>
+
+### force_engine
+
+强制指定内部解析引擎。
+
+| 字段 | 类型 | 可选值 | 说明 |
+|------|------|--------|------|
+| `force_engine` | string | `textin`, `mineru`, `paddle_ocr` | 强制使用特定的解析引擎 |
+
+**引擎说明**：
+- `textin`：TextIn 自研引擎，默认选项，综合性能最佳
+- `mineru`：开源 MinerU 引擎，适用于学术文档
+- `paddle_ocr`：百度 PaddleOCR 引擎，适用于简单 OCR 场景
+
+**使用场景**：
+- 对比不同引擎的效果
+- 特定场景下需要使用特定引擎
+- 调试和测试
+
+```json
+{
+  "config": {
+    "force_engine": "mineru"
+  }
+}
+```
+
+### engine_params
+
+引擎级自定义参数，不同引擎支持的参数不同。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `engine_params` | object | 传递给解析引擎的自定义参数 |
+
+**常用参数示例**：
+
+```json
+{
+  "config": {
+    "force_engine": "textin",
+    "engine_params": {
+      "formula_level": 0,
+      "image_output_type": "url"
+    }
+  }
+}
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `formula_level` | int | 公式识别级别，0 为标准，1 为增强 |
+| `image_output_type` | string | 图片输出类型，`url` 或 `base64` |
+
+<Note>
+  不同引擎支持的参数可能不同，具体参数请联系技术支持获取。
+</Note>
+
+---
+
+## 完整配置示例
+
+### 基础配置（推荐）
+
+适用于大多数场景的默认配置：
+
+```json
+{
+  "schema_version": "1.3.0",
+  "capabilities": {
+    "include_hierarchy": true,
+    "title_tree": true,
+    "include_table_structure": true
+  }
+}
+```
+
+### 最大化详细信息
+
+返回所有可用的详细信息（会增加处理时间和数据量）：
+
+```json
+{
+  "schema_version": "1.3.0",
+  "capabilities": {
+    "include_hierarchy": true,
+    "include_inline_objects": true,
+    "include_char_details": true,
+    "include_image_data": true,
+    "include_table_structure": true,
+    "pages": true,
+    "title_tree": true,
+    "table_view": "html"
+  }
+}
+```
+
+### 最小化配置
+
+仅返回基本的元素和 Markdown：
+
+```json
+{
+  "schema_version": "1.3.0",
+  "capabilities": {
+    "include_hierarchy": false
+  }
+}
+```
+
+### 处理加密 PDF
+
+```json
+{
+  "schema_version": "1.3.0",
+  "document": {
+    "password": "your-pdf-password"
+  },
+  "capabilities": {
+    "include_hierarchy": true,
+    "title_tree": true
+  }
+}
+```
+
+### 仅处理前 10 页
+
+```json
+{
+  "schema_version": "1.3.0",
+  "scope": {
+    "page_range": "1-10"
+  },
+  "capabilities": {
+    "include_hierarchy": true
+  }
+}
+```
+
+---
+
+## 性能优化建议
+
+<AccordionGroup>
+  <Accordion title="按需开启能力" icon="toggle-on">
+    只开启必需的能力开关，避免返回不必要的数据。例如，如果不需要字符级详情，就不要开启 `include_char_details`。
+  </Accordion>
+
+  <Accordion title="合理使用 page_range" icon="file">
+    对于大文档，可以先处理部分页面进行测试，确认效果后再处理全部页面。
+  </Accordion>
+
+  <Accordion title="异步处理大文件" icon="clock">
+    对于超过 50 页的文档，建议使用异步 API，避免 HTTP 超时。
+  </Accordion>
+
+  <Accordion title="缓存处理结果" icon="database">
+    相同文档的重复处理会产生相同的 `file_id`，可以通过 `file_id` 实现结果缓存。
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## 相关链接
+
+<CardGroup cols={2}>
+  <Card title="快速入门" icon="rocket" href="/xparse/v1/quickstart">
+    5 分钟完成第一次文档解析
+  </Card>
+  <Card title="返回结构详解" icon="code" href="/xparse/v1/parse-response">
+    了解完整的返回数据结构
+  </Card>
+  <Card title="API 参考" icon="book" href="/api-reference/endpoint/xparse/v1/parse-sync">
+    完整的 API 参数与响应 Schema
+  </Card>
+  <Card title="异步解析" icon="clock" href="/api-reference/endpoint/xparse/v1/parse-async">
+    使用异步 API 处理大文件
+  </Card>
+</CardGroup>
