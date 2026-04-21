@@ -1,0 +1,65 @@
+# GUI Parse API
+
+## 接口信息
+
+| 项目 | 说明 |
+|------|------|
+| URL | `POST /gui_parse/analyze` |
+| Content-Type | `multipart/form-data` |
+
+## 请求参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `image` | file | 是 | 图片文件，支持 jpeg/png/gif/webp，最大 10MB |
+
+## 响应格式
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "x_request_id": "trace-id",
+  "data": {
+    "elements": [
+      {
+        "type": "button",
+        "content": "登录",
+        "position": [430, 520, 570, 560],
+        "interactivity": true,
+        "description": "Login button"
+      }
+    ]
+  }
+}
+```
+
+## elements 字段说明
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `type` | string | 元素类型：button, text, input, icon, image, link, checkbox, dropdown, menu, tab, label, title, navigation, toolbar, statusbar 等 |
+| `content` | string | 元素的可见文本/标签内容 |
+| `position` | `[x1, y1, x2, y2]` | 归一化坐标，范围 [0, 1000]。(0,0) 为左上角，(1000,1000) 为右下角。`[x1,y1]` 为左上顶点，`[x2,y2]` 为右下顶点 |
+| `interactivity` | bool | 是否可交互 |
+| `description` | string | 元素的简要描述 |
+
+## 调用示例
+
+**基本调用：**
+
+```bash
+curl -X POST https://textin-sandbox.intsig.com/gui_parse/analyze \
+ -F "image=@/Users/test/example.png"
+```
+
+## 错误码
+
+| code | 说明 |
+|------|------|
+| 200 | 成功 |
+| 400 | 缺少必要参数或参数值不正确 |
+| 40301 | 文件类型不支持 |
+| 40302 | 文件大小超限 |
+| 40305 | 文件未上传 |
+| 500 | 服务器内部错误 |
