@@ -12,6 +12,7 @@
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `image` | file | 是 | 图片文件，支持 jpeg/png/gif/webp，最大 10MB |
+| `engine` | string | 否 | 解析引擎，支持 gemini（默认）,gpt,claude |
 
 ## 响应格式
 
@@ -51,6 +52,7 @@
 ```bash
 curl -X POST https://textin-sandbox.intsig.com/gui_parse/analyze \
  -F "image=@/Users/test/example.png"
+ -F "engine=gemini"
 ```
 
 ## 错误码

@@ -33,6 +33,22 @@
                 ]
               },
               {
+                "group": "文档解析新版",
+                "tag": "NEW",
+                "pages": [
+                  "xparse/v1/quickstart",
+                  "xparse/v1/parse-config",
+                  "xparse/v1/parse-response"
+                ]
+              },
+              {
+                "group": "GUI 解析",
+                "tag": "NEW",
+                "pages": [
+                  "xparse/v1/gui-parse"
+                ]
+              },
+              {
                 "group": "文档解析",
                 "pages": [
                   "xparse/parse-quickstart",
@@ -49,15 +65,6 @@
                       "xparse/parse-debug-apifox"
                     ]
                   }
-                ]
-              },
-              {
-                "group": "文档解析新版",
-                "tag": "NEW",
-                "pages": [
-                  "xparse/v1/quickstart",
-                  "xparse/v1/parse-config",
-                  "xparse/v1/parse-response"
                 ]
               },
               {
